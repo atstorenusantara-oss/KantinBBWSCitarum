@@ -232,11 +232,77 @@ function switchPage(page) {
     if (page === 'bms') loadBMSData();
 }
 
-// --- BMS Logic (Mockup) ---
-function loadBMSData() {
-    console.log('Loading BMS Monitoring Data...');
-    // Real-time update simulation could go here
-    lucide.createIcons();
+// --- BMS Logic ---
+async function loadBMSData() {
+    try {
+        const response = await fetch('/api/bms/devices');
+        const result = await response.json();
+
+        if (result.success) {
+            const devices = result.json || result.data; // Handle both formats
+
+            // 1. Update Core Stats (Watts, Temp, Water)
+            const kwh = devices.find(d => d.category === 'ELECTRIC');
+            const temp = devices.find(d => d.category === 'HVAC' && d.type === 'SENSOR');
+            const water = devices.find(d => d.category === 'WATER');
+
+            if (kwh) document.querySelector('#bmsPage .report-grid .card:nth-child(1) h2').innerHTML = `${kwh.current_value} <span style="font-size: 1rem; color: var(--text-muted);">${kwh.unit}</span>`;
+            if (temp) document.querySelector('#bmsPage .report-grid .card:nth-child(2) h2').innerHTML = `${temp.current_value} <span style="font-size: 1rem; color: var(--text-muted);">°${temp.unit === 'Celsius' ? 'C' : temp.unit}</span>`;
+            if (water) document.querySelector('#bmsPage .report-grid .card:nth-child(3) h2').innerHTML = `${water.current_value} <span style="font-size: 1rem; color: var(--text-muted);">${water.unit}</span>`;
+
+            // 2. Render Lighting/Actuator Controls
+            const actuators = devices.filter(d => d.type === 'ACTUATOR');
+            const controlContainer = document.querySelector('#bmsPage .card:first-of-type div[style*="flex-direction: column"]');
+
+            if (controlContainer && actuators.length > 0) {
+                controlContainer.innerHTML = actuators.map(d => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--glass); border-radius: 12px;">
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <i data-lucide="${d.category === 'LIGHTING' ? 'lightbulb' : 'wind'}" style="color: ${d.current_value === 'ON' ? 'var(--accent)' : 'var(--text-muted)'};"></i>
+                            <span>${d.name}</span>
+                        </div>
+                        <button class="category-btn ${d.current_value === 'ON' ? 'active' : ''}" 
+                                onclick="toggleBMSDevice('${d.id}', '${d.current_value === 'ON' ? 'OFF' : 'ON'}')" 
+                                style="padding: 5px 15px;">
+                            ${d.current_value}
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // 3. Render Health Table
+            const tableBody = document.querySelector('#bmsPage table.data-table tbody');
+            if (tableBody) {
+                tableBody.innerHTML = devices.map(d => `
+                    <tr>
+                        <td>${d.name}</td>
+                        <td><span style="color: ${d.is_active ? 'var(--success)' : 'var(--danger)'};">● ${d.is_active ? 'Active' : 'Offline'}</span></td>
+                        <td>${d.type === 'SENSOR' ? '92%' : '-'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            lucide.createIcons();
+        }
+    } catch (error) {
+        console.error('BMS Fetch Error:', error);
+    }
+}
+
+async function toggleBMSDevice(id, newValue) {
+    try {
+        const response = await fetch(`/api/bms/devices/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: newValue })
+        });
+        const result = await response.json();
+        if (result.success) {
+            loadBMSData(); // Refresh UI
+        }
+    } catch (error) {
+        alert('Gagal mengontrol perangkat BMS');
+    }
 }
 
 // --- Report Logic ---
