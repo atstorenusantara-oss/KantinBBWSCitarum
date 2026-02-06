@@ -260,6 +260,27 @@
 
             <div class="card" style="margin-top: 30px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Transaksi Terbaru (Shift Terpilih)</h3>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Invoice</th>
+                            <th>Pelanggan</th>
+                            <th>Total</th>
+                            <th>Status/Metode</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentSalesBody">
+                        <!-- Data transaksi terbaru -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3>Ringkasan Audit Stok (Opname)</h3>
                     <select id="opnameFilter" class="category-btn" onchange="loadReportData()"
                         style="padding: 5px 15px;">
@@ -481,6 +502,11 @@
                             <option value="QRIS">📱 QRIS</option>
                         </select>
                     </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; cursor: pointer;">
+                    <input type="checkbox" id="checkPrint" style="width: 18px; height: 18px; cursor: pointer;" checked>
+                    <label for="checkPrint" style="cursor: pointer; font-size: 0.9rem;">Cetak Struk Otomatis</label>
                 </div>
 
                 <button class="btn-checkout" id="btnCheckout">

@@ -6,5 +6,6 @@ const salesController = require('../controllers/sales.controller');
 router.post('/', salesController.create);
 router.get('/pending', salesController.getPending);
 router.put('/complete/:id', salesController.complete);
+router.post('/reprint/:id', salesController.reprint);
 
 module.exports = router;

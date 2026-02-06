@@ -156,9 +156,13 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
     const paymentStatus = document.getElementById('paymentStatus').value;
     const paymentMethod = document.getElementById('paymentMethod').value;
 
+    const shouldPrint = document.getElementById('checkPrint').checked;
+
     const payload = {
         invoice_number: `INV-${Date.now()}`,
         items: cart.map(item => ({
+            id: item.id, // for printer service if it needs name etc
+            name: item.name,
             product_id: item.id,
             qty: item.qty,
             price: item.price
@@ -166,7 +170,8 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
         total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0) * 1.1,
         payment_method: paymentMethod,
         customer_name: customerName,
-        payment_status: paymentStatus
+        payment_status: paymentStatus,
+        should_print: shouldPrint
     };
 
     try {
@@ -178,7 +183,14 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
 
         const result = await response.json();
         if (result.success) {
-            const msg = paymentStatus === 'PAID' ? 'Transaksi Berhasil!' : 'Pesanan disimpan ke daftar Pending.';
+            let msg = paymentStatus === 'PAID' ? 'Transaksi Berhasil!' : 'Pesanan disimpan ke daftar Pending.';
+
+            if (result.print && result.print.success) {
+                msg += `\n${result.print.message}`;
+            } else if (shouldPrint) {
+                msg += `\n⚠️ Gagal mencetak struk: ${result.print?.error || 'Sedang simulasi server'}`;
+            }
+
             alert(`${msg}\nCustomer: ${customerName}\nInvoice: ${payload.invoice_number}`);
             cart = [];
             document.getElementById('customerName').value = '';
@@ -391,8 +403,47 @@ async function loadReportData() {
             }
         }
 
+        // Update Recent Transactions
+        const recentBody = document.getElementById('recentSalesBody');
+        if (daily.data.recent_sales) {
+            recentBody.innerHTML = daily.data.recent_sales.map(s => `
+                <tr>
+                    <td>${new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td style="font-size: 0.85rem;">${s.invoice_number}</td>
+                    <td style="font-weight: 600;">${s.customer_name}</td>
+                    <td>Rp ${Number(s.total).toLocaleString()}</td>
+                    <td>
+                        <span style="color: ${s.payment_status === 'PAID' ? 'var(--success)' : 'var(--danger)'}">
+                            ${s.payment_status === 'PAID' ? 'LUNAS' : 'PENDING'}
+                        </span>
+                        <br><small style="color: var(--text-muted)">${s.payment_method || '-'}</small>
+                    </td>
+                    <td>
+                        <button class="category-btn" onclick="reprintSale('${s.id}')" style="padding: 5px 10px; font-size: 0.8rem; background: var(--glass);">
+                            <i data-lucide="printer" style="width: 14px; position: relative; top: 2px;"></i> Cetak
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
     } catch (error) {
         console.error('Report Error:', error);
+    }
+}
+
+async function reprintSale(id) {
+    try {
+        const res = await fetch(`/api/sales/reprint/${id}`, { method: 'POST' });
+        const result = await res.json();
+        if (result.success) {
+            alert('Perintah cetak ulang berhasil dikirim!');
+        } else {
+            alert('Gagal cetak ulang: ' + result.message);
+        }
+    } catch (error) {
+        alert('Kesalahan koneksi saat cetak ulang.');
     }
 }
 

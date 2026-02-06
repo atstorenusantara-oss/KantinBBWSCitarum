@@ -68,6 +68,23 @@ class SalesService {
         );
         return { success: true };
     }
+    async getSaleById(salesId) {
+        const [sales] = await db.query("SELECT * FROM sales WHERE id = ?", [salesId]);
+        if (sales.length === 0) return null;
+
+        const [items] = await db.query(
+            `SELECT si.*, p.name 
+             FROM sales_items si 
+             JOIN products p ON si.product_id = p.id 
+             WHERE si.sales_id = ?`,
+            [salesId]
+        );
+
+        return {
+            ...sales[0],
+            items: items
+        };
+    }
 }
 
 module.exports = new SalesService();

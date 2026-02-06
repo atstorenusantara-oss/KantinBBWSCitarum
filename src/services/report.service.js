@@ -73,6 +73,16 @@ class ReportService {
         `;
         const [pendingSales] = await db.query(pendingQuery, [startTime, endTime]);
 
+        // Recent transactions for this shift (Limited to 20)
+        const recentSalesQuery = `
+            SELECT id, invoice_number, customer_name, total, payment_method, payment_status, created_at
+            FROM sales 
+            WHERE created_at BETWEEN ? AND ?
+            ORDER BY created_at DESC
+            LIMIT 20
+        `;
+        const [recentSales] = await db.query(recentSalesQuery, [startTime, endTime]);
+
         return {
             period: 'Daily (Shift)',
             start: startTime,
@@ -80,7 +90,8 @@ class ReportService {
             summary: summary[0],
             payments: payments,
             top_products: topProducts,
-            pending_sales: pendingSales
+            pending_sales: pendingSales,
+            recent_sales: recentSales
         };
     }
 
