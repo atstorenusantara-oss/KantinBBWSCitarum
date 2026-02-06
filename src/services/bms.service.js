@@ -58,6 +58,16 @@ class BMSService {
 
         return { success: true, deviceId, updatedValue: value };
     }
+
+    /**
+     * Get single device status (for ESP32 polling)
+     * @param {string} name - Device name (e.g., 'Lampu Area Indoor')
+     */
+    async getDeviceStatusByName(name) {
+        const [rows] = await db.query('SELECT current_value FROM bms_devices WHERE name = ?', [name]);
+        if (rows.length === 0) return null;
+        return rows[0].current_value;
+    }
 }
 
 module.exports = new BMSService();

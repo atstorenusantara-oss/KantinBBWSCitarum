@@ -124,6 +124,18 @@ Digunakan oleh ESP32 untuk mengirim data suhu, listrik, atau air.
   ```
 - **Response**: Mengembalikan status sukses dan ID perangkat yang diperbarui.
 
+### **B. Ambil Status Perangkat (Polling)**
+Digunakan oleh ESP32 untuk mengecek apakah lampu harus ON atau OFF.
+- **Endpoint**: `GET /bms/status?name=Lampu Area Indoor`
+- **Response**:
+  ```json
+  {
+      "success": true,
+      "name": "Lampu Area Indoor",
+      "status": "OFF"
+  }
+  ```
+
 ---
 
 ## ⚠️ CATATAN TEKNIS

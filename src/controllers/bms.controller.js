@@ -35,6 +35,20 @@ class BMSController {
             res.status(500).json({ success: false, error: error.message });
         }
     }
+
+    async getStatusByName(req, res) {
+        try {
+            const { name } = req.query;
+            if (!name) return res.status(400).json({ success: false, error: "Missing name query param" });
+
+            const status = await bmsService.getDeviceStatusByName(name);
+            if (status === null) return res.status(404).json({ success: false, error: "Device not found" });
+
+            res.json({ success: true, name, status });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
 }
 
 module.exports = new BMSController();
