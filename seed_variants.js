@@ -2,74 +2,96 @@ const db = require('./src/database/connection');
 const { v4: uuidv4 } = require('uuid');
 
 async function seedVariants() {
-    console.log('🔄 Memulai Konfigurasi Varian Minuman (Panas/Dingin)...');
+    console.log('🔄 Memulai Konfigurasi Varian Minuman (Panas/Dingin) Dinamis...');
 
     try {
-        // 1. Ambil id Cup
+        // 1. Ambil ID Bahan Baku penting
         const [materials] = await db.query('SELECT id, name FROM raw_materials');
-        const cupPlastikId = materials.find(m => m.name.includes('Cup Plastik'))?.id;
-        const cupKertasId = materials.find(m => m.name.includes('Cup Kertas'))?.id;
-        const bijiKopiId = materials.find(m => m.name.includes('Biji Kopi'))?.id;
-        const susuId = materials.find(m => m.name.includes('Susu UHT'))?.id;
+        const cupPlastikId = materials.find(m => m.name.toLowerCase().includes('cup plastik'))?.id;
+        const cupKertasId = materials.find(m => m.name.toLowerCase().includes('cup kertas'))?.id;
+        const bijiKopiId = materials.find(m => m.name.toLowerCase().includes('biji kopi'))?.id;
+        const susuId = materials.find(m => m.name.toLowerCase().includes('susu uht'))?.id;
 
         if (!cupPlastikId || !cupKertasId) {
-            console.error('❌ Bahan Cup tidak ditemukan! Jalankan script sebelumnya dulu.');
+            console.error('❌ Bahan Cup tidak ditemukan! Pastikan raw_materials sudah terisi.');
             process.exit(1);
         }
 
-        // 2. Daftar minuman yang akan dibuatkan varian
-        const baseDrinks = ['Latte', 'Cappuccino', 'Americano', 'Mocha', 'Vanilla Latte', 'Caramel Latte', 'Hazelnut Latte'];
+        // 2. Ambil semua produk yang termasuk kategori minuman
+        const beverageCategories = ['Espresso Based', 'Milk Based', 'Manual Brew', 'Non-Coffee'];
+        const [baseDrinks] = await db.query(
+            "SELECT * FROM products WHERE category IN (?) AND name NOT LIKE '%(Panas)%' AND name NOT LIKE '%(Dingin)%'",
+            [beverageCategories]
+        );
 
-        for (const name of baseDrinks) {
-            // Cek produk original
-            const [orig] = await db.query('SELECT * FROM products WHERE name = ?', [name]);
-            if (orig.length === 0) continue;
+        console.log(`🔎 Ditemukan ${baseDrinks.length} minuman dasar untuk diproses.`);
 
-            const baseP = orig[0];
+        for (const baseP of baseDrinks) {
+            const name = baseP.name;
 
-            // Buat Varian Panas
+            // --- Varian Panas ---
             const [hotExists] = await db.query('SELECT id FROM products WHERE name = ?', [`${name} (Panas)`]);
             if (hotExists.length === 0) {
                 const hotId = uuidv4();
-                await db.query('INSERT INTO products (id, name, price, category, image_url) VALUES (?, ?, ?, ?, ?)',
+                await db.query('INSERT INTO products (id, name, price, category, image_url, is_active) VALUES (?, ?, ?, ?, ?, true)',
                     [hotId, `${name} (Panas)`, baseP.price, baseP.category, baseP.image_url]);
 
                 // Recipe Panas
                 const rHotId = uuidv4();
                 await db.query('INSERT INTO recipes (id, product_id) VALUES (?, ?)', [rHotId, hotId]);
-                await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?), (?, ?, ?, ?)',
-                    [uuidv4(), rHotId, bijiKopiId, 18, uuidv4(), rHotId, cupKertasId, 1]);
-                if (name.includes('Latte') || name === 'Cappuccino' || name === 'Mocha') {
+
+                // Tambahkan Cup Kertas (Wajib Panas)
+                await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?)',
+                    [uuidv4(), rHotId, cupKertasId, 1]);
+
+                // Tambah Biji Kopi jika mengandung kopi
+                if (baseP.category.includes('Espresso') || baseP.category.includes('Milk Based') || baseP.category.includes('Manual')) {
+                    if (bijiKopiId) await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?)', [uuidv4(), rHotId, bijiKopiId, 18]);
+                }
+
+                // Tambah Susu jika Milk Based
+                if (baseP.category === 'Milk Based' && susuId) {
                     await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?)', [uuidv4(), rHotId, susuId, 200]);
                 }
-                console.log(`✅ Varian Panas dibuat: ${name}`);
+
+                console.log(`   🔥 Varian Panas: ${name}`);
             }
 
-            // Buat Varian Dingin
+            // --- Varian Dingin ---
             const [coldExists] = await db.query('SELECT id FROM products WHERE name = ?', [`${name} (Dingin)`]);
             if (coldExists.length === 0) {
                 const coldId = uuidv4();
-                await db.query('INSERT INTO products (id, name, price, category, image_url) VALUES (?, ?, ?, ?, ?)',
+                await db.query('INSERT INTO products (id, name, price, category, image_url, is_active) VALUES (?, ?, ?, ?, ?, true)',
                     [coldId, `${name} (Dingin)`, baseP.price, baseP.category, baseP.image_url]);
 
                 // Recipe Dingin
                 const rColdId = uuidv4();
                 await db.query('INSERT INTO recipes (id, product_id) VALUES (?, ?)', [rColdId, coldId]);
-                await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?), (?, ?, ?, ?)',
-                    [uuidv4(), rColdId, bijiKopiId, 18, uuidv4(), rColdId, cupPlastikId, 1]);
-                if (name.includes('Latte') || name === 'Cappuccino' || name === 'Mocha') {
+
+                // Tambahkan Cup Plastik (Wajib Dingin)
+                await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?)',
+                    [uuidv4(), rColdId, cupPlastikId, 1]);
+
+                // Tambah Biji Kopi jika mengandung kopi
+                if (baseP.category.includes('Espresso') || baseP.category.includes('Milk Based') || baseP.category.includes('Manual')) {
+                    if (bijiKopiId) await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?)', [uuidv4(), rColdId, bijiKopiId, 18]);
+                }
+
+                // Tambah Susu jika Milk Based
+                if (baseP.category === 'Milk Based' && susuId) {
                     await db.query('INSERT INTO recipe_details (id, recipe_id, raw_material_id, qty) VALUES (?, ?, ?, ?)', [uuidv4(), rColdId, susuId, 200]);
                 }
-                console.log(`✅ Varian Dingin dibuat: ${name}`);
+
+                console.log(`   ❄️ Varian Dingin: ${name}`);
             }
 
-            // Nonaktifkan produk original agar tidak muncul di grid utama (tapi tetap ada id resepnya buat backup)
-            await db.query('UPDATE products SET is_active = false WHERE id = ?', [baseP.id]);
+            // Pastikan produk base TETAP AKTIF agar muncul di menu utama (sebagai trigger modal)
+            await db.query('UPDATE products SET is_active = true WHERE id = ?', [baseP.id]);
         }
 
-        console.log('\n✨ Konfigurasi Varian Selesai!');
+        console.log('\n✨ Semua minuman sekarang memiliki opsi Panas/Dingin!');
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Terjadi kesalahan:', error);
     } finally {
         process.exit();
     }
