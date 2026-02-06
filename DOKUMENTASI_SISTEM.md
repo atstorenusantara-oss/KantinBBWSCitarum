@@ -1,4 +1,4 @@
-# DOKUMENTASI SISTEM G-COFFEE POS v2
+# DOKUMENTASI SISTEM G-COFFEE POS v2.2
 **Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku (BOM)**
 
 ---
@@ -38,7 +38,7 @@ GCOFFEE_POSv2/
 └── package.json            # Daftar dependensi utama aplikasi
 ```
 
-## 4. FITUR UTAMA SISTEM (PEMBARUAN v2.1)
+## 4. FITUR UTAMA SISTEM (PEMBARUAN v2.2)
 
 ### A. Point of Sale (POS) & Billing
 - **Varian Produk**: Mendukung pilihan varian (contoh: Hot/Cold) dengan penyesuaian harga otomatis.
@@ -97,4 +97,4 @@ Sistem ini telah dioptimalkan untuk perangkat **Tablet (Tab)**:
 6. **Menjalankan**: Klik dua kali file `jalankan_server.bat`.
 
 ---
-*Dokumentasi ini diperbarui pada 6 Februari 2026 sebagai panduan teknis operasional G-Coffee POS v2.1.*
+*Dokumentasi ini diperbarui pada 6 Februari 2026 sebagai panduan teknis operasional G-Coffee POS v2.2.*

@@ -1,4 +1,4 @@
-# DOKUMENTASI API - G-COFFEE POS v2.1
+# DOKUMENTASI API - G-COFFEE POS v2.2
 
 Dokumentasi ini berisi daftar lengkap endpoint API yang digunakan dalam aplikasi G-Coffee POS untuk integrasi frontend, backend, dan database.
 
@@ -116,4 +116,4 @@ Melakukan audit stok fisik.
 3. **Keamanan**: Untuk saat ini API belum menggunakan Token/API Key (Dijalankan di Jaringan Lokal).
 
 ---
-*Dokumentasi API G-Coffee POS v2.1 | Update: 6 Februari 2026*
+*Dokumentasi API G-Coffee POS v2.2 | Update: 6 Februari 2026*
