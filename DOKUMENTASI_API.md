@@ -110,6 +110,22 @@ Melakukan audit stok fisik.
 
 ---
 
+## 🛰️ 5. BMS IOT (ESP32 INTEGRATION)
+
+### **A. Kirim Data Sensor (Telemetry)**
+Digunakan oleh ESP32 untuk mengirim data suhu, listrik, atau air.
+- **Endpoint**: `POST /bms/telemetry`
+- **Request Body**:
+  ```json
+  {
+      "device_name": "Suhu Area Bar",
+      "value": 24.8
+  }
+  ```
+- **Response**: Mengembalikan status sukses dan ID perangkat yang diperbarui.
+
+---
+
 ## ⚠️ CATATAN TEKNIS
 1. **Potong Stok Otomatis**: Setiap transaksi yang dibuat (baik PAID/PENDING) akan otomatis memotong stok di database melalui `stock.service.js`.
 2. **Validasi Shift**: Jam operasional shift ditentukan secara fleksibel melalui database (tabel `settings`).

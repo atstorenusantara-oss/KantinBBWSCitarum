@@ -34,6 +34,30 @@ class BMSService {
         );
         return rows;
     }
+
+    /**
+     * Save telemetry data from ESP32
+     * @param {string} deviceName - Human readable name or ID from ESP32
+     * @param {string} value - The sensor value
+     */
+    async saveTelemetry(deviceName, value) {
+        // 1. Find the device by name (or we can use ID)
+        const [devices] = await db.query('SELECT id FROM bms_devices WHERE name = ?', [deviceName]);
+
+        if (devices.length === 0) {
+            throw new Error(`Device with name ${deviceName} not found`);
+        }
+
+        const deviceId = devices[0].id;
+
+        // 2. Update current value
+        await db.query('UPDATE bms_devices SET current_value = ?, last_update = CURRENT_TIMESTAMP WHERE id = ?', [value, deviceId]);
+
+        // 3. Log the value (usually sensors logger frequently, maybe only log on significant change?)
+        await db.query('INSERT INTO bms_logs (device_id, value) VALUES (?, ?)', [deviceId, value]);
+
+        return { success: true, deviceId, updatedValue: value };
+    }
 }
 
 module.exports = new BMSService();

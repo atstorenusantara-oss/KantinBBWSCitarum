@@ -20,6 +20,21 @@ class BMSController {
             res.status(500).json({ success: false, error: error.message });
         }
     }
+
+    async postTelemetry(req, res) {
+        try {
+            const { device_name, value } = req.body;
+
+            if (!device_name || value === undefined) {
+                return res.status(400).json({ success: false, error: "Missing device_name or value" });
+            }
+
+            const result = await bmsService.saveTelemetry(device_name, value.toString());
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
 }
 
 module.exports = new BMSController();
