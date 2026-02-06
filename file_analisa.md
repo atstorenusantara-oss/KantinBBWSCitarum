@@ -1,325 +1,123 @@
-# Analisa Teknologi & Database  
-## Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku  
-Teknologi: **Node.js + MySQL**
+# Analisa Teknologi & Database - v2.3
+## Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku & IoT BMS
+Teknologi: **Node.js + MySQL + ESP32**
 
 ---
 
 ## 1. Gambaran Umum Sistem
 
-Sistem ini adalah **Point of Sale (POS)** untuk kedai kopi yang terhubung langsung dengan **manajemen stok bahan baku berbasis resep**.  
-Setiap penjualan akan otomatis mengurangi stok bahan sesuai takaran resep (BOM).
-
-Tujuan utama:
-- Sinkronisasi penjualan & stok
-- Kontrol takaran & pemborosan
-- Perhitungan HPP akurat
-- Audit stok yang jelas
+Sistem ini adalah **Point of Sale (POS)** untuk kedai kopi yang terhubung langsung dengan **manajemen stok bahan baku berbasis resep (BOM)** dan **Building Management System (BMS)**.
+Setiap penjualan akan otomatis mengurangi stok bahan sesuai takaran resep, termasuk otomatisasi pemilihan jenis packaging (Cup) berdasarkan suhu minuman.
 
 ---
 
-## 2. Arsitektur Sistem
+## 2. Arsitektur Sistem (Update v2.3)
 
 ```
-[Frontend Kasir & BMS]
-(Web / Tablet / PC)
-        |
-        v
-[Backend API - Node.js]
-(Express / Fastify)
-        |          |
-        v          v
-[MySQL DB]   [ESP32 / IoT Devices]
-        |
-        v
-[Printer Kasir Thermal]
+[Frontend Kasir & Dashbaord]
+(Vanilla JS / Tablet / PC)
+         |
+         v
+[Backend API - Node.js] <--- (Polling/Telemetry) ---> [ESP32 / IoT Devices]
+(Express.js)                                          (Sensors & Relays)
+         |          |
+         v          v
+[MySQL DB]   [Printer Kasir Thermal]
+             (ESC/POS Support)
 ```
-
-Karakteristik:
-- Real-time
-- Transaction-safe
-- Siap dikembangkan multi-outlet
 
 ---
 
-## 3. Analisa Teknologi Backend (Node.js)
+## 3. Analisa Teknologi Backend
 
-### 3.1 Alasan Menggunakan Node.js
-- Event-driven & cepat
-- Cocok untuk transaksi kasir
-- Mudah integrasi printer & device
-- Ekosistem library besar
+### 3.1 Stack Backend Terbaru
+- **Core**: Node.js v18+ & Express.js
+- **Database**: mysql2 (Transaction-safe)
+- **Printing**: `node-thermal-printer` (Direct ESC/POS)
+- **Utilities**: uuid, dayjs, dotenv, cors
 
-### 3.2 Stack Backend yang Disarankan
-- Node.js ≥ 18
-- Express.js / Fastify
-- mysql2 (support transaction)
-- Prisma / Sequelize (opsional ORM)
-- dotenv
-- uuid
-- dayjs
-- joi / zod (validasi input)
-
-### 3.3 Struktur Folder Backend
+### 3.2 Struktur Folder (Actual)
 ```
 src/
  ├─ app.js
- ├─ routes/
+ ├─ routes/ (Sales, Product, Stock, BMS, Report)
  ├─ controllers/
  ├─ services/
- │   ├─ sales.service.js
- │   ├─ stock.service.js
- ├─ models/
+ │   ├─ sales.service.js   (Core Transaction)
+ │   ├─ printer.service.js (Receipt Logic) - NEW
+ │   ├─ stock.service.js   (BOM Engine)
+ │   ├─ bms.service.js     (IoT Handler)
+ │   └─ report.service.js  (Aggregation)
  ├─ database/
- │   └─ connection.js
  └─ utils/
 ```
 
 ---
 
-## 4. Alur Transaksi Penjualan (Critical Logic)
+## 4. Alur Transaksi & Logika Varian (Critical Logic)
 
+### 4.1 Logika Varian & Packaging (v2.3)
+Sistem sekarang menggunakan script `seed_variants.js` yang dinamis untuk menciptakan varian suhu:
+- **Trigger**: Kasir klik produk dasar (Contoh: Americano).
+- **Opsi**: Modal muncul menanyakan "Panas" atau "Dingin".
+- **BOM Mapping**:
+    - **Panas** -> Menambahkan detail resep **Cup Kertas**.
+    - **Dingin** -> Menambahkan detail resep **Cup Plastik**.
+
+### 4.2 Alur Penjualan dengan Printer
 ```
 BEGIN TRANSACTION
-  INSERT sales
+  INSERT sales (and check should_print flag)
   INSERT sales_items
-  SELECT recipe_details
-  UPDATE raw_materials.stock
+  UPDATE raw_materials.stock (Otomatis potong Packaging)
   INSERT stock_movements
 COMMIT
-```
-
-Jika gagal:
-```
-ROLLBACK
-```
-
-Tujuan:
-- Tidak ada stok minus
-- Data penjualan & stok selalu konsisten
-
----
-
-## 5. Analisa Database (MySQL)
-
-### 5.1 Alasan Menggunakan MySQL
-- Stabil & mature
-- Support ACID transaction
-- Cocok untuk POS
-- Mudah backup & restore
-
-### 5.2 Konfigurasi Wajib
-- Storage Engine: **InnoDB**
-- Gunakan Foreign Key
-- Gunakan Index
-- Gunakan DECIMAL untuk harga & stok
-
----
-
-## 6. Diagram Alur Sistem
-
-### 6.1 Alur Penjualan
-```
-[Mulai]
-   |
-[Kasir pilih produk]
-   |
-[Input qty]
-   |
-[Sistem ambil resep]
-   |
-[Hitung kebutuhan bahan]
-   |
-[Validasi stok]
-   |---- stok kurang ---> [Tolak transaksi]
-   |
-[Simpan transaksi]
-   |
-[Kurangi stok bahan]
-   |
-[Cetak struk]
-   |
-[Selesai]
-```
-
-### 6.2 Alur Stock Opname
-```
-[Mulai]
-   |
-[Input stok fisik]
-   |
-[Bandingkan stok sistem]
-   |
-[Hitung selisih]
-   |
-[Simpan adjustment]
-   |
-[Laporan]
-   |
-[Selesai]
-```
-
-### 6.3 Alur Laporan Penjualan (Harian/Mingguan/Bulanan)
-```
-[Mulai]
-   |
-[Pilih Filter Waktu]
-   |
-[Query database tabel sales]
-   |
-[Agregasi data (SUM total)]
-   |
-[Hitung performa produk terlaris]
-   |
-[Tampilkan Ringkasan Dashboard]
-   |
-[Selesai]
-```
-
-### 6.4 Alur Laporan Audit Stok (Stock Opname)
-```
-[Mulai]
-   |
-[Filter Periode Audit (Harian/Mingguan/Bulanan)]
-   |
-[Ambil data stock_opnames]
-   |
-[Hitung total selisih (Loss/Gain)]
-   |
-[Tampilkan Ringkasan Audit Stok]
-   |
-[Selesai]
+  IF should_print: CALL PrinterService.printReceipt()
+  IF Failed: User can manually REPRINT from Report Page
 ```
 
 ---
 
-## 7. Struktur Database (ERD – Teks)
+## 5. Analisa IoT & BMS (ESP32)
 
-```
-PRODUCTS ──< SALES_ITEMS >── SALES
-   |
-   v
-RECIPES ──< RECIPE_DETAILS >── RAW_MATERIALS
-                                   |
-                                   v
-                            STOCK_MOVEMENTS
+### 5.1 Telemetry (Sensor)
+ESP32 mengirimkan data via `POST /api/bms/telemetry` secara berkala (5 detik).
+Data yang didukung: Suhu, Beban Listrik (Watts), Level Air.
 
-BMS_DEVICES ──< BMS_LOGS
-```
+### 5.2 Control (Actuator/Relay)
+ESP32 melakukan polling via `GET /api/bms/status?name=...`. Jika status di database berubah menjadi `ON` (via Dashboard), ESP32 akan mengaktifkan relay fisik pada GPIO yang ditentukan.
 
 ---
 
-## 8. Struktur Tabel Database
-
-### products
-- id (PK)
-- name
-- price
-- is_active
-- created_at
-
-### raw_materials
-- id (PK)
-- name
-- unit (gram/ml/pcs)
-- stock
-- min_stock
-- created_at
-
-### recipes
-- id (PK)
-- product_id (FK)
-
-### recipe_details
-- id (PK)
-- recipe_id (FK)
-- raw_material_id (FK)
-- qty
-
-### sales
-- id (PK)
-- invoice_number
-- total
-- payment_method
-- created_at
-
-### sales_items
-- id (PK)
-- sales_id (FK)
-- product_id (FK)
-- qty
-- price
-
-### stock_movements
-- id (PK)
-- raw_material_id (FK)
-- type (IN / OUT / ADJUST)
-- qty
-- reference_id
-- note
-- created_at
-
-### stock_opnames
-- id (PK)
-- raw_material_id (FK)
-- system_stock
-- physical_stock
-- difference
-- note
-- created_at
+## 6. Struktur Database (Schema Update)
 
 ### bms_devices
-- id (PK)
-- name
-- type (SENSOR / ACTUATOR)
-- category (ELECTRIC / HVAC / WATER / LIGHTING)
-- unit
-- current_value
-- is_active
-- last_update
-- created_at
+- id, name, type (SENSOR/ACTUATOR), category, unit, current_value, is_active.
 
-### bms_logs
-- id (PK)
-- device_id (FK)
-- value
-- created_at
+### sales (v2.3)
+- payment_status (PAID/PENDING) -> Mendukung fitur piutang.
+
+### raw_materials
+- packaging items (Cup Kertas, Cup Plastik) sudah masuk ke dalam sistem monitoring kritis.
 
 ---
 
-## 9. Printer Kasir & Hardware
+## 7. Printer Kasir & Hardware Integration
 
-- Printer thermal ESC/POS
-- USB / LAN / Bluetooth
-- Library Node.js: node-thermal-printer
-
-Alur:
-```
-Node.js → ESC/POS Command → Printer
-```
+- **Library**: node-thermal-printer.
+- **Support**: ESC/POS Standard.
+- **Fitur Baru**:
+    - Checkbox "Cetak Otomatis" di keranjang.
+    - Fungsi **Reprint** untuk mencetak ulang transaksi lama dari tabel riwayat.
 
 ---
 
-## 10. Pengembangan Lanjutan (Future)
+## 8. Kesimpulan & Blueprint Future
 
-- Multi outlet (outlet_id)
-- Role user (kasir / admin)
-- Notifikasi stok minimum
-- Integrasi Building Management System (BMS) - DONE
-- Real-time IoT Monitoring via ESP32 - DONE
-- Dashboard laporan grafis
-- Integrasi cloud database
+Sistem v2.3 telah mencapai tingkat maturitas yang tinggi dengan integrasi hardware (Printer & IoT). Pengembangan selanjutnya dapat difokuskan pada:
+- Dashbaord laporan grafis (Chart.js).
+- Multi-outlet support dengan `outlet_id`.
+- Notifikasi WhatsApp untuk pengingat stok kritis.
 
 ---
-
-## 11. Kesimpulan
-
-Kombinasi **Node.js + MySQL** sangat cocok untuk sistem kasir kedai kopi:
-- Stabil
-- Aman secara data
-- Mudah dikembangkan
-- Siap skala bisnis
-
-Dokumen ini dapat dijadikan:
-- Dokumentasi teknis
-- Blueprint pengembangan
-- Dasar implementasi kode
+*Dokumen diperbarui: 7 Februari 2026 sebagai Blueprint Dasar Pengembangan.*

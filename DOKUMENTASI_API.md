@@ -1,13 +1,14 @@
-# DOKUMENTASI API - G-COFFEE POS v2.2
+# DOKUMENTASI API - G-COFFEE POS v2.3
+**Sistem Kasir Modern, Inventaris Otomatis (BOM), & Building Management System (BMS)**
 
-Dokumentasi ini berisi daftar lengkap endpoint API yang digunakan dalam aplikasi G-Coffee POS untuk integrasi frontend, backend, dan database.
+Dokumentasi ini berisi daftar lengkap endpoint API yang digunakan dalam aplikasi G-Coffee POS untuk integrasi frontend, backend, database, dan IoT ESP32.
 
 ---
 
 ## 🚩 INFORMASI DASAR
-- **Base URL**: `http://localhost:3000/api`
+- **Base URL**: `http://[IP_SERVER]:3000/api`
 - **Format Data**: `JSON`
-- **Standard response**:
+- **Standard Response**:
   ```json
   {
       "success": true,
@@ -18,51 +19,52 @@ Dokumentasi ini berisi daftar lengkap endpoint API yang digunakan dalam aplikasi
 
 ---
 
-## 🛒 1. SALES (PENJUALAN & PIUTANG)
+## 🛒 1. SALES (PENJUALAN & CABANG)
 
 ### **A. Buat Transaksi Baru**
-Digunakan untuk mencatat penjualan lunas maupun pesanan pending.
+Mencatat penjualan lunas atau pesanan pending. Terintegrasi dengan pemotongan stok otomatis (BOM) dan layanan printer.
 - **Endpoint**: `POST /sales`
 - **Request Body**:
   ```json
   {
       "invoice_number": "INV-123456",
-      "customer_name": "Atjas",
+      "customer_name": "Pelanggan",
       "items": [
-          { "product_id": "UUID", "qty": 2, "price": 15000 }
+          { "product_id": "UUID", "name": "Espresso", "qty": 2, "price": 15000 }
       ],
       "total": 33000,
       "payment_method": "CASH",
-      "payment_status": "PAID" // Pilihan: PAID atau PENDING
+      "payment_status": "PAID",
+      "should_print": true // Flag untuk cetak struk otomatis (v2.3)
   }
   ```
 
 ### **B. Ambil Daftar Pesanan Pending**
-Mengambil semua transaksi yang statusnya masih `PENDING`.
+Mengambil semua transaksi dengan status `PENDING` (Piutang).
 - **Endpoint**: `GET /sales/pending`
-- **Response**: Array berisi data pelanggan, nominal, dan ringkasan menu yang dipesan.
+- **Response**: Array data pelanggan, total nominal, dan ringkasan menu.
 
 ### **C. Pelunasan Pembayaran**
-Mengubah status transaksi dari `PENDING` menjadi `PAID`.
+Mengubah status transaksi dari `PENDING` ke `PAID`.
 - **Endpoint**: `PUT /sales/complete/:id`
-- **Request Body**:
-  ```json
-  {
-      "payment_method": "QRIS" // Pilihan: CASH atau QRIS
-  }
-  ```
+- **Request Body**: `{ "payment_method": "QRIS" }`
+
+### **D. Cetak Ulang Struk (Reprint) - NEW v2.3**
+Mengirim ulang perintah cetak ke thermal printer untuk transaksi yang sudah ada.
+- **Endpoint**: `POST /sales/reprint/:id`
+- **Response**: Status keberhasilan pengiriman perintah ke printer.
 
 ---
 
-## 📦 2. PRODUCTS (PRODUK & RESEP)
+## 📦 2. PRODUCTS (PRODUK & VARIAN)
 
 ### **A. Ambil Semua Produk**
 - **Endpoint**: `GET /products`
-- **Fitur**: Mengambil semua menu yang aktif beserta URL gambarnya.
+- **Fitur**: Mengambil semua menu aktif (`is_active: true`). Digunakan untuk grid utama POS.
 
 ### **B. Ambil Resep Produk (BOM)**
 - **Endpoint**: `GET /products/:productId/recipe`
-- **Response**: Daftar bahan baku dan takaran yang dibutuhkan untuk membuat produk tersebut.
+- **Response**: Daftar bahan baku dan takaran yang dibutuhkan.
 
 ---
 
@@ -70,17 +72,17 @@ Mengubah status transaksi dari `PENDING` menjadi `PAID`.
 
 ### **A. Ambil Semua Bahan Baku**
 - **Endpoint**: `GET /stock/materials`
-- **Kegunaan**: Mengambil list bahan baku untuk dropdown pada menu Stock Opname.
+- **Kegunaan**: List bahan baku untuk dropdown menu Stock Opname.
 
 ### **B. Catat Stock Opname**
-Melakukan audit stok fisik.
+Melakukan audit stok fisik dan mencatat selisih.
 - **Endpoint**: `POST /stock/opname`
 - **Request Body**:
   ```json
   {
-      "raw_material_id": "ID_BAHAN",
+      "raw_material_id": "UUID",
       "physical_stock": 500,
-      "note": "Barang tumpah"
+      "note": "Keterangan audit"
   }
   ```
 
@@ -90,77 +92,48 @@ Melakukan audit stok fisik.
 
 ---
 
-## 📊 4. REPORTS (LAPORAN & AUDIT)
+## 📊 4. REPORTS (LAPORAN & ANALISA)
 
 ### **A. Laporan Harian (Shift)**
 - **Endpoint**: `GET /reports/daily`
-- **Query Params**: 
-    - `date`: Tanggal laporan (default: hari ini).
-    - `shift`: 1 (Pagi) atau 2 (Malam).
-- **Data**: Total omzet (hanya PAID), breakdown Cash/QRIS, Top 5 Produk, dan daftar Piutang per shift.
+- **Query Params**: `date` (YYYY-MM-DD), `shift` (1 atau 2).
+- **Response v2.3**: Mencakup Ringkasan Omzet, Breakdown Payment, Top Products, dan **recent_sales** (untuk daftar cetak ulang).
 
-### **B. Laporan Mingguan & Bulanan**
+### **B. Laporan Berkala**
 - **Endpoint**: `GET /reports/weekly`
 - **Endpoint**: `GET /reports/monthly`
-- **Data**: Rekap total omzet dan jumlah transaksi lunas.
 
-### **C. Status Inventaris Real-time**
+### **C. Status Inventaris**
 - **Endpoint**: `GET /reports/inventory`
-- **Data**: Mengambil sisa stok terakhir semua bahan baku dan packaging untuk pemantauan ketersediaan.
+- **Data**: Sisa stok real-time (bahan baku & packaging).
 
 ---
 
-## 🏛️ 5. BMS (BUILDING MANAGEMENT SYSTEM)
+## 🏛️ 5. BMS & IOT (BUILDING MANAGEMENT)
 
-### **A. Ambil Semua Perangkat**
+### **A. Status Perangkat (Dashboard)**
 - **Endpoint**: `GET /bms/devices`
-- **Data**: List semua sensor dan aktuator beserta nilai terakhirnya.
+- **Data**: Status semua sensor dan aktuator (Listrik, Suhu, Air, Lampu).
 
-### **B. Kontrol Perangkat (Switch ON/OFF)**
+### **B. Kontrol Perangkat (Actuator)**
 - **Endpoint**: `PUT /bms/devices/:id`
-- **Request Body**: `{ "value": "ON" }`
+- **Request Body**: `{ "value": "ON" atau "OFF" }`
 
-### **C. Kirim Data Sensor (Telemetry)**
+### **C. Kirim Data Telemetry (ESP32)**
+Digunakan mikrokontroler untuk mengirim data sensor secara berkala.
 - **Endpoint**: `POST /bms/telemetry`
-- **Request Body**: `{ "device_name": "Suhu Area Bar", "value": 24.8 }`
+- **Request Body**: `{ "device_name": "Suhu Area Bar", "value": 24.5 }`
 
-### **D. Cek Status Perangkat (Polling ESP32)**
-- **Endpoint**: `GET /bms/status?name=Nama Perangkat`
-
----
-
-## 🛰️ 5. BMS IOT (ESP32 INTEGRATION)
-
-### **A. Kirim Data Sensor (Telemetry)**
-Digunakan oleh ESP32 untuk mengirim data suhu, listrik, atau air.
-- **Endpoint**: `POST /bms/telemetry`
-- **Request Body**:
-  ```json
-  {
-      "device_name": "Suhu Area Bar",
-      "value": 24.8
-  }
-  ```
-- **Response**: Mengembalikan status sukses dan ID perangkat yang diperbarui.
-
-### **B. Ambil Status Perangkat (Polling)**
-Digunakan oleh ESP32 untuk mengecek apakah lampu harus ON atau OFF.
-- **Endpoint**: `GET /bms/status?name=Lampu Area Indoor`
-- **Response**:
-  ```json
-  {
-      "success": true,
-      "name": "Lampu Area Indoor",
-      "status": "OFF"
-  }
-  ```
+### **D. Polling Status (ESP32)**
+Digunakan ESP32 untuk mengecek status lampu/relay.
+- **Endpoint**: `GET /bms/status?name=[NAMA_PERANGKAT]`
 
 ---
 
 ## ⚠️ CATATAN TEKNIS
-1. **Potong Stok Otomatis**: Setiap transaksi yang dibuat (baik PAID/PENDING) akan otomatis memotong stok di database melalui `stock.service.js`.
-2. **Validasi Shift**: Jam operasional shift ditentukan secara fleksibel melalui database (tabel `settings`).
-3. **Keamanan**: Untuk saat ini API belum menggunakan Token/API Key (Dijalankan di Jaringan Lokal).
+1. **Integritas Data**: Setiap transaksi (PAID/PENDING) memicu `stock.service.js` untuk memotong stok resep (BOM).
+2. **Printer Thermal**: Backend membutuhkan konfigurasi `interface` printer yang benar di `printer.service.js`.
+3. **IoT ESP32**: Pastikan ESP32 berada di jaringan WiFi yang sama dengan Server agar API dapat dijangkau.
 
 ---
-*Dokumentasi API G-Coffee POS v2.2 | Update: 6 Februari 2026*
+*Dokumentasi API G-Coffee POS v2.3 | Terakhir Diperbarui: 7 Februari 2026*
