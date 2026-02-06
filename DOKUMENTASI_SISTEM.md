@@ -68,6 +68,12 @@ GCOFFEE_POSv2/
     - Pantauan Stok Bahan & Packaging.
     - **Catatan Piutang**: Daftar pelanggan yang belum bayar pada shift tersebut.
 
+### E. Building Management System (BMS) & IoT
+- **Real-time Monitoring**: Pemantauan daya listrik (Watts), suhu ruangan (°C), dan level air toren secara langsung.
+- **Smart Control**: Kontrol lampu indoor/outdoor dan AC langsung dari dashboard kasir.
+- **ESP32 Integration**: API siap pakai untuk integrasi mikrokontroler ESP32 via protokol HTTP POST/GET.
+- **Health System**: Monitoring status koneksi perangkat IoT (Active/Offline).
+
 ## 5. ALUR KERJA SISTEM (USE CASE)
 
 ### 1. Proses Penjualan & Piutang
@@ -82,6 +88,12 @@ GCOFFEE_POSv2/
 2. Pilih Tanggal dan **Shift** (Pagi/Malam) yang ingin dilihat.
 3. Omzet yang muncul hanya transaksi yang sudah **PAID**.
 4. Klik "Pratinjau Laporan" untuk mengirim laporan ringkas ke Owner.
+
+### 3. Monitoring Gedung (BMS)
+1. User masuk ke tab Ikon Gedung (BMS).
+2. Lihat indikator suhu, listrik, dan air.
+3. Klik tombol ON/OFF untuk mengontrol lampu/AC di lokasi.
+4. Perangkat IoT (ESP32) akan melakukan sinkronisasi otomatis dengan server.
 
 ## 6. RESPONSIVITAS PERANGKAT
 Sistem ini telah dioptimalkan untuk perangkat **Tablet (Tab)**:

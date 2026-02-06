@@ -20,15 +20,15 @@ Tujuan utama:
 ## 2. Arsitektur Sistem
 
 ```
-[Frontend Kasir]
+[Frontend Kasir & BMS]
 (Web / Tablet / PC)
         |
         v
 [Backend API - Node.js]
 (Express / Fastify)
-        |
-        v
-[MySQL Database]
+        |          |
+        v          v
+[MySQL DB]   [ESP32 / IoT Devices]
         |
         v
 [Printer Kasir Thermal]
@@ -202,6 +202,8 @@ RECIPES ──< RECIPE_DETAILS >── RAW_MATERIALS
                                    |
                                    v
                             STOCK_MOVEMENTS
+
+BMS_DEVICES ──< BMS_LOGS
 ```
 
 ---
@@ -265,6 +267,23 @@ RECIPES ──< RECIPE_DETAILS >── RAW_MATERIALS
 - note
 - created_at
 
+### bms_devices
+- id (PK)
+- name
+- type (SENSOR / ACTUATOR)
+- category (ELECTRIC / HVAC / WATER / LIGHTING)
+- unit
+- current_value
+- is_active
+- last_update
+- created_at
+
+### bms_logs
+- id (PK)
+- device_id (FK)
+- value
+- created_at
+
 ---
 
 ## 9. Printer Kasir & Hardware
@@ -285,7 +304,9 @@ Node.js → ESC/POS Command → Printer
 - Multi outlet (outlet_id)
 - Role user (kasir / admin)
 - Notifikasi stok minimum
-- Dashboard laporan
+- Integrasi Building Management System (BMS) - DONE
+- Real-time IoT Monitoring via ESP32 - DONE
+- Dashboard laporan grafis
 - Integrasi cloud database
 
 ---

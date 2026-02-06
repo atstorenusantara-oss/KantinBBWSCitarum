@@ -110,6 +110,25 @@ Melakukan audit stok fisik.
 
 ---
 
+## 🏛️ 5. BMS (BUILDING MANAGEMENT SYSTEM)
+
+### **A. Ambil Semua Perangkat**
+- **Endpoint**: `GET /bms/devices`
+- **Data**: List semua sensor dan aktuator beserta nilai terakhirnya.
+
+### **B. Kontrol Perangkat (Switch ON/OFF)**
+- **Endpoint**: `PUT /bms/devices/:id`
+- **Request Body**: `{ "value": "ON" }`
+
+### **C. Kirim Data Sensor (Telemetry)**
+- **Endpoint**: `POST /bms/telemetry`
+- **Request Body**: `{ "device_name": "Suhu Area Bar", "value": 24.8 }`
+
+### **D. Cek Status Perangkat (Polling ESP32)**
+- **Endpoint**: `GET /bms/status?name=Nama Perangkat`
+
+---
+
 ## 🛰️ 5. BMS IOT (ESP32 INTEGRATION)
 
 ### **A. Kirim Data Sensor (Telemetry)**
