@@ -199,7 +199,8 @@ function switchPage(page) {
         'kasir': document.getElementById('kasirPage'),
         'stok': document.getElementById('stokPage'),
         'report': document.getElementById('reportPage'),
-        'pending': document.getElementById('pendingPage')
+        'pending': document.getElementById('pendingPage'),
+        'bms': document.getElementById('bmsPage')
     };
 
     const cartSection = document.getElementById('cartSection');
@@ -207,7 +208,8 @@ function switchPage(page) {
         'kasir': document.getElementById('navKasir'),
         'stok': document.getElementById('navStok'),
         'report': document.getElementById('navReport'),
-        'pending': document.getElementById('navPending')
+        'pending': document.getElementById('navPending'),
+        'bms': document.getElementById('navBMS')
     };
 
     // Hide all pages and remove active classes
@@ -227,6 +229,14 @@ function switchPage(page) {
     if (page === 'stok') loadStokData();
     if (page === 'report') loadReportData();
     if (page === 'pending') loadPendingSales();
+    if (page === 'bms') loadBMSData();
+}
+
+// --- BMS Logic (Mockup) ---
+function loadBMSData() {
+    console.log('Loading BMS Monitoring Data...');
+    // Real-time update simulation could go here
+    lucide.createIcons();
 }
 
 // --- Report Logic ---

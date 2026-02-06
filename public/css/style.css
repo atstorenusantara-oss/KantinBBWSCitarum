@@ -14,6 +14,23 @@
     --glass-border: rgba(255, 255, 255, 0.1);
 }
 
+@keyframes pulse {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* Stock Page Custom Styles */
 .opname-container {
     display: grid;

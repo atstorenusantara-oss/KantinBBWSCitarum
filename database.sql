@@ -81,3 +81,32 @@ CREATE TABLE stock_opnames (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (raw_material_id) REFERENCES raw_materials(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- BMS Devices Table
+CREATE TABLE IF NOT EXISTS bms_devices (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- SENSOR, ACTUATOR
+    category VARCHAR(50), -- ELECTRIC, HVAC, WATER, LIGHTING
+    unit VARCHAR(20), -- Watts, Celsius, %, ON/OFF
+    current_value VARCHAR(50),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- BMS Logs Table
+CREATE TABLE IF NOT EXISTS bms_logs (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    device_id VARCHAR(36),
+    value VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (device_id) REFERENCES bms_devices(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Initial BMS Data
+INSERT INTO bms_devices (id, name, type, category, unit, current_value) VALUES 
+(UUID(), 'KWH Meter Utama', 'SENSOR', 'ELECTRIC', 'Watts', '1250'),
+(UUID(), 'Suhu Area Bar', 'SENSOR', 'HVAC', 'Celsius', '24.5'),
+(UUID(), 'Level Toren Air', 'SENSOR', 'WATER', '%', '85'),
+(UUID(), 'Lampu Area Indoor', 'ACTUATOR', 'LIGHTING', 'ON/OFF', 'ON'),
+(UUID(), 'Lampu Area Outdoor', 'ACTUATOR', 'LIGHTING', 'ON/OFF', 'OFF');
