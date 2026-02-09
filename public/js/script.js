@@ -5,7 +5,7 @@ let currentCategory = 'Semua';
 // Mock data for initial visual (if DB is empty)
 const mockProducts = [
     { id: '1', name: 'Es Kopi Susu Aren', price: 18000, category: 'Milk Based', img: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=300&h=300&auto=format&fit=crop' },
-    { id: '2', name: 'Americano', price: 15000, category: 'Espresso Based', img: 'https://images.unsplash.com/photo-1551033406-611cf9a28f67?q=80&w=300&h=300&auto=format&fit=crop' },
+    { id: '2', name: 'Americano', price: 15000, category: 'Espresso Based', img: 'assets/img/americano.jpg' },
     { id: '3', name: 'V60 Gayo', price: 25000, category: 'Manual Brew', img: 'https://images.unsplash.com/photo-1544787210-22c1ec479ec5?q=80&w=300&h=300&auto=format&fit=crop' },
     { id: '4', name: 'Matcha Latte', price: 22000, category: 'Non-Coffee', img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=300&h=300&auto=format&fit=crop' },
     { id: '5', name: 'Caramel Macchiato', price: 28000, category: 'Milk Based', img: 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?q=80&w=300&h=300&auto=format&fit=crop' },
@@ -13,10 +13,22 @@ const mockProducts = [
     { id: '7', name: 'Croissant', price: 20000, category: 'Snack', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=300&h=300&auto=format&fit=crop' }
 ];
 
+function refreshIcons() {
+    if (typeof lucide !== 'undefined') {
+        try {
+            lucide.createIcons();
+        } catch (e) {
+            console.error('Lucide error:', e);
+        }
+    }
+}
+
 async function init() {
     await fetchProducts();
     setupCategoryListeners();
     renderProducts();
+
+    refreshIcons();
 }
 
 async function fetchProducts() {
@@ -44,21 +56,55 @@ function setupCategoryListeners() {
 
 function renderProducts() {
     const grid = document.getElementById('productGrid');
-    // Hanya tampilkan produk dasar (tidak mengandung label varian)
+    const searchInput = document.querySelector('.header .search-bar');
+    const query = searchInput ? searchInput.value.toLowerCase() : '';
+
+    if (!products || products.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-muted);">
+                <i data-lucide="loader-2" class="spin" style="margin-bottom: 10px;"></i>
+                <p>Memuat menu...</p>
+            </div>
+        `;
+        refreshIcons();
+        return;
+    }
+
+    // Filter by variant, category, and search query
     const filtered = products.filter(p => {
         const isVariant = p.name.includes('(Panas)') || p.name.includes('(Dingin)');
-        if (currentCategory === 'Semua') return !isVariant;
-        return p.category === currentCategory && !isVariant;
+        const matchCategory = currentCategory === 'Semua' ? !isVariant : (p.category === currentCategory && !isVariant);
+        const matchSearch = p.name.toLowerCase().includes(query);
+        return matchCategory && matchSearch;
     });
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-muted);">
+                <p>Tidak ada produk ditemukan di kategori "${currentCategory}"</p>
+            </div>
+        `;
+        return;
+    }
 
     grid.innerHTML = filtered.map(p => `
         <div class="product-card" onclick="checkVariants('${p.id}')">
-            <img src="${p.image_url || p.img || 'https://via.placeholder.com/150'}" class="product-img">
+            <img src="${p.image_url || p.img || 'https://via.placeholder.com/150'}" class="product-img" onerror="this.src='https://via.placeholder.com/150'">
             <div class="product-name">${p.name}</div>
             <div class="product-price">Rp ${Number(p.price).toLocaleString()}</div>
         </div>
     `).join('');
 }
+
+// Add Search Event Listener
+document.addEventListener('DOMContentLoaded', () => {
+    const searchBar = document.querySelector('.header .search-bar');
+    if (searchBar) {
+        searchBar.addEventListener('input', () => {
+            renderProducts();
+        });
+    }
+});
 
 function checkVariants(productId) {
     const baseProduct = products.find(p => p.id === productId);
@@ -238,6 +284,7 @@ function switchPage(page) {
     cartSection.style.display = (page === 'kasir') ? 'flex' : 'none';
 
     // Page-specific loaders
+    if (page === 'kasir') renderProducts();
     if (page === 'stok') loadStokData();
     if (page === 'report') loadReportData();
     if (page === 'pending') loadPendingSales();
@@ -294,7 +341,7 @@ async function loadBMSData() {
                 `).join('');
             }
 
-            lucide.createIcons();
+            refreshIcons();
         }
     } catch (error) {
         console.error('BMS Fetch Error:', error);
@@ -425,7 +472,7 @@ async function loadReportData() {
                     </td>
                 </tr>
             `).join('');
-            lucide.createIcons();
+            refreshIcons();
         }
 
     } catch (error) {
@@ -476,6 +523,11 @@ async function fetchOpnameHistory() {
         const tbody = document.getElementById('opnameHistoryBody');
 
         if (result.success) {
+            if (result.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada riwayat opname untuk periode ini</td></tr>';
+                return;
+            }
+
             tbody.innerHTML = result.data.map(h => {
                 const diffClass = h.difference < 0 ? 'diff-minus' : (h.difference > 0 ? 'diff-plus' : '');
                 const diffSign = h.difference > 0 ? '+' : '';

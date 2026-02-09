@@ -118,16 +118,23 @@ class StockService {
             WHERE 1=1
         `;
         const params = [];
-        const baseDate = date ? dayjs(date) : dayjs();
+        let baseDate = date ? dayjs(date) : dayjs();
 
-        if (filter === 'daily') {
+        // Handle "Early Morning" shift (12 AM - 3 AM)
+        // If it's early morning and no specific date was requested, 
+        // we are technically still in "yesterday's" business shift.
+        if (!date && dayjs().hour() < 6) {
+            baseDate = baseDate.subtract(1, 'day');
+        }
+
+        if (filter === 'daily' || !filter) {
             const startTime = baseDate.hour(6).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss');
             const endTime = baseDate.add(1, 'day').hour(3).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss');
             query += ' AND so.created_at BETWEEN ? AND ?';
             params.push(startTime, endTime);
         } else if (filter === 'weekly') {
             query += ' AND so.created_at >= ?';
-            params.push(baseDate.subtract(7, 'day').format('YYYY-MM-DD HH:mm:ss'));
+            params.push(baseDate.subtract(7, 'day').hour(0).minute(0).second(0).format('YYYY-MM-DD HH:mm:ss'));
         } else if (filter === 'monthly') {
             query += ' AND MONTH(so.created_at) = ? AND YEAR(so.created_at) = ?';
             params.push(baseDate.month() + 1);
