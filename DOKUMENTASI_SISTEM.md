@@ -1,10 +1,10 @@
-# DOKUMENTASI SISTEM G-COFFEE POS v2.3
+# DOKUMENTASI SISTEM G-COFFEE POS v2.4
 **Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku (BOM), Thermal Printer, & IoT BMS**
 
 ---
 
 ## 1. PENDAHULUAN
-G-Coffee POS v2.3 adalah aplikasi Point of Sale (POS) modern yang dirancang khusus untuk operasional kedai kopi. Versi terbaru ini mengintegrasikan **Penjualan**, **Manajemen Stok Otomatis (BOM)**, **Pencetakan Struk Thermal**, dan **Building Management System (BMS)** berbasis IoT.
+G-Coffee POS v2.4 adalah aplikasi Point of Sale (POS) modern yang dirancang khusus untuk operasional kedai kopi. Versi terbaru ini mengintegrasikan **Penjualan**, **Manajemen Stok Otomatis (BOM)**, **Pencetakan Struk Thermal**, dan **Building Management System (BMS)** berbasis IoT. Versi 2.4 menyertakan dukungan **Full Offline Icons**, **Pencarian Produk**, dan **Update Menu Februari 2026**.
 
 ## 2. TEKNOLOGI YANG DIGUNAKAN
 - **Backend**: Node.js & Express.js
@@ -48,8 +48,9 @@ GCOFFEE_POSv2/
 - **Telemetry System**: ESP32 secara otomatis mengirimkan data sensor ke server setiap 5 detik.
 
 ### C. Manajemen Stok & BOM
-- **Dinamis BOM**: Pengurangan bahan baku otomatis mencakup packaging sesuai dengan suhu minuman yang dipilih pelanggan.
-- **Audit Stok**: Sistem laporan opname untuk memantau selisih stok secara harian, mingguan, atau bulanan.
+- **Dinamis BOM**: Pengurangan bahan baku otomatis mencakup packaging sesuai dengan suhu minuman yang dipilih pelanggan. Update v2.4 mencakup takaran resep otomatis untuk Creamer (12g) dan SKM (25g).
+- **Audit Stok (Shift-Aware)**: Sistem laporan opname yang cerdas mengikuti jam operasional (06:00 - 03:00) untuk memantau selisih stok secara akurat bahkan saat dini hari.
+- **February Menu Update**: Penambahan 18 menu baru seperti Pandan Latte, Butterscotch, dan Squash series dengan dukungan varian suhu.
 
 ---
 
@@ -79,4 +80,4 @@ GCOFFEE_POSv2/
 4. **Maintenance Menu**: Jalankan `node seed_variants.js` setiap kali ada penambahan menu minuman baru untuk membuat varian suhunya secara otomatis.
 
 ---
-*Dokumentasi Sistem G-Coffee POS v2.3 | Update: 7 Februari 2026*
+*Dokumentasi Sistem G-Coffee POS v2.4 | Update: 10 Februari 2026*

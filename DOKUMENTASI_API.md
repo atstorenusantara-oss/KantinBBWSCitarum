@@ -1,4 +1,4 @@
-# DOKUMENTASI API - G-COFFEE POS v2.3
+# DOKUMENTASI API - G-COFFEE POS v2.4
 **Sistem Kasir Modern, Inventaris Otomatis (BOM), & Building Management System (BMS)**
 
 Dokumentasi ini berisi daftar lengkap endpoint API yang digunakan dalam aplikasi G-Coffee POS untuk integrasi frontend, backend, database, dan IoT ESP32.
@@ -136,4 +136,4 @@ Digunakan ESP32 untuk mengecek status lampu/relay.
 3. **IoT ESP32**: Pastikan ESP32 berada di jaringan WiFi yang sama dengan Server agar API dapat dijangkau.
 
 ---
-*Dokumentasi API G-Coffee POS v2.3 | Terakhir Diperbarui: 7 Februari 2026*
+*Dokumentasi API G-Coffee POS v2.4 | Terakhir Diperbarui: 10 Februari 2026*

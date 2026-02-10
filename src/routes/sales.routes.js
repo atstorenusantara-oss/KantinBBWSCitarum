@@ -7,5 +7,6 @@ router.post('/', salesController.create);
 router.get('/pending', salesController.getPending);
 router.put('/complete/:id', salesController.complete);
 router.post('/reprint/:id', salesController.reprint);
+router.put('/update-items/:id', salesController.updateItems);
 
 module.exports = router;

@@ -50,10 +50,14 @@ class SalesService {
     async getPendingSales() {
         const [rows] = await db.query(
             `SELECT s.id, s.invoice_number, s.customer_name, s.total, s.payment_method, s.created_at,
-                    GROUP_CONCAT(CONCAT(p.name, ' (x', si.qty, ')') SEPARATOR ', ') as items_summary
+                    GROUP_CONCAT(CONCAT(sub.name, ' (x', sub.sum_qty, ')') SEPARATOR ', ') as items_summary
              FROM sales s
-             JOIN sales_items si ON s.id = si.sales_id
-             JOIN products p ON si.product_id = p.id
+             JOIN (
+                 SELECT si.sales_id, p.name, SUM(si.qty) as sum_qty
+                 FROM sales_items si
+                 JOIN products p ON si.product_id = p.id
+                 GROUP BY si.sales_id, p.id
+             ) sub ON s.id = sub.sales_id
              WHERE s.payment_status = 'PENDING' 
              GROUP BY s.id
              ORDER BY s.created_at DESC`
@@ -68,6 +72,7 @@ class SalesService {
         );
         return { success: true };
     }
+
     async getSaleById(salesId) {
         const [sales] = await db.query("SELECT * FROM sales WHERE id = ?", [salesId]);
         if (sales.length === 0) return null;
@@ -84,6 +89,44 @@ class SalesService {
             ...sales[0],
             items: items
         };
+    }
+
+    async addItemsToSale(salesId, newItems) {
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            let addedTotal = 0;
+            for (const item of newItems) {
+                const itemId = uuidv4();
+                const productId = item.product_id || item.id; // Handle both key formats
+                addedTotal += (item.qty * item.price);
+
+                // Insert into sales_items
+                await connection.query(
+                    `INSERT INTO sales_items (id, sales_id, product_id, qty, price) 
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [itemId, salesId, productId, item.qty, item.price]
+                );
+
+                // Reduce stock
+                await stockService.reduceStockFromSale(productId, item.qty, salesId, connection);
+            }
+
+            // Update total in sales table
+            await connection.query(
+                "UPDATE sales SET total = total + ? WHERE id = ?",
+                [addedTotal, salesId]
+            );
+
+            await connection.commit();
+            return { success: true };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }
 

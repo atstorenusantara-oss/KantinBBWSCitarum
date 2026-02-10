@@ -1,6 +1,9 @@
 let products = [];
 let cart = [];
 let currentCategory = 'Semua';
+let currentUser = null;
+let currentAttendanceId = null;
+let pendingVoid = null;
 
 // Mock data for initial visual (if DB is empty)
 const mockProducts = [
@@ -24,10 +27,28 @@ function refreshIcons() {
 }
 
 async function init() {
+    // Load persisted session from localStorage
+    const savedUser = localStorage.getItem('gc_currentUser');
+    const savedAttendance = localStorage.getItem('gc_attendanceId');
+
+    if (savedUser && savedAttendance) {
+        currentUser = JSON.parse(savedUser);
+        currentAttendanceId = savedAttendance;
+    }
+
+    // Show login modal if not logged in
+    if (!currentUser) {
+        document.getElementById('loginModal').style.display = 'flex';
+    } else {
+        document.getElementById('loginModal').style.display = 'none';
+        console.log(`Session restored: ${currentUser.username}`);
+    }
+
     await fetchProducts();
     setupCategoryListeners();
     renderProducts();
 
+    initVK(); // Initialize virtual keyboard
     refreshIcons();
 }
 
@@ -168,8 +189,8 @@ function updateCart() {
     }
 
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const tax = subtotal * 0.1;
-    const total = subtotal + tax;
+    const tax = 0; // Tax set to 0% as requested
+    const total = subtotal;
 
     document.getElementById('subtotal').innerText = `Rp ${subtotal.toLocaleString()}`;
     document.getElementById('tax').innerText = `Rp ${tax.toLocaleString()}`;
@@ -180,11 +201,104 @@ function changeQty(id, delta) {
     const item = cart.find(i => i.id === id);
     if (!item) return;
 
+    if (delta < 0 && (item.qty === 1 || currentUser.role !== 'ADMIN')) {
+        // Prepare for void authorization
+        pendingVoid = { id, delta };
+        openVoidModal(item);
+        return;
+    }
+
     item.qty += delta;
     if (item.qty <= 0) {
         cart = cart.filter(i => i.id !== id);
     }
     updateCart();
+}
+
+// --- AUTH & VOID LOGIC ---
+function attemptLogin() {
+    const username = document.getElementById('loginUser').value;
+    const pin = document.getElementById('loginPin').value;
+
+    fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, pin })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                currentUser = data.user;
+                currentAttendanceId = data.attendance_id;
+
+                // Persist session
+                localStorage.setItem('gc_currentUser', JSON.stringify(currentUser));
+                localStorage.setItem('gc_attendanceId', currentAttendanceId);
+
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('loginPin').value = '';
+                alert(`Absen Masuk Berhasil! Selamat bekerja, ${currentUser.username}!`);
+            } else {
+                alert(data.message);
+            }
+        });
+}
+
+async function logout() {
+    if (currentAttendanceId && confirm('Konfirmasi Absen Pulang (Logout)?')) {
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attendance_id: currentAttendanceId })
+        });
+
+        // Clear session
+        currentUser = null;
+        currentAttendanceId = null;
+        localStorage.removeItem('gc_currentUser');
+        localStorage.removeItem('gc_attendanceId');
+
+        document.getElementById('loginModal').style.display = 'flex';
+    }
+}
+
+function openVoidModal(item) {
+    const modal = document.getElementById('voidModal');
+    document.getElementById('btnConfirmVoid').onclick = () => confirmVoid(item);
+    modal.style.display = 'flex';
+}
+
+function closeVoidModal() {
+    document.getElementById('voidModal').style.display = 'none';
+    pendingVoid = null;
+}
+
+async function confirmVoid(item) {
+    const reason = document.getElementById('voidReason').value;
+
+    // Log the void
+    await fetch('/api/auth/void-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            user_id: currentUser.id,
+            product_name: item.name,
+            price: item.price,
+            reason: reason
+        })
+    });
+
+    // Execute the removal
+    if (pendingVoid.delta < 0) {
+        item.qty += pendingVoid.delta;
+        if (item.qty <= 0) {
+            cart = cart.filter(i => i.id !== pendingVoid.id);
+        }
+    }
+
+    updateCart();
+    closeVoidModal();
+    alert('Penghapusan item dicatat dalam sistem.');
 }
 
 function togglePaymentSelection() {
@@ -196,13 +310,15 @@ function togglePaymentSelection() {
 document.getElementById('btnCheckout').addEventListener('click', async () => {
     if (cart.length === 0) return alert('Keranjang kosong!');
 
-    const customerName = document.getElementById('customerName').value;
-    if (!customerName) return alert('Harap isi Nama Pelanggan!');
+    let customerName = document.getElementById('customerName').value;
+    if (!customerName) {
+        customerName = `Kasir: ${currentUser.username}`;
+    }
 
     const paymentStatus = document.getElementById('paymentStatus').value;
     const paymentMethod = document.getElementById('paymentMethod').value;
 
-    const shouldPrint = document.getElementById('checkPrint').checked;
+    const shouldPrint = paymentStatus === 'PAID' && document.getElementById('checkPrint').checked;
 
     const payload = {
         invoice_number: `INV-${Date.now()}`,
@@ -213,7 +329,7 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
             qty: item.qty,
             price: item.price
         })),
-        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0) * 1.1,
+        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0), // Removed 1.1 multiplier (0% tax)
         payment_method: paymentMethod,
         customer_name: customerName,
         payment_status: paymentStatus,
@@ -224,7 +340,7 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
         const response = await fetch('/api/sales', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ ...payload, creator_id: currentUser.id })
         });
 
         const result = await response.json();
@@ -298,7 +414,8 @@ async function loadBMSData() {
         const result = await response.json();
 
         if (result.success) {
-            const devices = result.json || result.data; // Handle both formats
+            const devices = result.data || []; // Handle data format from API
+            if (!Array.isArray(devices)) return;
 
             // 1. Update Core Stats (Watts, Temp, Water)
             const kwh = devices.find(d => d.category === 'ELECTRIC');
@@ -475,6 +592,84 @@ async function loadReportData() {
             refreshIcons();
         }
 
+        // Update Void Logs (New v2.4 Audit)
+        const voidRes = await fetch('/api/auth/void-logs');
+        const voidData = await voidRes.json();
+        if (voidData.success && voidData.data) {
+            const voidBody = document.getElementById('reportVoidBody');
+            if (voidBody) {
+                voidBody.innerHTML = voidData.data.map(v => `
+                    <tr>
+                        <td>${new Date(v.created_at).toLocaleTimeString('id-ID')}</td>
+                        <td>${v.staff_name || 'System'}</td>
+                        <td style="font-weight: 600;">${v.product_name}</td>
+                        <td>Rp ${Number(v.price).toLocaleString()}</td>
+                        <td style="color: var(--danger); font-style: italic;">${v.reason}</td>
+                    </tr>
+                `).join('');
+                if (voidData.data.length === 0) {
+                    voidBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted)">Belum ada log penghapusan</td></tr>';
+                }
+            }
+        }
+
+        // --- NEW: Update Attendance Logs (Weekly Audit) ---
+        const attendanceRes = await fetch('/api/auth/attendance');
+        const attendanceData = await attendanceRes.json();
+        if (attendanceData.success && attendanceData.data) {
+            const attBody = document.getElementById('reportAttendanceBody');
+            if (attBody) {
+                attBody.innerHTML = attendanceData.data.map(a => `
+                    <tr>
+                        <td style="font-weight: 600;">${a.staff_name}</td>
+                        <td style="color: var(--success);">${new Date(a.clock_in).toLocaleString('id-ID')}</td>
+                        <td style="color: ${a.clock_out ? 'var(--text)' : 'var(--accent)'};">
+                            ${a.clock_out ? new Date(a.clock_out).toLocaleString('id-ID') : '<i>Masih Bertugas</i>'}
+                        </td>
+                        <td>
+                            <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; background: ${a.clock_out ? 'var(--glass)' : 'rgba(228, 168, 83, 0.2)'}">
+                                ${a.clock_out ? 'Selesai' : 'Aktif'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+                if (attendanceData.data.length === 0) {
+                    attBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted)">Belum ada data absensi minggu ini</td></tr>';
+                }
+            }
+        }
+
+        // --- NEW: Update AI Smart Audit Insights (v2.5) ---
+        try {
+            const aiRes = await fetch('/api/auth/ai-insights');
+            const aiData = await aiRes.json();
+            if (aiData.success && aiData.data) {
+                const aiContainer = document.getElementById('aiInsightContainer');
+                const aiList = document.getElementById('aiInsightList');
+                if (aiContainer && aiList) {
+                    aiContainer.style.display = 'block';
+                    aiList.innerHTML = aiData.data.map(i => `
+                        <div style="margin-bottom: 10px; padding-left: 15px; border-left: 3px solid ${i.severity === 'HIGH' ? 'var(--danger)' : 'var(--accent)'};">
+                            <span style="font-weight: bold; color: ${i.severity === 'HIGH' ? 'var(--danger)' : 'var(--accent)'}; text-transform: uppercase; font-size: 0.8rem;">
+                                [${i.type}]
+                            </span> 
+                            ${i.message}
+                        </div>
+                    `).join('');
+                }
+            }
+        } catch (aiErr) {
+            console.warn('AI Insights offline:', aiErr);
+            const aiList = document.getElementById('aiInsightList');
+            if (aiList) {
+                aiList.innerHTML = `<div style="color: var(--text-muted); font-style: italic;">
+                    <i data-lucide="brain-circuit" style="width:14px; vertical-align:middle; opacity: 0.5;"></i> 
+                    Server sedang offline. Analisa AI tidak tersedia saat ini.
+                </div>`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
+
     } catch (error) {
         console.error('Report Error:', error);
     }
@@ -487,7 +682,7 @@ async function reprintSale(id) {
         if (result.success) {
             alert('Perintah cetak ulang berhasil dikirim!');
         } else {
-            alert('Gagal cetak ulang: ' + result.message);
+            alert('Gagal cetak ulang: ' + (result.message || result.error || 'Server error'));
         }
     } catch (error) {
         alert('Kesalahan koneksi saat cetak ulang.');
@@ -693,6 +888,8 @@ function renderPendingTable(data) {
                 <div style="display: flex; gap: 8px;">
                     <button class="category-btn" onclick="payPending('${s.id}', 'CASH')" style="background: #27ae60; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">💵 Tunai</button>
                     <button class="category-btn" onclick="payPending('${s.id}', 'QRIS')" style="background: #2980b9; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">📱 QRIS</button>
+                    <button class="category-btn" onclick="reprintSale('${s.id}')" style="background: #e67e22; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">🖨️ Struk</button>
+                    <button class="category-btn" onclick="openBill('${s.id}')" style="background: #8e44ad; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">➕ Tambah Menu</button>
                 </div>
             </td>
         </tr>
@@ -725,6 +922,201 @@ async function payPending(salesId, method) {
     } catch (error) {
         alert('Gagal memproses pembayaran.');
     }
+}
+
+async function openBill(salesId) {
+    const sale = pendingSalesData.find(s => s.id === salesId);
+    if (!sale) return;
+
+    if (!confirm(`Tambahkan menu baru ke bill "${sale.customer_name}"?`)) return;
+
+    // Transition to Kasir page
+    switchPage('kasir');
+
+    // Set UI state for Open Bill
+    cart = []; // Start with new items only
+    document.getElementById('customerName').value = sale.customer_name;
+    document.getElementById('customerName').disabled = true;
+
+    const btnBox = document.querySelector('.checkout-area');
+    const originalBtn = document.getElementById('btnCheckout');
+    originalBtn.style.display = 'none';
+
+    // Add temporary Update Bill button
+    const updateBtn = document.createElement('button');
+    updateBtn.id = 'btnUpdateBill';
+    updateBtn.className = 'btn-checkout';
+    updateBtn.style.background = '#8e44ad';
+    updateBtn.innerText = 'Update Bill (Tambah Menu)';
+    updateBtn.onclick = async () => {
+        if (cart.length === 0) return alert('Pilih menu terlebih dahulu!');
+
+        try {
+            const res = await fetch(`/api/sales/update-items/${salesId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: cart.map(item => ({
+                        product_id: item.id,
+                        qty: item.qty,
+                        price: item.price
+                    }))
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                alert('Bill berhasil diperbarui!');
+                // Reset UI
+                cart = [];
+                updateCart();
+                document.getElementById('customerName').value = '';
+                document.getElementById('customerName').disabled = false;
+                updateBtn.remove();
+                originalBtn.style.display = 'block';
+                switchPage('pending');
+            }
+        } catch (e) {
+            alert('Gagal update bill.');
+        }
+    };
+
+    // Add cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'category-btn';
+    cancelBtn.style.width = '100%';
+    cancelBtn.style.marginTop = '10px';
+    cancelBtn.innerText = 'Batal Tambah Menu';
+    cancelBtn.onclick = () => {
+        cart = [];
+        updateCart();
+        document.getElementById('customerName').value = '';
+        document.getElementById('customerName').disabled = false;
+        updateBtn.remove();
+        cancelBtn.remove();
+        originalBtn.style.display = 'block';
+    };
+
+    btnBox.appendChild(updateBtn);
+    btnBox.appendChild(cancelBtn);
+
+    updateCart();
+}
+
+// --- VIRTUAL KEYBOARD LOGIC ---
+let vkTarget = null;
+let vkShift = false;
+
+function initVK() {
+    // Select all existing and future inputs
+    document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' && !['checkbox', 'radio', 'submit', 'button'].includes(e.target.type)) {
+            const type = (e.target.id === 'loginPin' || e.target.type === 'number' || e.target.id === 'opnameQty') ? 'NUM' : 'QWERTY';
+            showVK(e.target, type);
+        }
+    });
+
+    // Prevent losing focus when clicking keys
+    const panel = document.getElementById('vkPanel');
+    if (panel) {
+        panel.addEventListener('mousedown', e => e.preventDefault());
+    }
+}
+
+function showVK(target, type) {
+    vkTarget = target;
+    const panel = document.getElementById('vkPanel');
+    const title = document.getElementById('vkTitle');
+
+    if (title) {
+        title.innerText = (type === 'NUM') ? 'NUMERIC PAD' : 'QWERTY KEYBOARD';
+    }
+    renderVK(type);
+    panel.classList.add('show');
+}
+
+function hideVK() {
+    const panel = document.getElementById('vkPanel');
+    if (panel) panel.classList.remove('show');
+    vkTarget = null;
+}
+
+function renderVK(type) {
+    const content = document.getElementById('vkContent');
+    if (!content) return;
+
+    if (type === 'NUM') {
+        content.innerHTML = `
+            <div class="numpad-grid">
+                ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0, '.', 'DEL'].map(k => `
+                    <button class="vk-key numpad-key ${k === 'DEL' ? 'backspace' : ''}" onclick="pressVK('${k}', 'NUM')">
+                        ${k === 'DEL' ? '<i data-lucide="delete"></i>' : k}
+                    </button>
+                `).join('')}
+                <button class="vk-key numpad-key action" style="grid-column: span 3" onclick="hideVK()">SELESAI</button>
+            </div>
+        `;
+    } else {
+        const rows = [
+            ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+            ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+            ['SHIFT', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'DEL'],
+            ['SPACE', 'DONE']
+        ];
+
+        content.innerHTML = rows.map(row => `
+            <div class="vk-row">
+                ${row.map(k => {
+            let cls = 'vk-key';
+            let label = k;
+            if (k === 'SHIFT') {
+                cls += ' wide action';
+                if (vkShift) cls += ' active';
+                label = '<i data-lucide="arrow-up-circle"></i>';
+            }
+            if (k === 'DEL') {
+                cls += ' wide backspace';
+                label = '<i data-lucide="delete"></i>';
+            }
+            if (k === 'SPACE') {
+                cls += ' space';
+                label = 'SPASI';
+            }
+            if (k === 'DONE') {
+                cls += ' wide action';
+                label = 'OK';
+            }
+
+            const displayVal = (vkShift && k.length === 1) ? k.toUpperCase() : label;
+            return `<button class="${cls}" onclick="pressVK('${k}', 'QWERTY')">${displayVal}</button>`;
+        }).join('')}
+            </div>
+        `).join('');
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function pressVK(k, type) {
+    if (!vkTarget) return;
+
+    if (k === 'DEL') {
+        vkTarget.value = vkTarget.value.slice(0, -1);
+    } else if (k === 'SHIFT') {
+        vkShift = !vkShift;
+        renderVK('QWERTY');
+        return;
+    } else if (k === 'DONE') {
+        hideVK();
+        vkTarget.blur();
+    } else if (k === 'SPACE') {
+        vkTarget.value += ' ';
+    } else {
+        let val = k;
+        if (type === 'QWERTY' && vkShift) val = k.toUpperCase();
+        vkTarget.value += val;
+    }
+
+    // Trigger input event manually
+    vkTarget.dispatchEvent(new Event('input'));
 }
 
 // Init on load

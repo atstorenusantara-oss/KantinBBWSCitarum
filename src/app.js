@@ -20,6 +20,7 @@ app.use('/api/products', require('./routes/product.routes.js'));
 app.use('/api/stock', require('./routes/stock.routes.js'));
 app.use('/api/reports', require('./routes/report.routes.js'));
 app.use('/api/bms', require('./routes/bms.routes.js'));
+app.use('/api/auth', require('./routes/auth.routes.js'));
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

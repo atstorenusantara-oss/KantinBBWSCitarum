@@ -532,3 +532,128 @@ main {
         white-space: nowrap;
     }
 }
+
+/* --- VIRTUAL KEYBOARD STYLES --- */
+.vk-panel {
+    position: fixed;
+    bottom: -100%;
+    /* Hidden by default */
+    left: 0;
+    width: 100%;
+    background: rgba(45, 45, 45, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 2px solid var(--primary);
+    z-index: 30000;
+    padding: 10px;
+    transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -15px 30px rgba(0, 0, 0, 0.5);
+    user-select: none;
+}
+
+.vk-panel.show {
+    bottom: 0;
+}
+
+.vk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    padding: 0 10px;
+}
+
+#vkTitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-light);
+    letter-spacing: 1px;
+}
+
+.vk-close-btn {
+    background: var(--glass);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vk-content {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.vk-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.vk-key {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: white;
+    border-radius: 8px;
+    height: 45px;
+    min-width: 50px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+
+.vk-key:active {
+    background: var(--primary);
+    transform: scale(0.95);
+}
+
+.vk-key.wide {
+    flex: 1.5;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.vk-key.action {
+    background: var(--primary);
+    font-size: 0.9rem;
+    color: white;
+    text-transform: uppercase;
+}
+
+.vk-key.backspace {
+    background: rgba(255, 95, 95, 0.2);
+    color: var(--danger);
+}
+
+.vk-key.space {
+    flex: 6;
+}
+
+/* Numeric Pad Specifics */
+.numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.numpad-key {
+    height: 55px;
+    font-size: 1.3rem;
+}
+
+.numpad-key.action {
+    background: var(--success);
+    color: var(--secondary);
+}

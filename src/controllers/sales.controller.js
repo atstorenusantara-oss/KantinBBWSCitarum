@@ -65,7 +65,18 @@ class SalesController {
             const printResult = await printerService.printReceipt(salesData);
             res.json({ success: true, message: "Perintah cetak ulang dikirim", print: printResult });
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            console.error("Reprint Error:", error);
+            res.status(500).json({ success: false, message: error.message, error: error.stack });
+        }
+    }
+    async updateItems(req, res) {
+        try {
+            const { id } = req.params;
+            const { items } = req.body;
+            const result = await salesService.addItemsToSale(id, items);
+            res.json({ success: true, message: "Menu berhasil ditambahkan ke bill", data: result });
+        } catch (error) {
+            res.status(500).json({ success: false, message: "Gagal menambah menu", error: error.message });
         }
     }
 }

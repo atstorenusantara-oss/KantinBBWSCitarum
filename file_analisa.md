@@ -1,4 +1,4 @@
-# Analisa Teknologi & Database - v2.3
+# Analisa Teknologi & Database - v2.4
 ## Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku & IoT BMS
 Teknologi: **Node.js + MySQL + ESP32**
 
@@ -43,13 +43,12 @@ src/
  ├─ routes/ (Sales, Product, Stock, BMS, Report)
  ├─ controllers/
  ├─ services/
- │   ├─ sales.service.js   (Core Transaction)
- │   ├─ printer.service.js (Receipt Logic) - NEW
- │   ├─ stock.service.js   (BOM Engine)
- │   ├─ bms.service.js     (IoT Handler)
- │   └─ report.service.js  (Aggregation)
  ├─ database/
  └─ utils/
+seed_february.js           (February 2026 Menu Update) - NEW
+update_recipes_february.js (Creamer & UHT Engine) - NEW
+update_recipes_skm.js      (SKM logic) - NEW
+public/js/lucide.min.js    (Offline Icon Library) - NEW
 ```
 
 ---

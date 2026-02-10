@@ -18,8 +18,8 @@ class BMSService {
         // Update device current value
         await db.query('UPDATE bms_devices SET current_value = ? WHERE id = ?', [value, id]);
 
-        // Log the change
-        await db.query('INSERT INTO bms_logs (device_id, value) VALUES (?, ?)', [id, value]);
+        // Log the change (Disabled by request)
+        // await db.query('INSERT INTO bms_logs (device_id, value) VALUES (?, ?)', [id, value]);
 
         return { success: true, id, newValue: value };
     }
@@ -53,8 +53,8 @@ class BMSService {
         // 2. Update current value
         await db.query('UPDATE bms_devices SET current_value = ?, last_update = CURRENT_TIMESTAMP WHERE id = ?', [value, deviceId]);
 
-        // 3. Log the value (usually sensors logger frequently, maybe only log on significant change?)
-        await db.query('INSERT INTO bms_logs (device_id, value) VALUES (?, ?)', [deviceId, value]);
+        // 3. Log the value (Disabled by request)
+        // await db.query('INSERT INTO bms_logs (device_id, value) VALUES (?, ?)', [deviceId, value]);
 
         return { success: true, deviceId, updatedValue: value };
     }

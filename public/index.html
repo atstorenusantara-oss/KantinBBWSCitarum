@@ -27,7 +27,9 @@
                 data-lucide="bar-chart-2"></i></div>
         <div class="nav-item" id="navBMS" onclick="switchPage('bms')" title="Monitoring Bangunan (BMS)"><i
                 data-lucide="building-2"></i></div>
-        <div class="nav-item" style="margin-top: auto;"><i data-lucide="settings"></i></div>
+        <div class="nav-item" style="margin-top: auto;" onclick="logout()" title="Logout"><i data-lucide="log-out"
+                style="color: var(--danger);"></i></div>
+        <div class="nav-item"><i data-lucide="settings"></i></div>
     </nav>
 
     <main>
@@ -185,6 +187,25 @@
                 </div>
             </div>
 
+            <!-- AI SMART AUDIT INSIGHTS (v2.5) -->
+            <div id="aiInsightContainer" style="margin-bottom: 25px;">
+                <div class="card" style="border: 1px solid var(--accent); background: rgba(228, 168, 83, 0.05);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 12px;">
+                        <div
+                            style="background: var(--accent); color: var(--secondary); padding: 8px; border-radius: 8px; display: flex;">
+                            <i data-lucide="brain-circuit" style="width: 20px;"></i>
+                        </div>
+                        <h3 style="color: var(--accent);">AI Smart Audit Insight</h3>
+                    </div>
+                    <div id="aiInsightList" style="line-height: 1.6; font-size: 0.95rem;">
+                        <!-- AI Insights will be loaded here -->
+                        <div class="spin"
+                            style="width: 20px; height: 20px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; margin: 10px auto;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="report-grid">
                 <!-- Daily Card -->
                 <div class="card status-card">
@@ -304,6 +325,30 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- ADD ATTENDANCE LOGS (v2.4) -->
+            <div class="card" style="margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: var(--success);"><i data-lucide="users"
+                            style="width: 18px; margin-right: 8px; vertical-align: middle;"></i>Riwayat Absensi Karyawan
+                        (7 Hari)</h3>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nama Kasir</th>
+                            <th>Masuk (Login)</th>
+                            <th>Pulang (Logout)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportAttendanceBody">
+                        <!-- Attendance logs -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div>
         </div>
 
         <!-- PENDING ORDERS SECTION -->
@@ -465,7 +510,7 @@
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted);">Nama
                         Pelanggan</label>
-                    <input type="text" id="customerName" class="payment-dropdown" placeholder="Contoh: Budi"
+                    <input type="text" id="customerName" class="payment-dropdown" placeholder="Kosongkan = Kasir"
                         style="background-image: none; padding-right: 15px;">
                 </div>
 
@@ -514,6 +559,7 @@
                 </button>
             </div>
         </aside>
+        </div>
     </main>
 
     <!-- Variant Modal -->
@@ -535,6 +581,67 @@
             </div>
             <button class="category-btn" onclick="closeVariantModal()"
                 style="width: 100%; border-style: dashed;">Batal</button>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal"
+        style="display:flex; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: var(--bg); align-items: center; justify-content: center;">
+        <div class="card" style="width: 400px; text-align: center; border: 1px solid var(--primary);">
+            <div class="logo" style="margin: 0 auto 20px auto; width: 60px; height: 60px; font-size: 1.5rem;">GC</div>
+            <h2 style="margin-bottom: 20px;">G-Coffee POS Login</h2>
+            <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+                <label>Pilih User</label>
+                <select id="loginUser" class="payment-dropdown" style="background: var(--surface)">
+                    <option value="Atjas">Atjas (Owner)</option>
+                    <option value="Andi">Andi (Kasir)</option>
+                    <option value="Cipa">Cipa (Kasir)</option>
+                    <option value="Arya">Arya (Kasir)</option>
+                    <option value="Tamy">Tamy (Kasir)</option>
+                </select>
+            </div>
+            <div class="form-group" style="text-align: left; margin-bottom: 30px;">
+                <label>PIN (Masukkan 4 Digit)</label>
+                <input type="password" id="loginPin" class="search-bar"
+                    style="width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 10px;" maxlength="4"
+                    placeholder="••••">
+            </div>
+            <button class="btn-checkout" onclick="attemptLogin()" style="margin-top: 0;">Masuk Ke Sistem</button>
+        </div>
+    </div>
+
+    <!-- Void Reason Modal -->
+    <div id="voidModal"
+        style="display:none; position: fixed; z-index: 15000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+        <div class="card" style="width: 400px; border: 1px solid var(--danger);">
+            <h3 style="margin-bottom: 15px; color: var(--danger);">Konfirmasi Penghapusan</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 20px; color: var(--text-muted);">Penghapusan item akan dicatat
+                oleh sistem.</p>
+            <div class="form-group">
+                <label>Alasan Penghapusan</label>
+                <select id="voidReason" class="payment-dropdown" style="background: var(--surface)">
+                    <option value="Salah Input">Salah Input</option>
+                    <option value="Pelanggan Batal">Pelanggan Batal</option>
+                    <option value="Produk Habis/Reject">Produk Habis/Reject</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px;">
+                <button class="category-btn" onclick="closeVoidModal()" style="border-style: dashed;">Batal</button>
+                <button class="btn-checkout" id="btnConfirmVoid" style="margin-top: 0; background: var(--danger);">Hapus
+                    Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIRTUAL KEYBOARD PANEL -->
+    <div id="vkPanel" class="vk-panel">
+        <div class="vk-header">
+            <span id="vkTitle">Keyboard</span>
+            <button class="vk-close-btn" onclick="hideVK()"><i data-lucide="chevron-down"></i></button>
+        </div>
+        <div id="vkContent" class="vk-content">
+            <!-- Driven by JS -->
         </div>
     </div>
 

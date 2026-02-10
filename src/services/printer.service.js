@@ -9,20 +9,14 @@ class PrinterService {
 
         let printer = new ThermalPrinter({
             type: PrinterTypes.EPSON, // or STAR
-            interface: 'printer:My-Thermal-Printer', // Default name or IP
+            interface: 'file:temp_log.txt', // Dummy interface to avoid "No interface" error
             characterSet: 'PC852_LATIN2',
             removeSpecialCharacters: false,
             lineCharacter: "=",
-            width: 42, // printer width
+            width: 32, // Adjusted for 58mm printer
         });
 
         try {
-            const isConnected = await printer.isPrinterConnected();
-            if (!isConnected) {
-                console.warn("Printer not connected. Printing to console/log instead.");
-                // We'll proceed with log for demo if no physical printer
-            }
-
             printer.alignCenter();
             printer.setTextDoubleHeight();
             printer.setTextDoubleWidth();
@@ -38,21 +32,19 @@ class PrinterService {
             printer.println("--------------------------------");
 
             salesData.items.forEach(item => {
-                // Formatting item line: "Product Name xQty   Price"
                 const itemLine = `${item.name} x${item.qty}`;
-                const price = `Rp ${Number(item.price * item.qty).toLocaleString()}`;
-
-                // Simple padding logic
+                const priceValue = (item.price * item.qty);
+                const price = `Rp ${Number(priceValue).toLocaleString()}`;
                 const spaces = 32 - itemLine.length - price.length;
                 printer.println(`${itemLine}${" ".repeat(spaces > 0 ? spaces : 1)}${price}`);
             });
 
             printer.println("--------------------------------");
             printer.alignRight();
-            printer.println(`Subtotal: Rp ${Number(salesData.total / 1.1).toLocaleString()}`);
-            printer.println(`Pajak (10%): Rp ${Number(salesData.total - (salesData.total / 1.1)).toLocaleString()}`);
+            printer.println(`Total: Rp ${Number(salesData.total).toLocaleString()}`);
+            printer.println(`Pajak (0%): Rp 0`);
             printer.setTextDoubleHeight();
-            printer.println(`TOTAL: Rp ${Number(salesData.total).toLocaleString()}`);
+            printer.println(`BAYAR: Rp ${Number(salesData.total).toLocaleString()}`);
             printer.setTextNormal();
 
             printer.alignCenter();
@@ -62,17 +54,35 @@ class PrinterService {
             printer.alignCenter();
             printer.cut();
 
-            // Only execute if not in dry run mode or if connected
-            if (isConnected) {
-                await printer.execute();
+            // EXECUTION using PowerShell Spooler API (Most reliable on Windows without native driver)
+            const fs = require('fs');
+            const path = require('path');
+            const { execSync } = require('child_process');
+
+            const buffer = printer.getBuffer();
+            const tempFile = path.normalize(path.join(process.cwd(), `temp_print_${Date.now()}.bin`));
+            fs.writeFileSync(tempFile, buffer);
+
+            try {
+                const printerName = process.env.PRINTER_NAME || "RONGTA 58mm Series Printer";
+                const scriptPath = path.join(process.cwd(), 'print_raw.ps1');
+
+                // Call the PowerShell script
+                execSync(`powershell -ExecutionPolicy Bypass -File "${scriptPath}" "${printerName}" "${tempFile}"`, { encoding: 'utf8' });
                 return { success: true, message: "Struk dicetak" };
-            } else {
-                console.log("MOCK PRINT OUTPUT:\n", printer.getText());
-                return { success: true, message: "Printer tidak terdeteksi, cetak disimulasi di server", raw: printer.getText() };
+            } catch (printErr) {
+                console.error("Spooler Print Failed:", printErr.message);
+                return {
+                    success: false,
+                    message: "Gagal mencetak: Pastikan printer terhubung.",
+                    raw: printer.getText()
+                };
+            } finally {
+                if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
             }
 
         } catch (error) {
-            console.error("Print Error:", error);
+            console.error("General Print Error:", error);
             throw error;
         }
     }
