@@ -1,4 +1,4 @@
-# Analisa Teknologi & Database - v2.4
+# Analisa Teknologi & Database - v2.5
 ## Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku & IoT BMS
 Teknologi: **Node.js + MySQL + ESP32**
 
@@ -11,10 +11,10 @@ Setiap penjualan akan otomatis mengurangi stok bahan sesuai takaran resep, terma
 
 ---
 
-## 2. Arsitektur Sistem (Update v2.3)
+## 2. Arsitektur Sistem (Update v2.5)
 
 ```
-[Frontend Kasir & Dashbaord]
+[Frontend Kasir & Dashboard] <--- [Chrome Kiosk Mode]
 (Vanilla JS / Tablet / PC)
          |
          v
@@ -23,7 +23,7 @@ Setiap penjualan akan otomatis mengurangi stok bahan sesuai takaran resep, terma
          |          |
          v          v
 [MySQL DB]   [Printer Kasir Thermal]
-             (ESC/POS Support)
+              (ESC/POS Support via PowerShell Spooler)
 ```
 
 ---
@@ -33,90 +33,67 @@ Setiap penjualan akan otomatis mengurangi stok bahan sesuai takaran resep, terma
 ### 3.1 Stack Backend Terbaru
 - **Core**: Node.js v18+ & Express.js
 - **Database**: mysql2 (Transaction-safe)
-- **Printing**: `node-thermal-printer` (Direct ESC/POS)
-- **Utilities**: uuid, dayjs, dotenv, cors
+- **Printing**: `node-thermal-printer` & PowerShell Raw Printing (Spooler API)
+- **Utilities**: uuid, dayjs, dotenv, cors, **child_process** (untuk kontrol sistem/shutdown)
 
-### 3.2 Struktur Folder (Actual)
+### 3.2 Struktur Folder & File Utama
 ```
-src/
- ├─ app.js
- ├─ routes/ (Sales, Product, Stock, BMS, Report)
- ├─ controllers/
- ├─ services/
- ├─ database/
- └─ utils/
-seed_february.js           (February 2026 Menu Update) - NEW
-update_recipes_february.js (Creamer & UHT Engine) - NEW
-update_recipes_skm.js      (SKM logic) - NEW
-public/js/lucide.min.js    (Offline Icon Library) - NEW
+GCOFFEE_POSv2/
+ ├─ jalankan_pos_otomatis.bat   (Launcher: Cek Server + Kiosk Chrome) - NEW
+ ├─ aktifkan_autorun.bat        (Setup Startup Windows) - NEW
+ ├─ print_raw.ps1               (PowerShell Spooler API)
+ ├─ src/
+ │   ├─ app.js                  (Entry Point & Route Registration)
+ │   ├─ routes/                 (System, Sales, Product, Stock, BMS, Report, Auth)
+ │   ├─ controllers/
+ │   ├─ services/               (Printer Service with .env config)
+ │   ├─ database/
+ │   └─ utils/
+ ├─ public/
+ │   ├─ index.html              (UI Utama dengan Sidebar & Modal)
+ │   ├─ css/style.css           (Desain Modern + Tablet Optimized Keyboard)
+ │   └─ js/script.js            (Logic Frontend & VK v2)
+ └─ .env                        (Config: DB, Port, PRINTER_NAME)
 ```
 
 ---
 
-## 4. Alur Transaksi & Logika Varian (Critical Logic)
+## 4. Alur Transaksi & Logika Varian
 
 ### 4.1 Logika Varian & Packaging (v2.3)
-Sistem sekarang menggunakan script `seed_variants.js` yang dinamis untuk menciptakan varian suhu:
-- **Trigger**: Kasir klik produk dasar (Contoh: Americano).
-- **Opsi**: Modal muncul menanyakan "Panas" atau "Dingin".
-- **BOM Mapping**:
-    - **Panas** -> Menambahkan detail resep **Cup Kertas**.
-    - **Dingin** -> Menambahkan detail resep **Cup Plastik**.
+Sistem menggunakan script `seed_variants.js` yang dinamis:
+- **Panas** -> Menambahkan detail resep **Cup Kertas**.
+- **Dingin** -> Menambahkan detail resep **Cup Plastik**.
 
-### 4.2 Alur Penjualan dengan Printer
-```
-BEGIN TRANSACTION
-  INSERT sales (and check should_print flag)
-  INSERT sales_items
-  UPDATE raw_materials.stock (Otomatis potong Packaging)
-  INSERT stock_movements
-COMMIT
-  IF should_print: CALL PrinterService.printReceipt()
-  IF Failed: User can manually REPRINT from Report Page
-```
+### 4.2 Alur Penjualan dengan Printer (v2.5)
+1. **Transaction Start**: Simpan data ke MySQL.
+2. **Buffer Generation**: `PrinterService` membuat buffer ESC/POS.
+3. **Hardware Selection**: Nama printer diambil dari `.env` (`PRINTER_NAME`).
+4. **Execution**: Node.js memanggil PowerShell `print_raw.ps1` untuk mengirim data mentah ke spooler Windows (paling stabil).
 
 ---
 
-## 5. Analisa IoT & BMS (ESP32)
+## 5. Fitur Khusus Tablet (Pembaruan v2.5)
 
-### 5.1 Telemetry (Sensor)
-ESP32 mengirimkan data via `POST /api/bms/telemetry` secara berkala (5 detik).
-Data yang didukung: Suhu, Beban Listrik (Watts), Level Air.
+### 5.1 Keyboard Virtual v2 (Optimized)
+- Layout **5 Kolom** (Baris 1: [1-5], Baris 2: [6-0], Baris 3: [.][DEL][SELESAI]).
+- Dimensi lebih lebar dan pendek agar tangan mudah menjangkau semua area tanpa menutupi input text.
+- Deteksi otomatis: Numerik muncul untuk PIN/Qty, QWERTY untuk Nama/Search.
 
-### 5.2 Control (Actuator/Relay)
-ESP32 melakukan polling via `GET /api/bms/status?name=...`. Jika status di database berubah menjadi `ON` (via Dashboard), ESP32 akan mengaktifkan relay fisik pada GPIO yang ditentukan.
+### 5.2 Kiosk Mode & Autorun
+- `jalankan_pos_otomatis.bat` memastikan server aktif sebelum membuka Chrome.
+- Chrome dijalankan dengan flag `--kiosk` dan `--user-data-dir` untuk tampilan aplikasi penuh tanpa gangguan.
 
----
-
-## 6. Struktur Database (Schema Update)
-
-### bms_devices
-- id, name, type (SENSOR/ACTUATOR), category, unit, current_value, is_active.
-
-### sales (v2.3)
-- payment_status (PAID/PENDING) -> Mendukung fitur piutang.
-
-### raw_materials
-- packaging items (Cup Kertas, Cup Plastik) sudah masuk ke dalam sistem monitoring kritis.
+### 5.3 System Control
+- Endpoint `/api/system/shutdown` memungkinkan kasir mematikan tablet langsung dari aplikasi melalui dual-confirmation dialog.
 
 ---
 
-## 7. Printer Kasir & Hardware Integration
+## 6. Analisa IoT & BMS (ESP32)
 
-- **Library**: node-thermal-printer.
-- **Support**: ESC/POS Standard.
-- **Fitur Baru**:
-    - Checkbox "Cetak Otomatis" di keranjang.
-    - Fungsi **Reprint** untuk mencetak ulang transaksi lama dari tabel riwayat.
+- **Telemetry**: GET/POST data setiap 5 detik.
+- **Control**: Polling status relay via Dashboard.
 
 ---
 
-## 8. Kesimpulan & Blueprint Future
-
-Sistem v2.3 telah mencapai tingkat maturitas yang tinggi dengan integrasi hardware (Printer & IoT). Pengembangan selanjutnya dapat difokuskan pada:
-- Dashbaord laporan grafis (Chart.js).
-- Multi-outlet support dengan `outlet_id`.
-- Notifikasi WhatsApp untuk pengingat stok kritis.
-
----
-*Dokumen diperbarui: 7 Februari 2026 sebagai Blueprint Dasar Pengembangan.*
+*Dokumen diperbarui: 11 Februari 2026 | Antigravity AI Assistant.*

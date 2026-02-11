@@ -1,83 +1,69 @@
-# DOKUMENTASI SISTEM G-COFFEE POS v2.4
+# DOKUMENTASI SISTEM G-COFFEE POS v2.5
 **Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku (BOM), Thermal Printer, & IoT BMS**
 
 ---
 
 ## 1. PENDAHULUAN
-G-Coffee POS v2.4 adalah aplikasi Point of Sale (POS) modern yang dirancang khusus untuk operasional kedai kopi. Versi terbaru ini mengintegrasikan **Penjualan**, **Manajemen Stok Otomatis (BOM)**, **Pencetakan Struk Thermal**, dan **Building Management System (BMS)** berbasis IoT. Versi 2.4 menyertakan dukungan **Full Offline Icons**, **Pencarian Produk**, dan **Update Menu Februari 2026**.
+G-Coffee POS v2.5 adalah solusi kasir modern yang dirancang untuk Tablet/PC Windows. Mengintegrasikan manajemen penjualan, pemotongan stok bahan baku (resep) secara otomatis, monitoring gedung (BMS), dan kemudahan operasional tablet melalui Kiosk Mode.
 
-## 2. TEKNOLOGI YANG DIGUNAKAN
-- **Backend**: Node.js & Express.js
-- **Database**: MySQL 8.0+ (InnoDB Engine)
-- **Frontend**: Vanilla HTML5, CSS3, & JavaScript (Single Page Application)
-- **Icons**: Lucide Icons
+---
+
+## 2. TEKNOLOGI UTAMA
+- **Backend**: Node.js & Express.js.
+- **Database**: MySQL 8.0+.
+- **Frontend**: Single Page Application (Vanilla HTML/CSS/JS).
 - **Hardware Integration**:
-    - **Thermal Printer**: ESC/POS via `node-thermal-printer`
-    - **IoT**: ESP32 (Wireless Telemetry & Control)
+    - **Printer**: RONGTA 58mm / ESC-POS (via PowerShell Spooler API).
+    - **IoT**: ESP32 (Wireless Telemetry).
+    - **OS**: Windows (dengan integrasi Batch Script).
 
-## 3. STRUKTUR PROYEK
+---
+
+## 3. STRUKTUR PROYEK & FILE PENTING
 ```text
 GCOFFEE_POSv2/
-├── public/                 # File Frontend (Statis)
-│   ├── css/style.css       # Desain Modern & Responsif
-│   ├── js/script.js        # Logika Frontend & Interaksi API
-│   └── index.html          # Struktur Utama Dashboard
-├── src/                    # Backend Source Code
-│   ├── controllers/        # Logika Request & Response (Sales, Product, Stock, BMS)
-│   ├── database/           # Konfigurasi Koneksi MySQL
-│   ├── routes/             # Definisi Endpoint API
-│   └── services/           # Logika Bisnis Utama (Printer, BOM, BMS, Sales)
-├── esp32_bms.ino           # Firmware ESP32 (Arduino IDE)
-├── database.sql            # Skema Database & Tabel Utama
-├── .env                    # Konfigurasi Database & Port
-├── jalankan_server.bat     # Menjalankan aplikasi
-├── seed_variants.js        # Script otomatisasi varian Panas/Dingin (v2.3)
-└── package.json            # Daftar dependensi utama
+├── jalankan_pos_otomatis.bat  # Launcher cerdas (Cek server lalu buka Kiosk Chrome)
+├── aktifkan_autorun.bat       # Script untuk mendaftarkan program ke Startup Windows
+├── .env                       # Konfigurasi Database & Nama Printer
+├── public/                    # Frontend (UI/UX)
+│   ├── js/script.js           # Logika Utama & Keyboard Virtual v2
+│   └── index.html             # Struktur Dashboard Kasir
+└── src/                       # Backend (API & Logika Bisnis)
+    ├── services/              # BOM Logic & Printer Service
+    └── routes/                # API Endpoints (inc. System Shutdown)
 ```
 
-## 4. FITUR UNGGULAN (PEMBARUAN v2.3)
+---
 
-### A. Point of Sale (POS) & Billing
-- **Otomatisasi Varian**: Semua minuman kini memiliki opsi Panas/Dingin yang memicu pengurangan stok cup berbeda (Kertas vs Plastik).
-- **Cetak Struk Thermal**: Integrasi langsung dengan printer thermal. Terdapat checkbox opsi cetak pada saat checkout.
-- **Cetak Ulang (Reprint)**: Fitur baru di halaman laporan untuk mencetak ulang struk jika terjadi kegagalan hardware di awal.
+## 4. FITUR UNGGULAN v2.5 (TERBARU)
 
-### B. Building Management System (BMS) & IoT
-- **Real-time Monitoring**: Dashboard menampilkan data dari ESP32 (Listrik, Suhu, Air).
-- **Smart Control**: Kontrol relay (Lampu/AC) langsung dari aplikasi kasir yang akan dieksekusi oleh ESP32 secara wireless.
-- **Telemetry System**: ESP32 secara otomatis mengirimkan data sensor ke server setiap 5 detik.
+### A. Tablet Optimization & Accessibility
+- **Virtual Keyboard v2**: Keyboard numerik lebar (5 kolom) yang dirancang khusus untuk layar sentuh tablet agar presisi tekan tombol lebih tinggi.
+- **Dual Keyboard Mode**: Secara cerdas berganti antara Numerik (untuk PIN/Stok) dan QWERTY (untuk Nama/Cari).
 
-### C. Manajemen Stok & BOM
-- **Dinamis BOM**: Pengurangan bahan baku otomatis mencakup packaging sesuai dengan suhu minuman yang dipilih pelanggan. Update v2.4 mencakup takaran resep otomatis untuk Creamer (12g) dan SKM (25g).
-- **Audit Stok (Shift-Aware)**: Sistem laporan opname yang cerdas mengikuti jam operasional (06:00 - 03:00) untuk memantau selisih stok secara akurat bahkan saat dini hari.
-- **February Menu Update**: Penambahan 18 menu baru seperti Pandan Latte, Butterscotch, dan Squash series dengan dukungan varian suhu.
+### B. Integrated Kiosk Mode
+- Sistem dirancang untuk berjalan sebagai aplikasi mandiri.
+- **Auto-Launcher**: Memastikan database dan server Node.js aktif terlebih dahulu sebelum membuka antarmuka kasir.
+- **Kiosk Mode**: Chrome berjalan tanpa toolbar dan tombol sistem, mengunci tablet hanya untuk aplikasi kasir.
+
+### C. System Management & Security
+- **Remote Shutdown**: Fitur mematikan tablet langsung dari sidebar aplikasi (Menu Sistem) dengan konfirmasi ganda (Double Confirm) untuk keamanan.
+- **Print via Spooler**: Menggunakan PowerShell API (`print_raw.ps1`) untuk menjamin struk terdeteksi di Windows tanpa driver khusus pihak ketiga.
+
+### D. Manajemen Stok & Audit
+- **Automatic BOM**: Potong stok bahan & packaging (Cup) sesuai suhu minuman (Panas/Dingin).
+- **AI Smart Audit**: Fitur analisa anomali yang mendeteksi kecurangan atau selisih stok secara otomatis.
 
 ---
 
-## 5. ALUR KERJA SISTEM (USE CASE)
-
-### 1. Proses Penjualan
-1. Kasir memilih menu -> Pilih Suhu (Panas/Dingin) -> Masuk Keranjang.
-2. Masukkan Nama Pelanggan & Pilih Metode Bayar.
-3. Klik **Proses Pembayaran** (Pastikan opsi cetak centang jika ingin struk fisik).
-4. Stok terpotong -> Invoice tersimpan -> Printer mencetak struk.
-
-### 2. Monitoring & Kontrol Gedung
-1. Buka tab **BMS** (Ikon Gedung).
-2. Lihat grafik/angka suhu dan beban listrik.
-3. Gunakan tombol ON/OFF untuk mengontrol lampu indoor/outdoor. ESP32 akan menerima perintah dalam siklus polling berikutnya.
+## 5. PANDUAN INSTALASI (KOMPUTER BARU)
+1. **Salin Folder**: Copy seluruh folder project ke PC target.
+2. **Install Dependensi**: Jalankan `npm install` (Butuh Node.js).
+3. **Setup Database**: Buat DB `gcoffee_pos` di MySQL dan import `database.sql`.
+4. **Konfigurasi Printer**: Buka `.env` dan isi `PRINTER_NAME` sesuai nama di Windows.
+5. **Aktifkan Autorun**: Jalankan **`aktifkan_autorun.bat`** sebagai Administrator.
+6. **Selesai**: Restart komputer. Sistem akan otomatis masuk ke mode kasir layaknya mesin POS profesional.
 
 ---
 
-## 6. PANDUAN INSTALASI & MAINTENANCE
-1. **Instalasi**: Jalankan `npm install` untuk mengunduh library termasuk `node-thermal-printer`.
-2. **Setup Printer**: Buka `src/services/printer.service.js` dan sesuaikan nama printer pada bagian `interface: 'printer:Nama_Printer_Anda'`.
-3. **Setup ESP32**:
-    *   Buka `esp32_bms.ino` di Arduino IDE.
-    *   Masukkan SSID & Password WiFi.
-    *   Ganti `serverUrl` dengan IP Laptop Anda.
-    *   Upload ke ESP32.
-4. **Maintenance Menu**: Jalankan `node seed_variants.js` setiap kali ada penambahan menu minuman baru untuk membuat varian suhunya secara otomatis.
-
----
-*Dokumentasi Sistem G-Coffee POS v2.4 | Update: 10 Februari 2026*
+*Dokumentasi Sistem G-Coffee POS v2.5 | Update: 11 Februari 2026*

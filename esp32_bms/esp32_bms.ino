@@ -11,11 +11,11 @@
 // --- KONFIGURASI WIFI & SERVER ---
 const char *ssid = "TUBIS43LT2";
 const char *password = "12345678";
-const char *serverUrl = "http://192.168.0.106:3000";
+const char *serverUrl = "http://192.168.0.149:3000";
 
 // --- KONFIGURASI PIN ---
-#define PIN_RELAY_INDOOR  2//25
-#define PIN_RELAY_OUTDOOR 26
+#define PIN_RELAY_INDOOR  16//25
+#define PIN_RELAY_OUTDOOR 4
 
 unsigned long lastUpdate = 0;
 const long interval = 5000;
@@ -27,8 +27,8 @@ void setup() {
   pinMode(PIN_RELAY_INDOOR, OUTPUT);
   pinMode(PIN_RELAY_OUTDOOR, OUTPUT);
 
-  digitalWrite(PIN_RELAY_INDOOR, LOW);
-  digitalWrite(PIN_RELAY_OUTDOOR, LOW);
+  digitalWrite(PIN_RELAY_INDOOR, HIGH);
+  digitalWrite(PIN_RELAY_OUTDOOR, HIGH);
 
   WiFi.begin(ssid, password);
   Serial.print("Menghubungkan ke WiFi");
@@ -116,10 +116,10 @@ void checkAndControlLampu(String deviceName, int pin) {
     Serial.print("[Lampu] " + deviceName + " -> Hasil Server: " + status);
 
     if (status == "ON") {
-      digitalWrite(pin, HIGH);
+      digitalWrite(pin, LOW);
       Serial.println(" (Relay AKTIF)");
     } else {
-      digitalWrite(pin, LOW);
+      digitalWrite(pin, HIGH);
       Serial.println(" (Relay MATI)");
     }
   } else {

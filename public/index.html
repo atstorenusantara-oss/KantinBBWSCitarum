@@ -27,6 +27,8 @@
                 data-lucide="bar-chart-2"></i></div>
         <div class="nav-item" id="navBMS" onclick="switchPage('bms')" title="Monitoring Bangunan (BMS)"><i
                 data-lucide="building-2"></i></div>
+        <div class="nav-item" id="navSystem" onclick="switchPage('system')" title="Sistem"><i data-lucide="power"
+                style="color: var(--danger);"></i></div>
         <div class="nav-item" style="margin-top: auto;" onclick="logout()" title="Logout"><i data-lucide="log-out"
                 style="color: var(--danger);"></i></div>
         <div class="nav-item"><i data-lucide="settings"></i></div>
@@ -492,7 +494,37 @@
             </div>
         </div>
 
+        <!-- SYSTEM SECTION -->
+        <div class="product-section" id="systemPage" style="display: none;">
+            <div class="header">
+                <h1>Manajemen Sistem</h1>
+            </div>
+
+            <div style="display: flex; justify-content: center; align-items: center; height: 60vh;">
+                <div class="card"
+                    style="text-align: center; max-width: 500px; padding: 50px; border: 1px solid var(--danger);">
+                    <div
+                        style="background: rgba(255, 95, 95, 0.1); width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 30px auto;">
+                        <i data-lucide="power" style="width: 50px; height: 50px; color: var(--danger);"></i>
+                    </div>
+                    <h2 style="margin-bottom: 20px;">Matikan Tablet POS</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">
+                        Gunakan tombol di bawah ini untuk mematikan perangkat tablet secara aman.
+                        Pastikan semua transaksi telah tersimpan dan kasir sudah melakukan logout/setoran.
+                    </p>
+                    <button class="btn-checkout" onclick="confirmShutdown()"
+                        style="background: var(--danger); font-size: 1.2rem; padding: 20px;">
+                        SHUTDOWN SEKARANG
+                    </button>
+                    <p style="margin-top: 20px; font-size: 0.8rem; color: var(--text-muted);">
+                        *Perangkat akan mati dalam 10 detik setelah tombol ditekan.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <aside class="cart-section" id="cartSection">
+
             <div class="cart-header">
                 <i data-lucide="shopping-cart"></i>
                 Pesanan Baru

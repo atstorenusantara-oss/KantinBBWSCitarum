@@ -1,139 +1,95 @@
-# DOKUMENTASI API - G-COFFEE POS v2.4
+# DOKUMENTASI API - G-COFFEE POS v2.5
 **Sistem Kasir Modern, Inventaris Otomatis (BOM), & Building Management System (BMS)**
 
-Dokumentasi ini berisi daftar lengkap endpoint API yang digunakan dalam aplikasi G-Coffee POS untuk integrasi frontend, backend, database, dan IoT ESP32.
+Dokumentasi ini berisi daftar lengkap endpoint API yang digunakan dalam aplikasi G-Coffee POS.
 
 ---
 
 ## 🚩 INFORMASI DASAR
 - **Base URL**: `http://[IP_SERVER]:3000/api`
 - **Format Data**: `JSON`
-- **Standard Response**:
-  ```json
-  {
-      "success": true,
-      "message": "Pesan status",
-      "data": { ... }
-  }
-  ```
+- **Default Port**: `3000` (Bisa diubah di `.env`)
 
 ---
 
-## 🛒 1. SALES (PENJUALAN & CABANG)
+## 🛒 1. SALES (PENJUALAN)
 
-### **A. Buat Transaksi Baru**
-Mencatat penjualan lunas atau pesanan pending. Terintegrasi dengan pemotongan stok otomatis (BOM) dan layanan printer.
+### **A. Buat Transaksi**
 - **Endpoint**: `POST /sales`
-- **Request Body**:
-  ```json
-  {
-      "invoice_number": "INV-123456",
-      "customer_name": "Pelanggan",
-      "items": [
-          { "product_id": "UUID", "name": "Espresso", "qty": 2, "price": 15000 }
-      ],
-      "total": 33000,
-      "payment_method": "CASH",
-      "payment_status": "PAID",
-      "should_print": true // Flag untuk cetak struk otomatis (v2.3)
-  }
-  ```
+- **Body**: `{ invoice_number, customer_name, items[], total, payment_method, payment_status, should_print }`
 
-### **B. Ambil Daftar Pesanan Pending**
-Mengambil semua transaksi dengan status `PENDING` (Piutang).
-- **Endpoint**: `GET /sales/pending`
-- **Response**: Array data pelanggan, total nominal, dan ringkasan menu.
+### **B. Pending Sales**
+- **Endpoint**: `GET /sales/pending` (List piutang)
 
-### **C. Pelunasan Pembayaran**
-Mengubah status transaksi dari `PENDING` ke `PAID`.
-- **Endpoint**: `PUT /sales/complete/:id`
-- **Request Body**: `{ "payment_method": "QRIS" }`
+### **C. Update/Complete**
+- **Endpoint**: `PUT /sales/complete/:id` (Bayar piutang)
+- **PUT /sales/update-items/:id** (Tambah menu ke bill lama)
 
-### **D. Cetak Ulang Struk (Reprint) - NEW v2.3**
-Mengirim ulang perintah cetak ke thermal printer untuk transaksi yang sudah ada.
-- **Endpoint**: `POST /sales/reprint/:id`
-- **Response**: Status keberhasilan pengiriman perintah ke printer.
+### **D. Reprint**
+- **Endpoint**: `POST /sales/reprint/:id` (Cetak ulang struk)
 
 ---
 
-## 📦 2. PRODUCTS (PRODUK & VARIAN)
+## 📦 2. PRODUCTS & STOCK
 
-### **A. Ambil Semua Produk**
-- **Endpoint**: `GET /products`
-- **Fitur**: Mengambil semua menu aktif (`is_active: true`). Digunakan untuk grid utama POS.
+### **A. Products**
+- **GET /products**: Ambil katalog menu.
+- **GET /products/:id/recipe**: Ambil detail resep (BOM).
 
-### **B. Ambil Resep Produk (BOM)**
-- **Endpoint**: `GET /products/:productId/recipe`
-- **Response**: Daftar bahan baku dan takaran yang dibutuhkan.
-
----
-
-## 🏗️ 3. STOCK (MANAJEMEN BAHAN BAKU)
-
-### **A. Ambil Semua Bahan Baku**
-- **Endpoint**: `GET /stock/materials`
-- **Kegunaan**: List bahan baku untuk dropdown menu Stock Opname.
-
-### **B. Catat Stock Opname**
-Melakukan audit stok fisik dan mencatat selisih.
-- **Endpoint**: `POST /stock/opname`
-- **Request Body**:
-  ```json
-  {
-      "raw_material_id": "UUID",
-      "physical_stock": 500,
-      "note": "Keterangan audit"
-  }
-  ```
-
-### **C. Riwayat Stock Opname**
-- **Endpoint**: `GET /stock/opname/history`
-- **Query Params**: `filter` (daily/weekly/monthly), `date` (YYYY-MM-DD).
+### **B. Stock Audit (Opname)**
+- **GET /stock/materials**: List bahan baku.
+- **POST /stock/opname**: Simpan hasil audit fisik.
+- **GET /stock/opname/history**: Riwayat audit (filter: daily/weekly/monthly).
 
 ---
 
-## 📊 4. REPORTS (LAPORAN & ANALISA)
+## 📊 3. REPORTS & AI
 
-### **A. Laporan Harian (Shift)**
-- **Endpoint**: `GET /reports/daily`
-- **Query Params**: `date` (YYYY-MM-DD), `shift` (1 atau 2).
-- **Response v2.3**: Mencakup Ringkasan Omzet, Breakdown Payment, Top Products, dan **recent_sales** (untuk daftar cetak ulang).
+### **A. Reports**
+- **GET /reports/daily**: Laporan per shift (Shift 1 = 06-17, Shift 2 = 17-03).
+- **GET /reports/weekly / monthly**: Laporan omzet berkala.
+- **GET /reports/inventory**: Sisa stok real-time.
 
-### **B. Laporan Berkala**
-- **Endpoint**: `GET /reports/weekly`
-- **Endpoint**: `GET /reports/monthly`
-
-### **C. Status Inventaris**
-- **Endpoint**: `GET /reports/inventory`
-- **Data**: Sisa stok real-time (bahan baku & packaging).
+### **B. AI Insights**
+- **GET /auth/ai-insights**: Analisa anomali stok (Penjualan vs Stok Fisik).
 
 ---
 
-## 🏛️ 5. BMS & IOT (BUILDING MANAGEMENT)
+## 🔐 4. AUTH & USERS
 
-### **A. Status Perangkat (Dashboard)**
-- **Endpoint**: `GET /bms/devices`
-- **Data**: Status semua sensor dan aktuator (Listrik, Suhu, Air, Lampu).
+### **A. Login/Logout**
+- **POST /auth/login**: Username & PIN 4 Digit.
+- **POST /auth/logout**: Mencatat absen pulang.
 
-### **B. Kontrol Perangkat (Actuator)**
-- **Endpoint**: `PUT /bms/devices/:id`
-- **Request Body**: `{ "value": "ON" atau "OFF" }`
+### **B. Attendance**
+- **GET /auth/attendance**: Log absen 7 hari terakhir.
 
-### **C. Kirim Data Telemetry (ESP32)**
-Digunakan mikrokontroler untuk mengirim data sensor secara berkala.
-- **Endpoint**: `POST /bms/telemetry`
-- **Request Body**: `{ "device_name": "Suhu Area Bar", "value": 24.5 }`
-
-### **D. Polling Status (ESP32)**
-Digunakan ESP32 untuk mengecek status lampu/relay.
-- **Endpoint**: `GET /bms/status?name=[NAMA_PERANGKAT]`
+### **C. Management**
+- **POST /auth/verify-admin**: Verifikasi PIN Manager (untuk Void/Aksi sensitif).
+- **POST /auth/void-log**: Mencatat log penghapusan item keranjang.
 
 ---
 
-## ⚠️ CATATAN TEKNIS
-1. **Integritas Data**: Setiap transaksi (PAID/PENDING) memicu `stock.service.js` untuk memotong stok resep (BOM).
-2. **Printer Thermal**: Backend membutuhkan konfigurasi `interface` printer yang benar di `printer.service.js`.
-3. **IoT ESP32**: Pastikan ESP32 berada di jaringan WiFi yang sama dengan Server agar API dapat dijangkau.
+## 🏛️ 5. BMS & IOT
+
+### **A. Devices**
+- **GET /bms/devices**: Status real-time sensor & lampu.
+- **PUT /bms/devices/:id**: Kontrol lampu/AC (ON/OFF).
+
+### **B. Telemetry (IoT Only)**
+- **POST /bms/telemetry**: ESP32 kirim data sensor.
+- **GET /bms/status?name=X**: ESP32 cek status relay.
 
 ---
-*Dokumentasi API G-Coffee POS v2.4 | Terakhir Diperbarui: 10 Februari 2026*
+
+## 💻 6. SYSTEM (MANAJEMEN PERANGKAT)
+
+### **A. Shutdown Tablet**
+Mematikan perangkat tablet secara remote/via aplikasi.
+- **Endpoint**: `POST /system/shutdown`
+- **Aksi**: Menjalankan perintah `shutdown /s /t 10` pada Windows.
+- **Keamanan**: Direkomendasikan melakukan verifikasi PIN Manager di frontend.
+
+---
+
+*Dokumentasi API G-Coffee POS v2.5 | Terakhir Diperbarui: 11 Februari 2026*

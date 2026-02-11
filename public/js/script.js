@@ -374,7 +374,8 @@ function switchPage(page) {
         'stok': document.getElementById('stokPage'),
         'report': document.getElementById('reportPage'),
         'pending': document.getElementById('pendingPage'),
-        'bms': document.getElementById('bmsPage')
+        'bms': document.getElementById('bmsPage'),
+        'system': document.getElementById('systemPage')
     };
 
     const cartSection = document.getElementById('cartSection');
@@ -383,7 +384,8 @@ function switchPage(page) {
         'stok': document.getElementById('navStok'),
         'report': document.getElementById('navReport'),
         'pending': document.getElementById('navPending'),
-        'bms': document.getElementById('navBMS')
+        'bms': document.getElementById('navBMS'),
+        'system': document.getElementById('navSystem')
     };
 
     // Hide all pages and remove active classes
@@ -1117,6 +1119,32 @@ function pressVK(k, type) {
 
     // Trigger input event manually
     vkTarget.dispatchEvent(new Event('input'));
+}
+
+// --- SYSTEM LOGIC ---
+async function confirmShutdown() {
+    // First Confirmation
+    if (!confirm('Apakah Anda yakin ingin mematikan tablet ini?')) {
+        return;
+    }
+
+    // Second Confirmation (Double check to prevent misclicks)
+    if (!confirm('PERINGATAN TERAKHIR: Semua aplikasi akan ditutup dan tablet akan mati. Lanjutkan shutdown?')) {
+        return;
+    }
+
+    try {
+        const shutdownRes = await fetch('/api/system/shutdown', { method: 'POST' });
+        const shutdownResult = await shutdownRes.json();
+
+        if (shutdownResult.success) {
+            alert(shutdownResult.message);
+        } else {
+            alert('Gagal mengirim perintah shutdown.');
+        }
+    } catch (e) {
+        alert('Gagal menghubungi server.');
+    }
 }
 
 // Init on load
