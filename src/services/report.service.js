@@ -53,13 +53,13 @@ class ReportService {
 
         // All products sold for this shift
         const allProductQuery = `
-            SELECT p.name, SUM(si.qty) as total_qty
+            SELECT p.name, si.qty as total_qty, s.payment_method, s.payment_status, s.created_at
             FROM sales_items si
             JOIN products p ON si.product_id = p.id
             JOIN sales s ON si.sales_id = s.id
-            WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID'
-            GROUP BY p.id
-            ORDER BY total_qty DESC
+            WHERE s.created_at BETWEEN ? AND ?
+            GROUP BY s.id, si.id
+            ORDER BY s.created_at DESC
         `;
         const [allProducts] = await db.query(allProductQuery, [startTime, endTime]);
 
@@ -85,14 +85,16 @@ class ReportService {
 
         // Stock Adjustments (ADJUST) for this shift
         const stockAdjustQuery = `
-            SELECT rm.name, SUM(sm.qty) as total_qty, rm.unit,
-                   (SELECT note FROM stock_movements WHERE raw_material_id = rm.id AND type = 'ADJUST' AND created_at BETWEEN ? AND ? LIMIT 1) as last_note
-            FROM stock_movements sm
-            JOIN raw_materials rm ON sm.raw_material_id = rm.id
-            WHERE sm.type = 'ADJUST' AND sm.created_at BETWEEN ? AND ?
+            SELECT rm.name, SUM(so.difference) as total_qty, rm.unit,
+                   GROUP_CONCAT(so.note SEPARATOR ' | ') as notes,
+                   MIN(so.is_resolved) as all_resolved,
+                   GROUP_CONCAT(so.id) as opname_ids
+            FROM stock_opnames so
+            JOIN raw_materials rm ON so.raw_material_id = rm.id
+            WHERE so.created_at BETWEEN ? AND ?
             GROUP BY rm.id
         `;
-        const [stockAdjust] = await db.query(stockAdjustQuery, [startTime, endTime, startTime, endTime]);
+        const [stockAdjust] = await db.query(stockAdjustQuery, [startTime, endTime]);
 
         // Pending Sales (Unpaid) for this shift
         const pendingQuery = `

@@ -12,5 +12,6 @@ router.get('/opname/history', stockController.getHistory);
 router.get('/materials', stockController.getAllMaterials);
 
 router.post('/restock', stockController.restock);
+router.put('/opname/resolve/:id', stockController.resolveAnomaly);
 
 module.exports = router;

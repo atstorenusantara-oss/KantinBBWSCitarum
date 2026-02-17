@@ -85,6 +85,17 @@ class StockController {
             res.status(500).json({ success: false, message: error.message });
         }
     }
+    async resolveAnomaly(req, res) {
+        try {
+            const { id } = req.params;
+            const { pin } = req.body;
+            const result = await stockService.resolveAnomaly(id, pin);
+            res.json({ success: true, ...result });
+        } catch (error) {
+            console.error('Error in resolveAnomaly:', error);
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
 }
 
 module.exports = new StockController();

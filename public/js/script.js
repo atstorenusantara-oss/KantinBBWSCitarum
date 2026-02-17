@@ -54,8 +54,33 @@ async function init() {
     setupCategoryListeners();
     renderProducts();
 
+    initTheme(); // Load saved theme
     initVK(); // Initialize virtual keyboard
     refreshIcons();
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('gc_theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        updateThemeIcon(true);
+    } else {
+        updateThemeIcon(false);
+    }
+}
+
+function toggleTheme() {
+    const isLight = document.body.classList.toggle('light-theme');
+    localStorage.setItem('gc_theme', isLight ? 'light' : 'dark');
+    updateThemeIcon(isLight);
+}
+
+function updateThemeIcon(isLight) {
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+        icon.setAttribute('data-lucide', isLight ? 'sun' : 'moon');
+        refreshIcons();
+    }
 }
 
 async function fetchUsers() {
@@ -530,15 +555,23 @@ async function loadReportData() {
             document.getElementById('dailyRevenue').innerText = `Rp ${Number(daily.data.summary.gross_revenue || 0).toLocaleString()}`;
             document.getElementById('dailyCount').innerText = `${daily.data.summary.total_transactions || 0} Transaksi`;
 
-            // Render Products Sold (Previously Top Products)
+            // Render Products Sold
             const topBody = document.getElementById('topProductsBody');
-            const productsSold = daily.data.all_products || daily.data.top_products || [];
-            topBody.innerHTML = productsSold.map(p => `
+            const productsSold = daily.data.all_products || [];
+            topBody.innerHTML = productsSold.map(p => {
+                const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
+                const paymentLabel = isPaid ? (p.payment_method || 'CASH') : '<span style="color: var(--danger); font-weight: 800;">[BELUM BAYAR]</span>';
+                return `
                 <tr>
-                    <td>${p.name}</td>
-                    <td style="font-weight: bold;">${p.total_qty} terjual</td>
+                    <td>
+                        <div style="font-weight: 600; color: ${isPaid ? 'var(--text)' : 'var(--danger)'}">${p.name}</div>
+                        <small style="color: var(--text-muted)">${time} | ${paymentLabel}</small>
+                    </td>
+                    <td style="font-weight: bold; text-align: right;">${p.total_qty}</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Fetch Weekly
@@ -581,15 +614,34 @@ async function loadReportData() {
         if (opnameData.success) {
             const tbody = document.getElementById('reportOpnameBody');
             tbody.innerHTML = opnameData.data.map(h => {
+                const absDiff = Math.abs(h.difference);
+                const threshold = (h.material_name || '').toLowerCase().includes('cup') ? 2 : 50;
+                const isAnomaly = absDiff > threshold;
+                const isResolved = h.is_resolved === 1;
                 const diffClass = h.difference < 0 ? 'diff-minus' : (h.difference > 0 ? 'diff-plus' : '');
                 const diffSign = h.difference > 0 ? '+' : '';
+
+                let anomalyTag = '';
+                if (isResolved) {
+                    anomalyTag = '<span class="anomaly-tag" style="background: var(--success);">RESOLVED</span>';
+                } else if (isAnomaly) {
+                    anomalyTag = '<span class="anomaly-tag">ANOMALY</span>';
+                }
+
+                const resolveBtn = (isAnomaly && !isResolved)
+                    ? `<button onclick="resolveAnomaly('${h.id}')" class="category-btn no-print" style="font-size: 0.6rem; padding: 2px 5px; margin-left: 10px; border-color: var(--accent); color: var(--accent);">Selesaikan</button>`
+                    : '';
+
                 return `
-                    <tr>
-                        <td style="font-weight: 600;">${h.material_name}</td>
+                    <tr class="${(isAnomaly && !isResolved) ? 'anomaly-row' : ''}">
+                        <td style="font-weight: 600;">${anomalyTag}${h.material_name}${resolveBtn}</td>
                         <td>${h.system_stock} ${h.unit}</td>
                         <td style="font-weight: bold;">${h.physical_stock} ${h.unit}</td>
                         <td class="${diffClass}">${diffSign}${h.difference} ${h.unit}</td>
-                        <td style="font-size: 0.85rem; color: var(--text-muted)">${h.note || '-'}</td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted)">
+                            ${isResolved ? '<b style="color:var(--success)">[OK BY ' + h.resolved_by + ']</b> ' : ''}
+                            ${h.note || '-'}
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -836,14 +888,19 @@ async function fetchOpnameHistory() {
             }
 
             tbody.innerHTML = result.data.map(h => {
+                const absDiff = Math.abs(h.difference);
+                const threshold = (h.material_name || '').toLowerCase().includes('cup') ? 2 : 50;
+                const isAnomaly = absDiff > threshold;
                 const diffClass = h.difference < 0 ? 'diff-minus' : (h.difference > 0 ? 'diff-plus' : '');
                 const diffSign = h.difference > 0 ? '+' : '';
+                const anomalyTag = isAnomaly ? '<span class="anomaly-tag">ANOMALY</span>' : '';
+
                 return `
-                    <tr>
+                    <tr class="${isAnomaly ? 'anomaly-row' : ''}">
                         <td style="font-size: 0.8rem; color: var(--text-muted)">
                             ${new Date(h.created_at).toLocaleString('id-ID')}
                         </td>
-                        <td style="font-weight: 600;">${h.material_name}</td>
+                        <td style="font-weight: 600;">${anomalyTag}${h.material_name}</td>
                         <td>${h.system_stock} ${h.unit}</td>
                         <td style="font-weight: bold;">${h.physical_stock} ${h.unit}</td>
                         <td class="${diffClass}">${diffSign}${h.difference} ${h.unit}</td>
@@ -867,6 +924,19 @@ document.getElementById('btnSubmitOpname')?.addEventListener('click', async () =
     const payload = currentOpnameMode === 'AUDIT'
         ? { raw_material_id: materialId, physical_stock: parseFloat(qty), note: note }
         : { raw_material_id: materialId, qty: parseFloat(qty), note: note };
+
+    if (currentOpnameMode === 'AUDIT') {
+        const sysStock = parseFloat(selectedMaterialForOpname.stock);
+        const physicalStock = parseFloat(qty);
+        const diff = Math.abs(physicalStock - sysStock);
+        const threshold = selectedMaterialForOpname.name.toLowerCase().includes('cup') ? 2 : 50;
+
+        if (diff > threshold) {
+            if (!confirm(`⚠️ PERINGATAN ANOMALI!\n\nSelisih stok fisik (${physicalStock}) dengan sistem (${sysStock}) mencapai ${diff.toFixed(1)} ${selectedMaterialForOpname.unit}.\n\nApakah Anda yakin data hitung manual sudah benar?`)) {
+                return;
+            }
+        }
+    }
 
     try {
         const response = await fetch(endpoint, {
@@ -910,14 +980,24 @@ async function openPrintPreview() {
         document.getElementById('printCash').innerText = `Rp ${Number(cash).toLocaleString()}`;
         document.getElementById('printQRIS').innerText = `Rp ${Number(qris).toLocaleString()}`;
 
-        // All Products Sold
+        // All Products Sold (with Time & Payment Method)
         document.getElementById('printProductsUsed').innerHTML = data.all_products.length > 0
-            ? data.all_products.map(p => `
-                <div style="display:flex; justify-content:space-between;">
-                    <span>- ${p.name}</span>
+            ? data.all_products.map(p => {
+                const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
+                const paymentLabel = isPaid ? (p.payment_method || 'CASH') : 'BELUM BAYAR';
+                const textStyle = isPaid ? 'color: #333;' : 'color: #d32f2f; font-weight: bold;';
+
+                return `
+                <div style="display:flex; justify-content:space-between; font-size: 0.85rem; border-bottom: 1px dotted #eee; padding: 4px 0;">
+                    <div style="flex: 1;">
+                        <span style="display:block; font-weight: 600; ${isPaid ? '' : 'color: #d32f2f;'}">- ${p.name}</span>
+                        <small style="${textStyle}">${time} | ${paymentLabel}</small>
+                    </div>
                     <span style="font-weight:bold;">${p.total_qty}</span>
                 </div>
-            `).join('')
+            `;
+            }).join('')
             : '<p style="font-style:italic;">Belum ada penjualan</p>';
 
         // Stock Added
@@ -944,12 +1024,39 @@ async function openPrintPreview() {
         const adjustEl = document.getElementById('printStockAdjust');
         if (adjustEl) {
             adjustEl.innerHTML = data.stock_adjust && data.stock_adjust.length > 0
-                ? data.stock_adjust.map(s => `
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>~ ${s.name}</span>
-                        <span>${Number(s.total_qty).toLocaleString()} ${s.unit}</span>
+                ? data.stock_adjust.map(s => {
+                    const absDiff = Math.abs(Number(s.total_qty));
+                    const threshold = (s.name || '').toLowerCase().includes('cup') ? 2 : 50;
+                    const manualAnomaly = (s.notes || '').includes('[ANOMALY');
+                    const isAnomaly = absDiff > threshold || manualAnomaly;
+                    const isResolved = s.all_resolved === 1;
+                    const qty = Number(s.total_qty);
+                    const sign = qty > 0 ? '+' : '';
+
+                    let color = '#555';
+                    let bg = '';
+                    let statusLabel = '';
+
+                    if (isResolved) {
+                        color = '#2e7d32'; // Success color
+                        statusLabel = '<b style="font-size:0.6rem; color:#2e7d32;">[RESOLVED]</b> ';
+                    } else if (isAnomaly) {
+                        color = '#d32f2f';
+                        bg = 'background: #ffebee; border-left: 3px solid #d32f2f; padding-left: 5px;';
+                        statusLabel = '<b style="color:#d32f2f">ANOMALY:</b> ';
+                    }
+
+                    const resolveBtn = (isAnomaly && !isResolved)
+                        ? `<button onclick="resolveAnomalyGroup('${s.opname_ids}')" class="no-print" style="font-size: 0.6rem; margin-left:10px; cursor:pointer; background:none; border:1px solid #d32f2f; color:#d32f2f; border-radius:3px; padding: 2px 5px;">Bereskan</button>`
+                        : '';
+
+                    return `
+                    <div style="display:flex; justify-content:space-between; color: ${color}; ${bg} margin-bottom: 2px;">
+                        <span style="font-size: 0.8rem;">~ ${statusLabel}${s.name}${resolveBtn}</span>
+                        <span style="font-weight:bold; font-size: 0.8rem;">${sign}${qty.toLocaleString()} ${s.unit}</span>
                     </div>
-                `).join('')
+                `;
+                }).join('')
                 : '<p style="font-style:italic; font-size: 0.8rem;">Tidak ada penyesuaian</p>';
         }
 
@@ -1319,6 +1426,60 @@ async function confirmShutdown() {
     }
 }
 
+async function resolveAnomaly(id) {
+    const pin = prompt("Masukkan PIN Owner/Admin untuk verifikasi:");
+    if (!pin) return;
+
+    try {
+        const res = await fetch(`/api/stock/opname/resolve/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin })
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert(`Berhasil diselesaikan oleh ${result.resolved_by}`);
+            loadReportData();
+            fetchOpnameHistory();
+        } else {
+            alert(result.message);
+        }
+    } catch (error) {
+        alert("Gagal menghubungi server");
+    }
+}
+
+async function resolveAnomalyGroup(idsStr) {
+    const ids = idsStr.split(',');
+    const pin = prompt("Konfirmasi penyelesaian SEMUA anomali di item ini.\nMasukkan PIN Owner:");
+    if (!pin) return;
+
+    try {
+        let successCount = 0;
+        let lastUser = '';
+        for (const id of ids) {
+            const res = await fetch(`/api/stock/opname/resolve/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin })
+            });
+            const result = await res.json();
+            if (result.success) {
+                successCount++;
+                lastUser = result.resolved_by;
+            }
+        }
+        if (successCount > 0) {
+            alert(`Berhasil menyelesaikan ${successCount} data anomali oleh ${lastUser}`);
+            loadReportData();
+            fetchOpnameHistory();
+        }
+    } catch (error) {
+        alert("Terjadi kesalahan saat proses massal");
+    }
+}
+
 // Init on load
 init();
 switchPage('kasir'); // Default page
+

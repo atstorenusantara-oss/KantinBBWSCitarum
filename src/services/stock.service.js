@@ -55,7 +55,7 @@ class StockService {
         try {
             // 1. Get current system stock
             const [materials] = await connection.query(
-                'SELECT stock FROM raw_materials WHERE id = ? FOR UPDATE',
+                'SELECT stock, name FROM raw_materials WHERE id = ? FOR UPDATE',
                 [rawMaterialId]
             );
 
@@ -67,11 +67,21 @@ class StockService {
             const difference = physicalStock - systemStock;
             const opnameId = uuidv4();
 
+            // Auto-tag anomaly: 3 units for cups, 50 units for others
+            let finalNote = note;
+            const absDiff = Math.abs(difference);
+            const materialName = materials[0].name.toLowerCase();
+            const threshold = materialName.includes('cup') ? 2 : 50;
+
+            if (absDiff > threshold) {
+                finalNote = `[ANOMALY ${absDiff.toFixed(1)}] ${note}`;
+            }
+
             // 2. Save Opname Record
             await connection.query(
                 `INSERT INTO stock_opnames (id, raw_material_id, system_stock, physical_stock, difference, note)
                  VALUES (?, ?, ?, ?, ?, ?)`,
-                [opnameId, rawMaterialId, systemStock, physicalStock, difference, note]
+                [opnameId, rawMaterialId, systemStock, physicalStock, difference, finalNote]
             );
 
             // 3. Update Raw Material Stock to physical stock
@@ -174,6 +184,20 @@ class StockService {
         } finally {
             connection.release();
         }
+    }
+    async resolveAnomaly(opnameId, pin) {
+        const [users] = await db.query('SELECT username FROM users WHERE role = "ADMIN" AND pin = ?', [pin]);
+        if (users.length === 0) {
+            throw new Error('PIN Admin tidak valid atau Anda bukan Owner/Admin!');
+        }
+
+        const username = users[0].username;
+        await db.query(
+            'UPDATE stock_opnames SET is_resolved = 1, resolved_by = ? WHERE id = ?',
+            [username, opnameId]
+        );
+
+        return { success: true, resolved_by: username };
     }
 }
 

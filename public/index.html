@@ -34,6 +34,9 @@
             id="sidebarUser">
             -
         </div>
+        <div class="nav-item" id="themeToggle" onclick="toggleTheme()" title="Ganti Tema">
+            <i data-lucide="moon" id="themeIcon"></i>
+        </div>
         <div class="nav-item" onclick="logout()" title="Logout"><i data-lucide="log-out"
                 style="color: var(--danger);"></i></div>
         <div class="nav-item"><i data-lucide="settings"></i></div>
@@ -71,17 +74,25 @@
                 <h1>Manajemen Stok (Opname)</h1>
             </div>
 
-            <div class="opname-container" style="display: block;">
-                <div style="margin-bottom: 25px;">
-                    <h3 style="margin-bottom: 15px; color: var(--accent);">Pilih Bahan Baku untuk Opname:</h3>
+            <div class="opname-container">
+                <div>
+                    <h3
+                        style="margin-bottom: 20px; color: var(--accent); display: flex; align-items: center; gap: 12px;">
+                        <div class="header-icon"><i data-lucide="package" style="width: 20px;"></i></div>
+                        Pilih Bahan Baku untuk Opname
+                    </h3>
                     <div id="materialGrid"
                         style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;">
                         <!-- Material cards will be loaded here -->
                     </div>
                 </div>
 
-                <div class="card opname-history" style="margin-top: 30px;">
-                    <h3>Riwayat Opname</h3>
+                <div class="card opname-history">
+                    <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                        <div class="header-icon" style="color: var(--text);"><i data-lucide="history"
+                                style="width: 20px;"></i></div>
+                        Riwayat Opname
+                    </h3>
                     <div class="table-container">
                         <table class="data-table">
                             <thead>

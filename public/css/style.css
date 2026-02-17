@@ -14,6 +14,15 @@
     --glass-border: rgba(255, 255, 255, 0.1);
 }
 
+body.light-theme {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --glass: rgba(0, 0, 0, 0.05);
+    --glass-border: rgba(0, 0, 0, 0.1);
+}
+
 @keyframes spin {
     from {
         transform: rotate(0deg);
@@ -48,7 +57,7 @@
 /* Stock Page Custom Styles */
 .opname-container {
     display: grid;
-    grid-template-columns: 350px 1fr;
+    grid-template-columns: 1fr 450px;
     gap: 30px;
     align-items: start;
     margin-top: 20px;
@@ -59,6 +68,18 @@
     border-radius: 20px;
     padding: 25px;
     border: 1px solid var(--glass-border);
+}
+
+.header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--accent);
 }
 
 .form-group {
@@ -238,7 +259,7 @@ main {
     border-radius: 12px;
     padding: 12px 20px;
     width: 300px;
-    color: white;
+    color: var(--text);
     outline: none;
 }
 
@@ -438,7 +459,7 @@ main {
     }
 
     .opname-container {
-        grid-template-columns: 300px 1fr;
+        grid-template-columns: 1fr 350px;
         gap: 20px;
     }
 }
@@ -713,4 +734,31 @@ main {
         max-height: none;
         overflow: visible;
     }
+}
+
+/* Difference colors & Anomaly Highlight */
+.diff-minus {
+    color: #ff5f5f !important;
+    font-weight: bold;
+}
+
+.diff-plus {
+    color: #67ff9e !important;
+    font-weight: bold;
+}
+
+.anomaly-row {
+    background: rgba(255, 95, 95, 0.1) !important;
+}
+
+.anomaly-tag {
+    background: #ff5f5f;
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 800;
+    margin-right: 5px;
+    display: inline-block;
+    vertical-align: middle;
 }

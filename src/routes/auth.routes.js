@@ -125,7 +125,7 @@ router.get('/ai-insights', async (req, res) => {
                 JOIN products p ON si.product_id = p.id
                 JOIN product_recipes pr ON p.id = pr.product_id
                 JOIN sales s ON si.sales_id = s.id
-                WHERE pr.material_id = ? AND s.payment_status = 'PAID'
+                WHERE pr.material_id = ?
                 AND s.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
             `, [mat.id]);
 
