@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
+const { v4: uuidv4 } = require('uuid');
 
 async function seedRecipes() {
     const db = await mysql.createConnection({
@@ -10,46 +11,98 @@ async function seedRecipes() {
     });
 
     try {
-        // 1. Get products and materials
+        console.log('Fetching products and materials...');
         const [products] = await db.query('SELECT id, name FROM products');
         const [materials] = await db.query('SELECT id, name FROM raw_materials');
 
-        const getP = (name) => products.find(p => p.name.includes(name))?.id;
-        const getM = (name) => materials.find(m => m.name.includes(name))?.id;
+        const getP = (name) => products.find(p => p.name.toLowerCase() === name.toLowerCase())?.id;
+        const getP_like = (name) => products.find(p => p.name.toLowerCase().includes(name.toLowerCase()))?.id;
+        const getM = (name) => materials.find(m => m.name.toLowerCase().includes(name.toLowerCase()))?.id;
 
-        // Clear existing recipes
+        // Clear existing recipes in product_recipes (AI Table)
         await db.query('DELETE FROM product_recipes');
 
         const recipes = [];
-        const { v4: uuidv4 } = require('uuid');
 
-        // Example: Kopi Susu / Latte needs Coffee Beans and Milk
-        const latteId = getP('Latte') || getP('Kopi Susu');
+        // Definition of standard materials
         const beanId = getM('Biji Kopi');
-        const milkId = getM('Susu Fresh');
-        const cupId = getM('Cup');
+        const uhtId = getM('Susu UHT');
+        const skmId = getM('Susu Kental Manis');
+        const creamerId = getM('Creamer Bubuk');
+        const cupPlastikId = getM('Cup Plastik');
+        const cupKertasId = getM('Cup Kertas');
 
-        if (latteId) {
-            if (beanId) recipes.push([uuidv4(), latteId, beanId, 18.00]); // 18g beans
-            if (milkId) recipes.push([uuidv4(), latteId, milkId, 150.00]); // 150ml milk
-            if (cupId) recipes.push([uuidv4(), latteId, cupId, 1.00]); // 1 cup
+        // Logic to add recipe items
+        const addRecipe = (productId, materialId, qty) => {
+            if (productId && materialId) {
+                recipes.push([uuidv4(), productId, materialId, qty]);
+            }
+        };
+
+        // 1. Hazelnut Latte (The missing one)
+        const hazelnutProducts = products.filter(p => p.name.includes('Hazelnut Latte'));
+        const hazelnutSyrupId = getM('Sirup Hazelnut');
+
+        for (const p of hazelnutProducts) {
+            addRecipe(p.id, beanId, 15);
+            addRecipe(p.id, uhtId, 100);
+            addRecipe(p.id, skmId, 25);
+            addRecipe(p.id, creamerId, 12);
+            addRecipe(p.id, hazelnutSyrupId, 20);
+            addRecipe(p.id, p.name.includes('(Panas)') ? cupKertasId : cupPlastikId, 1);
         }
 
-        // Example: Espresso
-        const espressoId = getP('Espresso');
-        if (espressoId) {
-            if (beanId) recipes.push([uuidv4(), espressoId, beanId, 18.00]);
+        // 2. Caramel Latte
+        const caramelProducts = products.filter(p => p.name.includes('Caramel Latte'));
+        const caramelSyrupId = getM('Syrup Caramel');
+        for (const p of caramelProducts) {
+            addRecipe(p.id, beanId, 15);
+            addRecipe(p.id, uhtId, 100);
+            addRecipe(p.id, skmId, 25);
+            addRecipe(p.id, creamerId, 12);
+            addRecipe(p.id, caramelSyrupId, 20);
+            addRecipe(p.id, p.name.includes('(Panas)') ? cupKertasId : cupPlastikId, 1);
+        }
+
+        // 3. Vanilla Latte
+        const vanillaProducts = products.filter(p => p.name.includes('Vanilla Latte'));
+        const vanillaSyrupId = getM('Vanilla Powder'); // Note: material name is Vanilla Powder
+        for (const p of vanillaProducts) {
+            addRecipe(p.id, beanId, 15);
+            addRecipe(p.id, uhtId, 100);
+            addRecipe(p.id, skmId, 25);
+            addRecipe(p.id, creamerId, 12);
+            addRecipe(p.id, vanillaSyrupId, 20);
+            addRecipe(p.id, p.name.includes('(Panas)') ? cupKertasId : cupPlastikId, 1);
+        }
+
+        // 4. Espresso
+        const espressoProducts = products.filter(p => p.name.includes('Espresso'));
+        for (const p of espressoProducts) {
+            addRecipe(p.id, beanId, 18);
+        }
+
+        // 5. Kopi Susu
+        const kopiSusuProducts = products.filter(p => p.name.includes('Kopi Susu'));
+        const gulaArenId = getM('Gula Aren Cair');
+        for (const p of kopiSusuProducts) {
+            addRecipe(p.id, beanId, 15);
+            addRecipe(p.id, uhtId, 100);
+            addRecipe(p.id, skmId, 25);
+            addRecipe(p.id, creamerId, 12);
+            addRecipe(p.id, gulaArenId, 20);
+            addRecipe(p.id, p.name.includes('(Panas)') ? cupKertasId : cupPlastikId, 1);
         }
 
         if (recipes.length > 0) {
             await db.query('INSERT INTO product_recipes (id, product_id, material_id, quantity) VALUES ?', [recipes]);
-            console.log(`Seeded ${recipes.length} recipe ingredients.`);
+            console.log(`✅ Successfully seeded ${recipes.length} recipe ingredients for AI analysis.`);
         } else {
-            console.log('No matching products/materials found to seed recipes.');
+            console.log('⚠️ No matching products/materials found to seed recipes.');
         }
 
     } catch (error) {
-        console.error('Seeding error:', error);
+        console.error('❌ Seeding error:', error);
     } finally {
         await db.end();
     }
