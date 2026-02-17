@@ -3,6 +3,16 @@ const router = express.Router();
 const db = require('../database/connection');
 const { v4: uuidv4 } = require('uuid');
 
+// Auth: Get Users (for login dropdown)
+router.get('/users', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT username, role FROM users');
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Auth: Login
 router.post('/login', async (req, res) => {
     try {

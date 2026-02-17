@@ -4,6 +4,7 @@ let currentCategory = 'Semua';
 let currentUser = null;
 let currentAttendanceId = null;
 let pendingVoid = null;
+let activePage = 'kasir';
 
 // Mock data for initial visual (if DB is empty)
 const mockProducts = [
@@ -41,15 +42,36 @@ async function init() {
         document.getElementById('loginModal').style.display = 'flex';
     } else {
         document.getElementById('loginModal').style.display = 'none';
+        const staffName = currentUser.username.toUpperCase();
+        document.getElementById('sidebarUser').innerText = staffName;
+        document.getElementById('headerStaffKasir').innerText = staffName;
+        document.getElementById('headerStaffPending').innerText = staffName;
         console.log(`Session restored: ${currentUser.username}`);
     }
 
     await fetchProducts();
+    await fetchUsers(); // Fetch users from DB
     setupCategoryListeners();
     renderProducts();
 
     initVK(); // Initialize virtual keyboard
     refreshIcons();
+}
+
+async function fetchUsers() {
+    try {
+        const response = await fetch('/api/auth/users');
+        const result = await response.json();
+        const select = document.getElementById('loginUser');
+
+        if (result.success && select) {
+            select.innerHTML = result.data.map(u =>
+                `<option value="${u.username}">${u.username} (${u.role === 'ADMIN' ? 'Owner' : 'Kasir'})</option>`
+            ).join('');
+        }
+    } catch (error) {
+        console.error('Fetch users error:', error);
+    }
 }
 
 async function fetchProducts() {
@@ -64,7 +86,9 @@ async function fetchProducts() {
 }
 
 function setupCategoryListeners() {
-    const buttons = document.querySelectorAll('.category-btn');
+    const container = document.querySelector('.categories');
+    if (!container) return;
+    const buttons = container.querySelectorAll('.category-btn');
     buttons.forEach(btn => {
         btn.addEventListener('click', () => {
             buttons.forEach(b => b.classList.remove('active'));
@@ -237,6 +261,10 @@ function attemptLogin() {
 
                 document.getElementById('loginModal').style.display = 'none';
                 document.getElementById('loginPin').value = '';
+                const staffName = currentUser.username.toUpperCase();
+                document.getElementById('sidebarUser').innerText = staffName;
+                document.getElementById('headerStaffKasir').innerText = staffName;
+                document.getElementById('headerStaffPending').innerText = staffName;
                 alert(`Absen Masuk Berhasil! Selamat bekerja, ${currentUser.username}!`);
             } else {
                 alert(data.message);
@@ -310,9 +338,9 @@ function togglePaymentSelection() {
 document.getElementById('btnCheckout').addEventListener('click', async () => {
     if (cart.length === 0) return alert('Keranjang kosong!');
 
-    let customerName = document.getElementById('customerName').value;
+    let customerName = document.getElementById('customerName').value.trim();
     if (!customerName) {
-        customerName = `Kasir: ${currentUser.username}`;
+        customerName = "PELANGGAN UMUM";
     }
 
     const paymentStatus = document.getElementById('paymentStatus').value;
@@ -369,6 +397,7 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
 
 // --- Navigation Logic ---
 function switchPage(page) {
+    activePage = page;
     const pages = {
         'kasir': document.getElementById('kasirPage'),
         'stok': document.getElementById('stokPage'),
@@ -501,9 +530,10 @@ async function loadReportData() {
             document.getElementById('dailyRevenue').innerText = `Rp ${Number(daily.data.summary.gross_revenue || 0).toLocaleString()}`;
             document.getElementById('dailyCount').innerText = `${daily.data.summary.total_transactions || 0} Transaksi`;
 
-            // Render Top Products
+            // Render Products Sold (Previously Top Products)
             const topBody = document.getElementById('topProductsBody');
-            topBody.innerHTML = daily.data.top_products.map(p => `
+            const productsSold = daily.data.all_products || daily.data.top_products || [];
+            topBody.innerHTML = productsSold.map(p => `
                 <tr>
                     <td>${p.name}</td>
                     <td style="font-weight: bold;">${p.total_qty} terjual</td>
@@ -585,9 +615,14 @@ async function loadReportData() {
                         <br><small style="color: var(--text-muted)">${s.payment_method || '-'}</small>
                     </td>
                     <td>
-                        <button class="category-btn" onclick="reprintSale('${s.id}')" style="padding: 5px 10px; font-size: 0.8rem; background: var(--glass);">
-                            <i data-lucide="printer" style="width: 14px; position: relative; top: 2px;"></i> Cetak
-                        </button>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="category-btn" onclick="reprintSale('${s.id}')" title="Print Struk" style="padding: 5px 8px; font-size: 0.8rem; background: var(--glass);">
+                                <i data-lucide="printer" style="width: 14px;"></i>
+                            </button>
+                            <button class="category-btn" onclick="previewReceipt('${s.id}')" title="Preview Struk" style="padding: 5px 8px; font-size: 0.8rem; background: var(--glass); color: var(--accent);">
+                                <i data-lucide="eye" style="width: 14px;"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -661,12 +696,12 @@ async function loadReportData() {
                 }
             }
         } catch (aiErr) {
-            console.warn('AI Insights offline:', aiErr);
+            console.warn('AI Insights offline or Container missing:', aiErr);
             const aiList = document.getElementById('aiInsightList');
             if (aiList) {
                 aiList.innerHTML = `<div style="color: var(--text-muted); font-style: italic;">
                     <i data-lucide="brain-circuit" style="width:14px; vertical-align:middle; opacity: 0.5;"></i> 
-                    Server sedang offline. Analisa AI tidak tersedia saat ini.
+                    Server sedang offline atau elemen tidak ditemukan.
                 </div>`;
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }
@@ -691,26 +726,101 @@ async function reprintSale(id) {
     }
 }
 
+async function previewReceipt(id) {
+    try {
+        const res = await fetch(`/api/reports/sale/${id}`);
+        const result = await res.json();
+
+        if (result.success) {
+            const sale = result.data;
+            document.getElementById('receiptInvoice').innerText = sale.invoice_number;
+            document.getElementById('receiptDate').innerText = new Date(sale.created_at).toLocaleString('id-ID');
+            document.getElementById('receiptStaff').innerText = sale.staff_name || '-';
+            document.getElementById('receiptCustomer').innerText = sale.customer_name || '-';
+            document.getElementById('receiptTotalText').innerText = `Rp ${Number(sale.total).toLocaleString()}`;
+            document.getElementById('receiptMethodText').innerText = sale.payment_method;
+
+            const itemsHtml = sale.items.map(item => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <div style="flex:1;">
+                        <div>${item.name}</div>
+                        <div style="font-size:0.75rem; color:#666;">${item.qty} x ${Number(item.price).toLocaleString()}</div>
+                    </div>
+                    <div style="font-weight:bold;">Rp ${(item.qty * item.price).toLocaleString()}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('receiptItems').innerHTML = itemsHtml;
+            document.getElementById('receiptModal').style.display = 'block';
+        } else {
+            alert('Gagal mengambil detail transaksi');
+        }
+    } catch (e) {
+        alert('Kesalahan koneksi saat mengambil detail struk');
+    }
+}
+
 // --- Stock Opname Logic ---
 async function loadStokData() {
     await fetchMaterials();
     await fetchOpnameHistory();
 }
 
+let selectedMaterialForOpname = null;
+
 async function fetchMaterials() {
     try {
         const response = await fetch('/api/stock/materials');
         const result = await response.json();
-        const select = document.getElementById('opnameMaterial');
+        const grid = document.getElementById('materialGrid');
 
         if (result.success) {
-            select.innerHTML = result.data.map(m =>
-                `<option value="${m.id}">${m.name} | Unit: ${m.unit} | Stok Sistem: ${Number(m.stock).toLocaleString()}</option>`
-            ).join('');
+            grid.innerHTML = result.data.map(m => `
+                <div class="product-card" onclick="openOpnameModal(${JSON.stringify(m).replace(/"/g, '&quot;')})" style="max-width: none;">
+                    <img src="${m.image_url || 'https://via.placeholder.com/150'}" class="product-img" style="height: 100px;">
+                    <div class="product-name" style="font-size: 0.85rem;">${m.name}</div>
+                    <div style="font-size: 0.75rem; color: var(--accent); font-weight: bold;">
+                        ${Number(m.stock).toLocaleString()} ${m.unit}
+                    </div>
+                </div>
+            `).join('');
         }
     } catch (error) {
         console.error('Fetch materials error:', error);
     }
+}
+
+let currentOpnameMode = 'AUDIT';
+
+function setOpnameMode(mode) {
+    currentOpnameMode = mode;
+    const btnOpname = document.getElementById('modeOpname');
+    const btnRestock = document.getElementById('modeRestock');
+    const qtyLabel = document.getElementById('qtyLabel');
+    const sysStockEl = document.getElementById('opnameSysStock');
+
+    if (mode === 'AUDIT') {
+        btnOpname.classList.add('active');
+        btnRestock.classList.remove('active');
+        qtyLabel.innerText = 'Stok FISIK (Hasil Hitung Manual)';
+        sysStockEl.style.display = 'block';
+    } else {
+        btnRestock.classList.add('active');
+        btnOpname.classList.remove('active');
+        qtyLabel.innerText = 'JUMLAH STOK MASUK (Baru)';
+        sysStockEl.style.display = 'none';
+    }
+}
+
+function openOpnameModal(material) {
+    selectedMaterialForOpname = material;
+    document.getElementById('opnameModalTitle').innerText = material.name;
+    document.getElementById('opnameModalUnit').innerText = material.unit;
+    document.getElementById('opnameSysStock').innerText = `Stok Sistem saat ini: ${Number(material.stock).toLocaleString()} ${material.unit}`;
+    setOpnameMode('AUDIT'); // Reset to Audit by default
+    document.getElementById('opnameQty').value = '';
+    document.getElementById('opnameNote').value = '';
+    document.getElementById('opnameModal').style.display = 'flex';
 }
 
 async function fetchOpnameHistory() {
@@ -747,34 +857,36 @@ async function fetchOpnameHistory() {
 }
 
 document.getElementById('btnSubmitOpname')?.addEventListener('click', async () => {
-    const materialId = document.getElementById('opnameMaterial').value;
-    const physicalStock = document.getElementById('opnameQty').value;
+    const materialId = selectedMaterialForOpname ? selectedMaterialForOpname.id : null;
+    const qty = document.getElementById('opnameQty').value;
     const note = document.getElementById('opnameNote').value;
 
-    if (!materialId || !physicalStock) return alert('Pilih bahan dan isi stok fisik!');
+    if (!materialId || qty === '') return alert('Isi jumlah stok!');
+
+    const endpoint = currentOpnameMode === 'AUDIT' ? '/api/stock/opname' : '/api/stock/restock';
+    const payload = currentOpnameMode === 'AUDIT'
+        ? { raw_material_id: materialId, physical_stock: parseFloat(qty), note: note }
+        : { raw_material_id: materialId, qty: parseFloat(qty), note: note };
 
     try {
-        const response = await fetch('/api/stock/opname', {
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                raw_material_id: materialId,
-                physical_stock: parseFloat(physicalStock),
-                note: note
-            })
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
         if (result.success) {
-            alert('Stock Opname berhasil disimpan!');
-            document.getElementById('opnameQty').value = '';
-            document.getElementById('opnameNote').value = '';
+            alert(currentOpnameMode === 'AUDIT' ? 'Stock Opname berhasil disimpan!' : 'Stok Masuk berhasil dicatat!');
+            document.getElementById('opnameModal').style.display = 'none';
             loadStokData(); // Refresh data
+            if (activePage === 'report') loadReportData(); // Refresh report if on report page
         } else {
             alert('Gagal: ' + result.message);
         }
     } catch (error) {
-        alert('Terjadi kesalahan koneksi.');
+        console.error('Opname/Restock error:', error);
+        alert('Gagal memproses data: ' + error.message);
     }
 });
 
@@ -798,6 +910,63 @@ async function openPrintPreview() {
         document.getElementById('printCash').innerText = `Rp ${Number(cash).toLocaleString()}`;
         document.getElementById('printQRIS').innerText = `Rp ${Number(qris).toLocaleString()}`;
 
+        // All Products Sold
+        document.getElementById('printProductsUsed').innerHTML = data.all_products.length > 0
+            ? data.all_products.map(p => `
+                <div style="display:flex; justify-content:space-between;">
+                    <span>- ${p.name}</span>
+                    <span style="font-weight:bold;">${p.total_qty}</span>
+                </div>
+            `).join('')
+            : '<p style="font-style:italic;">Belum ada penjualan</p>';
+
+        // Stock Added
+        document.getElementById('printStockIn').innerHTML = data.stock_added.length > 0
+            ? data.stock_added.map(s => `
+                <div style="display:flex; justify-content:space-between;">
+                    <span>+ ${s.name}</span>
+                    <span>${Number(s.total_qty).toLocaleString()} ${s.unit}</span>
+                </div>
+            `).join('')
+            : '<p style="font-style:italic; font-size: 0.8rem;">Tidak ada stok masuk</p>';
+
+        // Stock Used
+        document.getElementById('printStockOut').innerHTML = data.stock_used.length > 0
+            ? data.stock_used.map(s => `
+                <div style="display:flex; justify-content:space-between;">
+                    <span>- ${s.name}</span>
+                    <span>${Number(s.total_qty).toLocaleString()} ${s.unit}</span>
+                </div>
+            `).join('')
+            : '<p style="font-style:italic; font-size: 0.8rem;">Tidak ada pemakaian bahan</p>';
+
+        // Stock Adjustments
+        const adjustEl = document.getElementById('printStockAdjust');
+        if (adjustEl) {
+            adjustEl.innerHTML = data.stock_adjust && data.stock_adjust.length > 0
+                ? data.stock_adjust.map(s => `
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>~ ${s.name}</span>
+                        <span>${Number(s.total_qty).toLocaleString()} ${s.unit}</span>
+                    </div>
+                `).join('')
+                : '<p style="font-style:italic; font-size: 0.8rem;">Tidak ada penyesuaian</p>';
+        }
+
+        // Final Inventory Status
+        const invEl = document.getElementById('printInventory');
+        if (invEl) {
+            invEl.innerHTML = data.inventory.map(m => {
+                const lowStock = m.stock <= 100;
+                return `
+                    <div style="display:flex; justify-content:space-between; ${lowStock ? 'color:red; font-weight:bold;' : ''}">
+                        <span>${m.name}</span>
+                        <span>${Number(m.stock).toLocaleString()} ${m.unit}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
         // Handle Pending Sales in Print Preview
         const pendingArea = document.getElementById('printPendingArea');
         const pendingList = document.getElementById('printPendingSales');
@@ -810,7 +979,7 @@ async function openPrintPreview() {
                 </div>
             `).join('') + `
                 <div style="text-align:right; border-top:1px dashed #000; margin-top:5px; padding-top:5px;">
-                    <span style="font-weight:bold; color:#d32f2f;">Total Piutang: Rp ${data.pending_sales.reduce((sum, s) => sum + Number(s.total), 0).toLocaleString()}</span>
+                    <span style="font-weight:bold; color:#d32f2f; font-size: 0.85rem;">Total Piutang: Rp ${data.pending_sales.reduce((sum, s) => sum + Number(s.total), 0).toLocaleString()}</span>
                 </div>
             `;
         } else {
@@ -820,39 +989,20 @@ async function openPrintPreview() {
 
     const shiftLabel = reportShift == 1 ? "PAGI (06:00 - 17:00)" : "MALAM (17:00 - 03:00)";
     document.getElementById('printTimestamp').innerText = `Shift: ${shiftLabel}\nTanggal: ${reportDate} | Jam: ${new Date().toLocaleTimeString('id-ID')}`;
+    document.getElementById('printStaffName').innerText = currentUser ? currentUser.username : '-';
 
-    // Fill Top Products (Top 3)
-    const topRows = Array.from(document.querySelectorAll('#topProductsBody tr')).slice(0, 3);
-    document.getElementById('printTopProducts').innerHTML = topRows.length > 0
-        ? topRows.map(row => {
-            const cells = row.querySelectorAll('td');
-            return `<div style="display:flex; justify-content:space-between;"><span>${cells[0].innerText}</span> <span>${cells[1].innerText}</span></div>`;
-        }).join('')
-        : '<p style="font-style:italic;">Belum ada penjualan</p>';
-
-    // Fill Inventory (Critical + Packaging)
-    const inventoryRows = Array.from(document.querySelectorAll('#inventoryStatusBody tr'));
-    const packagingKeywords = ['cup', 'sedotan', 'plastik', 'kertas'];
-
-    const relevantItems = inventoryRows.filter(row => {
-        const name = row.querySelectorAll('td')[0].innerText.toLowerCase();
-        const stock = parseFloat(row.querySelectorAll('td')[1].innerText);
-        const isPackaging = packagingKeywords.some(keyword => name.includes(keyword));
-        return stock < 200 || isPackaging;
-    });
-
-    document.getElementById('printInventory').innerHTML = relevantItems.length > 0
-        ? relevantItems.map(row => {
-            const cells = row.querySelectorAll('td');
-            const name = cells[0].innerText;
-            const stockValue = parseFloat(cells[1].innerText);
-            const color = stockValue < 100 ? 'red' : 'black';
-            const weight = name.toLowerCase().includes('cup') ? 'bold' : 'normal';
-            return `<div style="display:flex; justify-content:space-between; font-weight:${weight};"><span>${name}</span> <span style="color:${color}">${cells[1].innerText} ${cells[2].innerText}</span></div>`;
-        }).join('')
-        : '<p style="font-style:italic;">Stok aman</p>';
+    // Reset report layout
+    document.getElementById('printArea').classList.remove('two-column');
+    document.getElementById('colBtnText').innerText = "2 Kolom";
 
     document.getElementById('printModal').style.display = 'block';
+}
+
+function toggleReportColumns() {
+    const printArea = document.getElementById('printArea');
+    const btnText = document.getElementById('colBtnText');
+    const isTwoCol = printArea.classList.toggle('two-column');
+    btnText.innerText = isTwoCol ? "1 Kolom" : "2 Kolom";
 }
 
 function closePrintPreview() {
@@ -880,7 +1030,7 @@ function renderPendingTable(data) {
     tbody.innerHTML = data.map(s => `
         <tr>
             <td>${new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
-            <td style="font-weight: 600;">${s.customer_name}</td>
+            <td style="font-weight: 600;">${s.customer_name || 'PELANGGAN UMUM'}</td>
             <td style="font-size: 0.9rem; color: var(--text-muted); max-width: 250px;">${s.items_summary || '-'}</td>
             <td>
                 <div style="color: var(--danger); font-size: 0.75rem; font-weight: 800; margin-bottom: 2px;">🔴 BELUM BAYAR</div>
@@ -888,14 +1038,36 @@ function renderPendingTable(data) {
             </td>
             <td>
                 <div style="display: flex; gap: 8px;">
-                    <button class="category-btn" onclick="payPending('${s.id}', 'CASH')" style="background: #27ae60; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">💵 Tunai</button>
-                    <button class="category-btn" onclick="payPending('${s.id}', 'QRIS')" style="background: #2980b9; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">📱 QRIS</button>
-                    <button class="category-btn" onclick="reprintSale('${s.id}')" style="background: #e67e22; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">🖨️ Struk</button>
-                    <button class="category-btn" onclick="openBill('${s.id}')" style="background: #8e44ad; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">➕ Tambah Menu</button>
+                    <button class="category-btn" onclick="openPaymentModal('${s.id}', ${s.total})" style="background: #27ae60; color: white; border: none; padding: 6px 12px; font-size: 0.85rem; font-weight: bold;">💳 Bayar</button>
+                    <button class="category-btn" onclick="openBill('${s.id}')" style="background: #8e44ad; color: white; border: none; padding: 6px 12px; font-size: 0.85rem;">➕ Menu</button>
+                    <button class="category-btn" onclick="previewReceipt('${s.id}')" title="Preview Struk" style="background: var(--glass); padding: 6px 10px; color: var(--accent);">
+                        <i data-lucide="eye" style="width: 14px;"></i>
+                    </button>
+                    <button class="category-btn" onclick="reprintSale('${s.id}')" title="Cetak Struk" style="background: var(--glass); padding: 6px 10px;">
+                        <i data-lucide="printer" style="width: 14px;"></i>
+                    </button>
                 </div>
             </td>
         </tr>
     `).join('');
+    refreshIcons();
+}
+
+function openPaymentModal(salesId, total) {
+    const modal = document.getElementById('paymentModal');
+    document.getElementById('paymentAmountText').innerText = `Rp ${Number(total).toLocaleString()}`;
+
+    document.getElementById('btnPayCash').onclick = () => {
+        modal.style.display = 'none';
+        payPending(salesId, 'CASH');
+    };
+
+    document.getElementById('btnPayQRIS').onclick = () => {
+        modal.style.display = 'none';
+        payPending(salesId, 'QRIS');
+    };
+
+    modal.style.display = 'flex';
 }
 
 function filterPending() {

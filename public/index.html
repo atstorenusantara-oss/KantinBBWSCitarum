@@ -29,7 +29,12 @@
                 data-lucide="building-2"></i></div>
         <div class="nav-item" id="navSystem" onclick="switchPage('system')" title="Sistem"><i data-lucide="power"
                 style="color: var(--danger);"></i></div>
-        <div class="nav-item" style="margin-top: auto;" onclick="logout()" title="Logout"><i data-lucide="log-out"
+        <div class="nav-item"
+            style="margin-top: auto; padding: 10px 0; color: var(--text-muted); font-size: 0.7rem; font-weight: bold; pointer-events: none;"
+            id="sidebarUser">
+            -
+        </div>
+        <div class="nav-item" onclick="logout()" title="Logout"><i data-lucide="log-out"
                 style="color: var(--danger);"></i></div>
         <div class="nav-item"><i data-lucide="settings"></i></div>
     </nav>
@@ -38,7 +43,11 @@
         <!-- POS SECTION -->
         <div class="product-section" id="kasirPage">
             <div class="header">
-                <h1>Menu Kopi</h1>
+                <div style="display: flex; flex-direction: column;">
+                    <h1 style="margin: 0;">G-Coffee Menu</h1>
+                    <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: bold;">Kasir: <span
+                            id="headerStaffKasir">-</span></span>
+                </div>
                 <input type="text" class="search-bar" placeholder="Cari menu...">
             </div>
 
@@ -62,29 +71,16 @@
                 <h1>Manajemen Stok (Opname)</h1>
             </div>
 
-            <div class="opname-container">
-                <div class="card opname-form">
-                    <h3>Input Stok Fisik</h3>
-                    <div class="form-group">
-                        <label>Pilih Bahan Baku</label>
-                        <select id="opnameMaterial" class="payment-dropdown"
-                            style="background: var(--surface)"></select>
+            <div class="opname-container" style="display: block;">
+                <div style="margin-bottom: 25px;">
+                    <h3 style="margin-bottom: 15px; color: var(--accent);">Pilih Bahan Baku untuk Opname:</h3>
+                    <div id="materialGrid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;">
+                        <!-- Material cards will be loaded here -->
                     </div>
-                    <div class="form-group">
-                        <label>Stok Fisik Aktual</label>
-                        <input type="number" id="opnameQty" class="search-bar" style="width: 100%" placeholder="0.00">
-                    </div>
-                    <div class="form-group">
-                        <label>Catatan</label>
-                        <input type="text" id="opnameNote" class="search-bar" style="width: 100%"
-                            placeholder="Contoh: Audit Mingguan">
-                    </div>
-                    <button class="btn-checkout" id="btnSubmitOpname" style="margin-top: 10px;">
-                        Simpan Opname
-                    </button>
                 </div>
 
-                <div class="card opname-history">
+                <div class="card opname-history" style="margin-top: 30px;">
                     <h3>Riwayat Opname</h3>
                     <div class="table-container">
                         <table class="data-table">
@@ -128,64 +124,117 @@
             <!-- Print Preview Modal -->
             <div id="printModal"
                 style="display:none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); overflow-y: auto; padding: 20px;">
-                <div id="printArea"
-                    style="background: white; color: black; max-width: 450px; margin: 20px auto; padding: 30px; border-radius: 5px; font-family: 'Courier New', Courier, monospace; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-                    <div
-                        style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 20px;">
-                        <h2 style="margin: 0; font-size: 1.5rem;">G-COFFEE POS</h2>
-                        <p style="margin: 5px 0; font-weight: bold;">LAPORAN RINGKAS HARIAN</p>
-                        <p id="printTimestamp" style="font-size: 0.8rem; margin: 5px 0;"></p>
-                    </div>
-
-                    <div style="margin-bottom: 20px; font-size: 1.1rem;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>TOTAL OMZET:</span>
-                            <span id="printRevenue" style="font-weight: bold;">Rp 0</span>
-                        </div>
-                        <div
-                            style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; color: #444; padding-left: 20px;">
-                            <span>- TOTAL CASH:</span>
-                            <span id="printCash">Rp 0</span>
-                        </div>
-                        <div
-                            style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; color: #444; padding-left: 20px;">
-                            <span>- TOTAL QRIS:</span>
-                            <span id="printQRIS">Rp 0</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>TRANSAKSI:</span>
-                            <span id="printCount" style="font-weight: bold;">0</span>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <p style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px;">TOP 3 PRODUK:
-                        </p>
-                        <div id="printTopProducts" style="line-height: 1.6;"></div>
-                    </div>
-
-                    <div style="margin-bottom: 25px;">
-                        <p style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px;">STOK BAHAN &
-                            PACKAGING:</p>
-                        <div id="printInventory" style="line-height: 1.6;"></div>
-                    </div>
-
-                    <div id="printPendingArea" style="margin-bottom: 25px; display: none;">
-                        <p
-                            style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px; color: #d32f2f;">
-                            PESANAN BELUM BAYAR (PIUTANG):</p>
-                        <div id="printPendingSales" style="line-height: 1.6; font-size: 0.9rem;"></div>
-                    </div>
-                </div>
-
-                <div style="text-align: center; border-top: 2px dashed #000; padding-top: 15px; font-size: 0.8rem;">
-                    <p style="margin: 2px 0;">Shift: 06:00 - 03:00</p>
-                    <p style="margin: 2px 0; font-weight: bold;">*** DOKUMEN VALID SISTEM ***</p>
-                    <p style="margin: 10px 0 0 0; font-style: italic;">Silakan difoto untuk laporan</p>
-                </div>
-                <div style="text-align: center; margin: 20px 0 40px 0;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 20px auto 10px auto;">
                     <button class="category-btn" onclick="closePrintPreview()"
-                        style="background: var(--danger); color: white; padding: 12px 40px; border: none; font-size: 1.1rem;">TUTUP</button>
+                        style="background: var(--danger); color: white; padding: 10px 20px; border: none; font-size: 1rem;">TUTUP</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="category-btn" onclick="toggleReportColumns()"
+                            style="font-size: 0.8rem; background: var(--glass); border: 1px solid var(--accent);">
+                            <i data-lucide="layout-grid"
+                                style="width: 14px; vertical-align: middle; margin-right: 5px;"></i>
+                            <span id="colBtnText">2 Kolom</span>
+                        </button>
+                        <button class="category-btn" onclick="printReport()"
+                            style="background: var(--accent); color: var(--bg); font-weight: bold;">
+                            CETAK LAPORAN
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Print Preview Content -->
+                <div id="printArea" class="print-preview-body">
+                    <div id="printContent" class="print-layout-container">
+                        <!-- Column 1 (Original Header & Sales) -->
+                        <div class="print-column">
+                            <div
+                                style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 15px;">
+                                <h2 style="margin: 0; font-size: 1.5rem;">G-COFFEE POS</h2>
+                                <h3 style="margin: 5px 0; font-weight: normal; font-size: 1rem;">LAPORAN RINGKAS HARIAN
+                                </h3>
+                                <p id="printTimestamp"
+                                    style="font-size: 0.8rem; margin: 10px 0; white-space: pre-line;"></p>
+                                <p style="font-size: 0.9rem; font-weight: bold;">Staff: <span
+                                        id="printStaffName"></span></p>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <div
+                                    style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                                    <span>TOTAL OMZET:</span>
+                                    <span id="printRevenue" style="font-weight: bold;">Rp 0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; color: #444; padding-left: 20px;">
+                                    <span>- TOTAL CASH:</span>
+                                    <span id="printCash">Rp 0</span>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; color: #444; padding-left: 20px;">
+                                    <span>- TOTAL QRIS:</span>
+                                    <span id="printQRIS">Rp 0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>TRANSAKSI:</span>
+                                    <span id="printCount" style="font-weight: bold;">0</span>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <p style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px;">PRODUK
+                                    TERJUAL:</p>
+                                <div id="printProductsUsed" style="font-size: 0.95rem; line-height: 1.6;">
+                                    <!-- Items -->
+                                </div>
+                            </div>
+
+                            <div id="printPendingArea"
+                                style="margin-top: 20px; border-top: 1px solid #000; padding-top: 10px; display: none;">
+                                <p style="font-weight: bold; margin-bottom: 10px;">PESANAN PENDING (PIUTANG):</p>
+                                <div id="printPendingSales" style="font-size: 0.9rem;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Column 2 (Logistics & Inventory) -->
+                        <div class="print-column second-column-wrapper">
+                            <div style="margin-bottom: 20px;">
+                                <p style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px;">BAHAN
+                                    BAKU MASUK (STOK IN):</p>
+                                <div id="printStockIn" style="font-size: 0.9rem; line-height: 1.5;">
+                                    <!-- Stock added -->
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <p style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px;">
+                                    PENYESUAIAN STOK (ADJUST):</p>
+                                <div id="printStockAdjust" style="font-size: 0.9rem; line-height: 1.5;">
+                                    <!-- Stock adjustments -->
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <p style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px;">
+                                    PENGGUNAAN BAHAN (STOK OUT):</p>
+                                <div id="printStockOut" style="font-size: 0.9rem; line-height: 1.5;">
+                                    <!-- Stock used -->
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 10px;">
+                                <p style="border-bottom: 1px solid #000; font-weight: bold; margin-bottom: 10px;">POSISI
+                                    STOK AKHIR:</p>
+                                <div id="printInventory" style="font-size: 0.85rem; line-height: 1.4;">
+                                    <!-- Stock levels -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; border-top: 2px dashed #000; padding-top: 15px; font-size: 0.8rem;">
+                        <p style="margin: 2px 0;">Shift: 06:00 - 03:00</p>
+                        <p style="margin: 2px 0; font-weight: bold;">*** DOKUMEN VALID SISTEM ***</p>
+                        <p style="margin: 10px 0 0 0; font-style: italic;">Silakan difoto untuk laporan</p>
+                    </div>
                 </div>
             </div>
 
@@ -263,26 +312,6 @@
 
             <div class="card" style="margin-top: 30px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3>Sisa Persediaan Bahan Baku (Real-time)</h3>
-                    <button class="category-btn" onclick="loadReportData()" style="padding: 5px 15px;">Refresh
-                        Stok</button>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Nama Bahan</th>
-                            <th>Stok Tersedia</th>
-                            <th>Satuan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryStatusBody">
-                        <!-- Data sisa stok akan muncul di sini -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card" style="margin-top: 30px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3>Transaksi Terbaru (Shift Terpilih)</h3>
                 </div>
                 <table class="data-table">
@@ -298,6 +327,26 @@
                     </thead>
                     <tbody id="recentSalesBody">
                         <!-- Data transaksi terbaru -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Sisa Persediaan Bahan Baku (Real-time)</h3>
+                    <button class="category-btn" onclick="loadReportData()" style="padding: 5px 15px;">Refresh
+                        Stok</button>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nama Bahan</th>
+                            <th>Stok Tersedia</th>
+                            <th>Satuan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryStatusBody">
+                        <!-- Data sisa stok akan muncul di sini -->
                     </tbody>
                 </table>
             </div>
@@ -356,7 +405,11 @@
         <!-- PENDING ORDERS SECTION -->
         <div class="product-section" id="pendingPage" style="display: none;">
             <div class="header">
-                <h1>Daftar Pesanan Pending</h1>
+                <div style="display: flex; flex-direction: column;">
+                    <h1 style="margin: 0;">Daftar Pesanan Pending</h1>
+                    <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: bold;">Kasir: <span
+                            id="headerStaffPending">-</span></span>
+                </div>
                 <input type="text" id="searchPending" class="search-bar" placeholder="Cari nama pelanggan..."
                     onkeyup="filterPending()">
             </div>
@@ -583,7 +636,8 @@
 
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; cursor: pointer;">
                     <input type="checkbox" id="checkPrint" style="width: 18px; height: 18px; cursor: pointer;" checked>
-                    <label for="checkPrint" style="cursor: pointer; font-size: 0.9rem;">Cetak Struk Otomatis</label>
+                    <label for="checkPrint" style="cursor: pointer; font-size: 0.9rem; font-weight: 500;">Cetak Struk
+                        Otomatis</label>
                 </div>
 
                 <button class="btn-checkout" id="btnCheckout">
@@ -593,6 +647,71 @@
         </aside>
         </div>
     </main>
+
+    <!-- Receipt Preview Modal -->
+    <div id="receiptModal"
+        style="display:none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); overflow-y: auto; padding: 20px;">
+        <div
+            style="background: white; color: black; max-width: 350px; margin: 20px auto; padding: 20px; border-radius: 5px; font-family: 'Courier New', Courier, monospace; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin: 0;">G-COFFEE POS</h3>
+                <p id="receiptInvoice" style="font-size: 0.8rem; margin: 5px 0;"></p>
+                <p id="receiptDate" style="font-size: 0.8rem; margin: 5px 0;"></p>
+                <p style="font-size: 0.8rem; margin: 5px 0;">Kasir: <span id="receiptStaff"
+                        style="font-weight: bold;"></span></p>
+                <p style="font-size: 0.8rem; margin: 5px 0; font-weight: bold;">Pelanggan: <span
+                        id="receiptCustomer"></span></p>
+            </div>
+
+            <div id="receiptItems" style="font-size: 0.9rem; margin-bottom: 15px;">
+                <!-- Items list -->
+            </div>
+
+            <div style="border-top: 1px dashed #000; padding-top: 10px; font-weight: bold;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>TOTAL:</span>
+                    <span id="receiptTotalText"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #444;">
+                    <span>METODE:</span>
+                    <span id="receiptMethodText"></span>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 15px;">
+                <p style="margin: 0; font-size: 0.8rem;">TERIMA KASIH</p>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="category-btn" onclick="document.getElementById('receiptModal').style.display='none'"
+                style="background: var(--danger); color: white;">TUTUP PREVIEW</button>
+        </div>
+    </div>
+
+    <!-- Payment Selection Modal (for Pending Orders) -->
+    <div id="paymentModal"
+        style="display:none; position: fixed; z-index: 12000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+        <div class="card"
+            style="width: 350px; text-align: center; border: 1px solid var(--success); background: var(--surface);">
+            <h3 style="margin-bottom: 20px;">Pilih Metode Pembayaran</h3>
+            <p id="paymentAmountText"
+                style="font-weight: bold; font-size: 1.2rem; color: var(--accent); margin-bottom: 25px;">Rp 0</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <button class="btn-checkout" id="btnPayCash"
+                    style="margin-top:0; background: #27ae60; padding: 20px 10px;">
+                    <div style="font-size: 1.2rem; margin-bottom: 5px;">💵</div>
+                    TUNAI
+                </button>
+                <button class="btn-checkout" id="btnPayQRIS"
+                    style="margin-top:0; background: #2980b9; padding: 20px 10px;">
+                    <div style="font-size: 1.2rem; margin-bottom: 5px;">📱</div>
+                    QRIS
+                </button>
+            </div>
+            <button class="category-btn" onclick="document.getElementById('paymentModal').style.display='none'"
+                style="width: 100%; border-style: dashed;">Batal</button>
+        </div>
+    </div>
 
     <!-- Variant Modal -->
     <div id="variantModal"
@@ -616,6 +735,46 @@
         </div>
     </div>
 
+    <!-- Opname Input Modal -->
+    <div id="opnameModal"
+        style="display:none; position: fixed; z-index: 12000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
+        <div class="card" style="width: 400px; border: 1px solid var(--accent); background: var(--surface);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 id="opnameModalTitle" style="margin: 0;">Input Stok</h3>
+                <span id="opnameModalUnit"
+                    style="font-size: 0.8rem; background: var(--glass); padding: 4px 8px; border-radius: 4px;"></span>
+            </div>
+
+            <div
+                style="display: flex; gap: 10px; margin-bottom: 20px; background: var(--glass); padding: 5px; border-radius: 8px;">
+                <button id="modeOpname" class="category-btn active" style="flex: 1; font-size: 0.8rem; padding: 10px;"
+                    onclick="setOpnameMode('AUDIT')">AUDIT (OPNAME)</button>
+                <button id="modeRestock" class="category-btn" style="flex: 1; font-size: 0.8rem; padding: 10px;"
+                    onclick="setOpnameMode('RESTOCK')">TAMBAH STOK</button>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px; text-align: left;">
+                <label id="qtyLabel" style="color: var(--text-muted); font-size: 0.9rem;">Stok FISIK (Hasil Hitung
+                    Manual)</label>
+                <input type="number" id="opnameQty" class="search-bar"
+                    style="width: 100%; font-size: 1.5rem; padding: 15px; margin-top: 8px;" placeholder="0.00">
+                <p id="opnameSysStock" style="font-size: 0.75rem; margin-top: 5px; color: var(--text-muted);"></p>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 25px; text-align: left;">
+                <label style="color: var(--text-muted); font-size: 0.9rem;">Catatan (Opsional)</label>
+                <input type="text" id="opnameNote" class="search-bar" style="width: 100%; margin-top: 8px;"
+                    placeholder="Contoh: Barang rusak, salah hitung, dll">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <button class="category-btn" onclick="document.getElementById('opnameModal').style.display='none'"
+                    style="border-style: dashed;">Batal</button>
+                <button class="btn-checkout" id="btnSubmitOpname" style="margin: 0;">SIMPAN DATA</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Login Modal -->
     <div id="loginModal"
         style="display:flex; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: var(--bg); align-items: center; justify-content: center;">
@@ -625,11 +784,8 @@
             <div class="form-group" style="text-align: left; margin-bottom: 20px;">
                 <label>Pilih User</label>
                 <select id="loginUser" class="payment-dropdown" style="background: var(--surface)">
-                    <option value="Atjas">Atjas (Owner)</option>
-                    <option value="Andi">Andi (Kasir)</option>
-                    <option value="Cipa">Cipa (Kasir)</option>
-                    <option value="Arya">Arya (Kasir)</option>
-                    <option value="Tamy">Tamy (Kasir)</option>
+                    <!-- Populasi otomatis via JS dari Database -->
+                    <option value="">Memuat user...</option>
                 </select>
             </div>
             <div class="form-group" style="text-align: left; margin-bottom: 30px;">

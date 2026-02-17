@@ -51,8 +51,8 @@ class ReportService {
         `;
         const [payments] = await db.query(paymentQuery, [startTime, endTime]);
 
-        // Best selling products for this shift
-        const productQuery = `
+        // All products sold for this shift
+        const allProductQuery = `
             SELECT p.name, SUM(si.qty) as total_qty
             FROM sales_items si
             JOIN products p ON si.product_id = p.id
@@ -60,9 +60,39 @@ class ReportService {
             WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID'
             GROUP BY p.id
             ORDER BY total_qty DESC
-            LIMIT 5
         `;
-        const [topProducts] = await db.query(productQuery, [startTime, endTime]);
+        const [allProducts] = await db.query(allProductQuery, [startTime, endTime]);
+
+        // Stock Added (IN) for this shift
+        const stockInQuery = `
+            SELECT rm.name, ABS(SUM(sm.qty)) as total_qty, rm.unit
+            FROM stock_movements sm
+            JOIN raw_materials rm ON sm.raw_material_id = rm.id
+            WHERE sm.type = 'IN' AND sm.created_at BETWEEN ? AND ?
+            GROUP BY rm.id
+        `;
+        const [stockAdded] = await db.query(stockInQuery, [startTime, endTime]);
+
+        // Stock Used (OUT) for this shift
+        const stockOutQuery = `
+            SELECT rm.name, ABS(SUM(sm.qty)) as total_qty, rm.unit
+            FROM stock_movements sm
+            JOIN raw_materials rm ON sm.raw_material_id = rm.id
+            WHERE sm.type = 'OUT' AND sm.created_at BETWEEN ? AND ?
+            GROUP BY rm.id
+        `;
+        const [stockUsed] = await db.query(stockOutQuery, [startTime, endTime]);
+
+        // Stock Adjustments (ADJUST) for this shift
+        const stockAdjustQuery = `
+            SELECT rm.name, SUM(sm.qty) as total_qty, rm.unit,
+                   (SELECT note FROM stock_movements WHERE raw_material_id = rm.id AND type = 'ADJUST' AND created_at BETWEEN ? AND ? LIMIT 1) as last_note
+            FROM stock_movements sm
+            JOIN raw_materials rm ON sm.raw_material_id = rm.id
+            WHERE sm.type = 'ADJUST' AND sm.created_at BETWEEN ? AND ?
+            GROUP BY rm.id
+        `;
+        const [stockAdjust] = await db.query(stockAdjustQuery, [startTime, endTime, startTime, endTime]);
 
         // Pending Sales (Unpaid) for this shift
         const pendingQuery = `
@@ -83,13 +113,20 @@ class ReportService {
         `;
         const [recentSales] = await db.query(recentSalesQuery, [startTime, endTime]);
 
+        // All inventory (for current status)
+        const [inventory] = await db.query('SELECT name, stock, unit FROM raw_materials ORDER BY name ASC');
+
         return {
             period: 'Daily (Shift)',
             start: startTime,
             end: endTime,
             summary: summary[0],
             payments: payments,
-            top_products: topProducts,
+            all_products: allProducts,
+            stock_added: stockAdded,
+            stock_used: stockUsed,
+            stock_adjust: stockAdjust,
+            inventory: inventory,
             pending_sales: pendingSales,
             recent_sales: recentSales
         };

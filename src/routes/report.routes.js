@@ -6,5 +6,6 @@ router.get('/daily', reportController.getDaily);
 router.get('/weekly', reportController.getWeekly);
 router.get('/monthly', reportController.getMonthly);
 router.get('/inventory', reportController.getInventory);
+router.get('/sale/:id', reportController.getSaleDetail);
 
 module.exports = router;

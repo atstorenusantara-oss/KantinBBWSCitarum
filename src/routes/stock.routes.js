@@ -11,4 +11,6 @@ router.get('/opname/history', stockController.getHistory);
 // Route untuk mendapatkan list bahan baku (untuk dropdown opname)
 router.get('/materials', stockController.getAllMaterials);
 
+router.post('/restock', stockController.restock);
+
 module.exports = router;

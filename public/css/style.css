@@ -657,3 +657,60 @@ main {
     background: var(--success);
     color: var(--secondary);
 }
+
+/* --- Print Layout for Report --- */
+.print-preview-body {
+    background: #fff;
+    color: #000;
+    padding: 30px;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    overflow-y: auto;
+    max-height: 75vh;
+    margin: 0 auto;
+    max-width: 450px;
+    transition: max-width 0.4s ease;
+}
+
+.print-preview-body.two-column {
+    max-width: 900px;
+}
+
+.print-layout-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.two-column .print-layout-container {
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.print-column {
+    flex: 1;
+    min-width: 350px;
+}
+
+.second-column-wrapper {
+    display: block;
+    /* Show even in 1-column mode (below) */
+    border-top: 1px dashed #ccc;
+    margin-top: 30px;
+    padding-top: 20px;
+}
+
+.two-column .second-column-wrapper {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+    border-left: 1px dashed #ccc;
+    padding-left: 30px;
+}
+
+@media print {
+    .print-preview-body {
+        max-height: none;
+        overflow: visible;
+    }
+}

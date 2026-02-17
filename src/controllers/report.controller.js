@@ -1,4 +1,5 @@
 const reportService = require('../services/report.service');
+const salesService = require('../services/sales.service');
 
 class ReportController {
     async getDaily(req, res) {
@@ -36,6 +37,17 @@ class ReportController {
         try {
             const inventory = await reportService.getInventoryStatus();
             res.json({ success: true, data: inventory });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    async getSaleDetail(req, res) {
+        try {
+            const { id } = req.params;
+            const sale = await salesService.getSaleById(id);
+            if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
+            res.json({ success: true, data: sale });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
         }

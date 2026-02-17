@@ -14,9 +14,9 @@ class SalesService {
 
             // 1. Insert into sales table
             await connection.query(
-                `INSERT INTO sales (id, invoice_number, total, payment_method, customer_name, payment_status) 
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [salesId, invoice_number, total, payment_method, customer_name || 'Pelanggan', payment_status || 'PAID']
+                `INSERT INTO sales (id, invoice_number, total, payment_method, customer_name, payment_status, creator_id) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [salesId, invoice_number, total, payment_method, customer_name || 'Pelanggan', payment_status || 'PAID', salesData.creator_id || null]
             );
 
             // 2. Insert items and reduce stock
@@ -74,7 +74,12 @@ class SalesService {
     }
 
     async getSaleById(salesId) {
-        const [sales] = await db.query("SELECT * FROM sales WHERE id = ?", [salesId]);
+        const [sales] = await db.query(`
+            SELECT s.*, u.username as staff_name 
+            FROM sales s 
+            LEFT JOIN users u ON s.creator_id = u.id 
+            WHERE s.id = ?
+        `, [salesId]);
         if (sales.length === 0) return null;
 
         const [items] = await db.query(

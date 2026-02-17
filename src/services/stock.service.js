@@ -146,6 +146,35 @@ class StockService {
         const [rows] = await db.query(query, params);
         return rows;
     }
+
+    /**
+     * Restock raw material (Stock IN)
+     */
+    async restock(rawMaterialId, qty, note = '') {
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            await connection.query(
+                'UPDATE raw_materials SET stock = stock + ? WHERE id = ?',
+                [qty, rawMaterialId]
+            );
+
+            await connection.query(
+                `INSERT INTO stock_movements (id, raw_material_id, type, qty, note)
+                 VALUES (?, ?, 'IN', ?, ?)`,
+                [uuidv4(), rawMaterialId, qty, note || 'Restock/Stock In']
+            );
+
+            await connection.commit();
+            return { success: true };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
 }
 
 module.exports = new StockService();

@@ -10,9 +10,11 @@ class StockController {
             const materials = await materialService.getAll();
             res.json({ success: true, data: materials });
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            console.error('Error in getAllMaterials:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     }
+
     /**
      * Create new stock opname
      */
@@ -62,8 +64,25 @@ class StockController {
             console.error('Error in getHistory:', error);
             res.status(500).json({
                 success: false,
-                message: 'Internal server error'
+                message: error.message || 'Internal server error'
             });
+        }
+    }
+
+    /**
+     * Create new stock in (restock)
+     */
+    async restock(req, res) {
+        try {
+            const { raw_material_id, qty, note } = req.body;
+            if (!raw_material_id || qty === undefined) {
+                return res.status(400).json({ success: false, message: 'Material and quantity are required' });
+            }
+            const result = await stockService.restock(raw_material_id, parseFloat(qty), note);
+            res.json({ success: true, ...result });
+        } catch (error) {
+            console.error('Error in restock:', error);
+            res.status(500).json({ success: false, message: error.message });
         }
     }
 }
