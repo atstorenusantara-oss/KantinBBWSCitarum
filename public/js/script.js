@@ -51,11 +51,16 @@ async function init() {
 
     await fetchProducts();
     await fetchUsers(); // Fetch users from DB
+    await loadAppSettings(); // Load system settings
     setupCategoryListeners();
     renderProducts();
 
     initTheme(); // Load saved theme
     initVK(); // Initialize virtual keyboard
+
+    // Show/hide settings based on role
+    updateSidebarVisibility();
+
     refreshIcons();
 }
 
@@ -290,11 +295,22 @@ function attemptLogin() {
                 document.getElementById('sidebarUser').innerText = staffName;
                 document.getElementById('headerStaffKasir').innerText = staffName;
                 document.getElementById('headerStaffPending').innerText = staffName;
+
+                // Show/hide owner menu
+                updateSidebarVisibility();
+
                 alert(`Absen Masuk Berhasil! Selamat bekerja, ${currentUser.username}!`);
             } else {
                 alert(data.message);
             }
         });
+}
+
+function updateSidebarVisibility() {
+    const navSettings = document.getElementById('navSettings');
+    if (navSettings) {
+        navSettings.style.display = (currentUser && currentUser.role === 'ADMIN') ? 'flex' : 'none';
+    }
 }
 
 async function logout() {
@@ -403,7 +419,12 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
             if (result.print && result.print.success) {
                 msg += `\n${result.print.message}`;
             } else if (shouldPrint) {
-                msg += `\n⚠️ Gagal mencetak struk: ${result.print?.error || 'Sedang simulasi server'}`;
+                if (result.print?.isCloud) {
+                    msg += `\n☁️ Mode Cloud: Membuka struk untuk cetak manual...`;
+                    previewReceipt(result.data.id);
+                } else {
+                    msg += `\n⚠️ Gagal mencetak struk: ${result.print?.error || 'Sedang simulasi server'}`;
+                }
             }
 
             alert(`${msg}\nCustomer: ${customerName}\nInvoice: ${payload.invoice_number}`);
@@ -429,7 +450,10 @@ function switchPage(page) {
         'report': document.getElementById('reportPage'),
         'pending': document.getElementById('pendingPage'),
         'bms': document.getElementById('bmsPage'),
-        'system': document.getElementById('systemPage')
+        'system': document.getElementById('systemPage'),
+        'settings': document.getElementById('settingsPage'),
+        'belanja': document.getElementById('belanjaPage'),
+        'gudang': document.getElementById('gudangPage')
     };
 
     const cartSection = document.getElementById('cartSection');
@@ -439,8 +463,16 @@ function switchPage(page) {
         'report': document.getElementById('navReport'),
         'pending': document.getElementById('navPending'),
         'bms': document.getElementById('navBMS'),
-        'system': document.getElementById('navSystem')
+        'system': document.getElementById('navSystem'),
+        'settings': document.getElementById('navSettings'),
+        'gudang': document.getElementById('navGudang')
     };
+
+    // Access Control
+    if (page === 'settings' && (!currentUser || currentUser.role !== 'ADMIN')) {
+        alert('Akses Dibatalkan: Menu ini hanya untuk Owner/Admin!');
+        return;
+    }
 
     // Hide all pages and remove active classes
     Object.keys(pages).forEach(p => {
@@ -461,6 +493,89 @@ function switchPage(page) {
     if (page === 'report') loadReportData();
     if (page === 'pending') loadPendingSales();
     if (page === 'bms') loadBMSData();
+    if (page === 'settings') loadActivityLogs();
+    if (page === 'belanja') {
+        loadExpenseMaterials();
+        loadExpenseHistory();
+    }
+    if (page === 'gudang') loadGudangData();
+    refreshIcons();
+}
+
+// --- App Settings Logic ---
+async function loadAppSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        const result = await res.json();
+        if (result.success) {
+            const settings = result.data;
+
+            // Apply Shutdown Visibility
+            const navSystem = document.getElementById('navSystem');
+            if (navSystem) {
+                navSystem.style.display = settings.show_shutdown === 'ON' ? 'flex' : 'none';
+            }
+
+            // Apply Default Print
+            const checkPrint = document.getElementById('checkPrint');
+            if (checkPrint) {
+                checkPrint.checked = settings.default_print === 'ON';
+            }
+
+            // Sync to Settings Page UI if it's open (or just always sync)
+            const uiDefaultPrint = document.getElementById('settingDefaultPrint');
+            const uiShowShutdown = document.getElementById('settingShowShutdown');
+            if (uiDefaultPrint) uiDefaultPrint.checked = settings.default_print === 'ON';
+            if (uiShowShutdown) uiShowShutdown.checked = settings.show_shutdown === 'ON';
+        }
+    } catch (err) {
+        console.error('Load settings error:', err);
+    }
+}
+
+async function updateAppSetting(key, value) {
+    try {
+        const res = await fetch('/api/settings/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, value })
+        });
+        const result = await res.json();
+        if (result.success) {
+            // Re-apply settings
+            await loadAppSettings();
+        }
+    } catch (err) {
+        alert('Gagal memperbarui pengaturan');
+    }
+}
+
+async function loadActivityLogs() {
+    const tbody = document.getElementById('activityLogBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Memuat log...</td></tr>';
+
+    try {
+        const res = await fetch('/api/settings/logs');
+        const result = await res.json();
+        if (result.success) {
+            tbody.innerHTML = result.data.map(log => `
+                <tr>
+                    <td style="font-size: 0.8rem; color: var(--text-muted)">${new Date(log.created_at).toLocaleString('id-ID')}</td>
+                    <td style="font-weight: 600">${log.username}</td>
+                    <td><span class="anomaly-tag" style="background: var(--primary); font-size: 0.6rem">${log.action}</span></td>
+                    <td style="font-size: 0.85rem">${log.note || '-'}</td>
+                </tr>
+            `).join('');
+
+            if (result.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted)">Belum ada aktivitas tercatat</td></tr>';
+            }
+        }
+    } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--danger)">Gagal memuat log</td></tr>';
+    }
 }
 
 // --- BMS Logic ---
@@ -536,6 +651,47 @@ async function toggleBMSDevice(id, newValue) {
         alert('Gagal mengontrol perangkat BMS');
     }
 }
+// --- Usage Analysis Logic ---
+async function loadUsageAnalysis() {
+    const selector = document.getElementById('analysisDays');
+    if (!selector) return;
+    const days = selector.value;
+    try {
+        const res = await fetch(`/api/stock/analysis?days=${days}`);
+        const result = await res.json();
+        if (result.success) {
+            const tbody = document.getElementById('usageAnalysisBody');
+            if (tbody) {
+                tbody.innerHTML = result.data.map(m => {
+                    const effNum = parseFloat(m.efficiency);
+                    let statusColor = 'var(--success)';
+                    let statusText = 'SANGAT BAIK';
+
+                    if (effNum < 90) {
+                        statusColor = 'var(--danger)';
+                        statusText = 'EVALUASI';
+                    } else if (effNum < 97) {
+                        statusColor = 'var(--accent)';
+                        statusText = 'NORMAL';
+                    }
+
+                    return `
+                        <tr>
+                            <td style="font-weight: 600;">${m.name}</td>
+                            <td>${Number(m.usage_sold).toLocaleString()} ${m.unit}</td>
+                            <td style="color: var(--danger);">${m.usage_loss > 0 ? '-' + Number(m.usage_loss).toLocaleString() : '0'} ${m.unit}</td>
+                            <td style="color: var(--success);">${m.usage_surplus > 0 ? '+' + Number(m.usage_surplus).toLocaleString() : '0'} ${m.unit}</td>
+                            <td style="font-weight: bold; font-size: 1.1rem; color: ${statusColor}">${m.efficiency}%</td>
+                            <td><span style="background: ${statusColor}1A; color: ${statusColor}; border: 1px solid ${statusColor}44; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800;">${statusText}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (e) {
+        console.error("Error loading usage analysis:", e);
+    }
+}
 
 // --- Report Logic ---
 async function loadReportData() {
@@ -548,14 +704,23 @@ async function loadReportData() {
     const selectedShift = document.getElementById('reportShift').value || 1;
 
     try {
-        // Fetch Daily (Selected Shift)
+        // 1. Fetch Daily (Selected Shift)
         const dailyRes = await fetch(`/api/reports/daily?date=${selectedDate}&shift=${selectedShift}`);
         const daily = await dailyRes.json();
         if (daily.success) {
             document.getElementById('dailyRevenue').innerText = `Rp ${Number(daily.data.summary.gross_revenue || 0).toLocaleString()}`;
             document.getElementById('dailyCount').innerText = `${daily.data.summary.total_transactions || 0} Transaksi`;
 
-            // Render Products Sold
+            // Revenue Breakdown
+            const cashPayment = daily.data.payments.find(p => p.payment_method === 'CASH');
+            const qrisPayment = daily.data.payments.find(p => p.payment_method === 'QRIS');
+            if (document.getElementById('dailyCash')) {
+                document.getElementById('dailyCash').innerText = `Rp ${Number(cashPayment?.total_amount || 0).toLocaleString()}`;
+            }
+            if (document.getElementById('dailyQRIS')) {
+                document.getElementById('dailyQRIS').innerText = `Rp ${Number(qrisPayment?.total_amount || 0).toLocaleString()}`;
+            }
+
             const topBody = document.getElementById('topProductsBody');
             const productsSold = daily.data.all_products || [];
             topBody.innerHTML = productsSold.map(p => {
@@ -569,207 +734,191 @@ async function loadReportData() {
                         <small style="color: var(--text-muted)">${time} | ${paymentLabel}</small>
                     </td>
                     <td style="font-weight: bold; text-align: right;">${p.total_qty}</td>
-                </tr>
-            `;
-            }).join('');
-        }
-
-        // Fetch Weekly
-        const weeklyRes = await fetch('/api/reports/weekly');
-        const weekly = await weeklyRes.json();
-        if (weekly.success) {
-            document.getElementById('weeklyRevenue').innerText = `Rp ${Number(weekly.data.summary.gross_revenue || 0).toLocaleString()}`;
-            document.getElementById('weeklyCount').innerText = `${weekly.data.summary.total_transactions || 0} Transaksi`;
-        }
-
-        // Fetch Monthly
-        const monthlyRes = await fetch('/api/reports/monthly');
-        const monthly = await monthlyRes.json();
-        if (monthly.success) {
-            document.getElementById('monthlyRevenue').innerText = `Rp ${Number(monthly.data.summary.gross_revenue || 0).toLocaleString()}`;
-            document.getElementById('monthlyCount').innerText = `${monthly.data.summary.total_transactions || 0} Transaksi`;
-        }
-
-        // Fetch Current Inventory Status
-        const inventoryRes = await fetch('/api/reports/inventory');
-        const inventoryData = await inventoryRes.json();
-        if (inventoryData.success) {
-            const tbody = document.getElementById('inventoryStatusBody');
-            tbody.innerHTML = inventoryData.data.map(m => `
-                <tr>
-                    <td style="font-weight: 600;">${m.name}</td>
-                    <td style="font-weight: bold; color: ${m.stock <= 100 ? 'var(--danger)' : 'var(--success)'};">
-                        ${Number(m.stock).toLocaleString()}
-                    </td>
-                    <td>${m.unit}</td>
-                </tr>
-            `).join('');
-        }
-
-        // Fetch Audit Stok (Opname) report
-        const opnameFilter = document.getElementById('opnameFilter').value;
-        const opnameRes = await fetch(`/api/stock/opname/history?filter=${opnameFilter}&date=${selectedDate}`);
-        const opnameData = await opnameRes.json();
-
-        if (opnameData.success) {
-            const tbody = document.getElementById('reportOpnameBody');
-            tbody.innerHTML = opnameData.data.map(h => {
-                const absDiff = Math.abs(h.difference);
-                const threshold = (h.material_name || '').toLowerCase().includes('cup') ? 2 : 50;
-                const isAnomaly = absDiff > threshold;
-                const isResolved = h.is_resolved === 1;
-                const diffClass = h.difference < 0 ? 'diff-minus' : (h.difference > 0 ? 'diff-plus' : '');
-                const diffSign = h.difference > 0 ? '+' : '';
-
-                let anomalyTag = '';
-                if (isResolved) {
-                    anomalyTag = '<span class="anomaly-tag" style="background: var(--success);">RESOLVED</span>';
-                } else if (isAnomaly) {
-                    anomalyTag = '<span class="anomaly-tag">ANOMALY</span>';
-                }
-
-                const resolveBtn = (isAnomaly && !isResolved)
-                    ? `<button onclick="resolveAnomaly('${h.id}')" class="category-btn no-print" style="font-size: 0.6rem; padding: 2px 5px; margin-left: 10px; border-color: var(--accent); color: var(--accent);">Selesaikan</button>`
-                    : '';
-
-                return `
-                    <tr class="${(isAnomaly && !isResolved) ? 'anomaly-row' : ''}">
-                        <td style="font-weight: 600;">${anomalyTag}${h.material_name}${resolveBtn}</td>
-                        <td>${h.system_stock} ${h.unit}</td>
-                        <td style="font-weight: bold;">${h.physical_stock} ${h.unit}</td>
-                        <td class="${diffClass}">${diffSign}${h.difference} ${h.unit}</td>
-                        <td style="font-size: 0.85rem; color: var(--text-muted)">
-                            ${isResolved ? '<b style="color:var(--success)">[OK BY ' + h.resolved_by + ']</b> ' : ''}
-                            ${h.note || '-'}
-                        </td>
-                    </tr>
-                `;
+                </tr>`;
             }).join('');
 
-            if (opnameData.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted)">Tidak ada data audit untuk periode ini</td></tr>';
-            }
-        }
-
-        // Update Recent Transactions
-        const recentBody = document.getElementById('recentSalesBody');
-        if (daily.data.recent_sales) {
-            recentBody.innerHTML = daily.data.recent_sales.map(s => `
-                <tr>
-                    <td>${new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td style="font-size: 0.85rem;">${s.invoice_number}</td>
-                    <td style="font-weight: 600;">${s.customer_name}</td>
-                    <td>Rp ${Number(s.total).toLocaleString()}</td>
-                    <td>
-                        <span style="color: ${s.payment_status === 'PAID' ? 'var(--success)' : 'var(--danger)'}">
-                            ${s.payment_status === 'PAID' ? 'LUNAS' : 'PENDING'}
-                        </span>
-                        <br><small style="color: var(--text-muted)">${s.payment_method || '-'}</small>
-                    </td>
-                    <td>
-                        <div style="display: flex; gap: 5px;">
-                            <button class="category-btn" onclick="reprintSale('${s.id}')" title="Print Struk" style="padding: 5px 8px; font-size: 0.8rem; background: var(--glass);">
-                                <i data-lucide="printer" style="width: 14px;"></i>
-                            </button>
-                            <button class="category-btn" onclick="previewReceipt('${s.id}')" title="Preview Struk" style="padding: 5px 8px; font-size: 0.8rem; background: var(--glass); color: var(--accent);">
-                                <i data-lucide="eye" style="width: 14px;"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-            refreshIcons();
-        }
-
-        // Update Void Logs (New v2.4 Audit)
-        const voidRes = await fetch('/api/auth/void-logs');
-        const voidData = await voidRes.json();
-        if (voidData.success && voidData.data) {
-            const voidBody = document.getElementById('reportVoidBody');
-            if (voidBody) {
-                voidBody.innerHTML = voidData.data.map(v => `
+            // Update Recent Transactions
+            const recentBody = document.getElementById('recentSalesBody');
+            if (daily.data.recent_sales && recentBody) {
+                recentBody.innerHTML = daily.data.recent_sales.map(s => `
                     <tr>
-                        <td>${new Date(v.created_at).toLocaleTimeString('id-ID')}</td>
-                        <td>${v.staff_name || 'System'}</td>
-                        <td style="font-weight: 600;">${v.product_name}</td>
-                        <td>Rp ${Number(v.price).toLocaleString()}</td>
-                        <td style="color: var(--danger); font-style: italic;">${v.reason}</td>
-                    </tr>
-                `).join('');
-                if (voidData.data.length === 0) {
-                    voidBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted)">Belum ada log penghapusan</td></tr>';
-                }
-            }
-        }
-
-        // --- NEW: Update Attendance Logs (Weekly Audit) ---
-        const attendanceRes = await fetch('/api/auth/attendance');
-        const attendanceData = await attendanceRes.json();
-        if (attendanceData.success && attendanceData.data) {
-            const attBody = document.getElementById('reportAttendanceBody');
-            if (attBody) {
-                attBody.innerHTML = attendanceData.data.map(a => `
-                    <tr>
-                        <td style="font-weight: 600;">${a.staff_name}</td>
-                        <td style="color: var(--success);">${new Date(a.clock_in).toLocaleString('id-ID')}</td>
-                        <td style="color: ${a.clock_out ? 'var(--text)' : 'var(--accent)'};">
-                            ${a.clock_out ? new Date(a.clock_out).toLocaleString('id-ID') : '<i>Masih Bertugas</i>'}
+                        <td>${new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td style="font-size: 0.85rem;">${s.invoice_number}</td>
+                        <td style="font-weight: 600;">${s.customer_name}</td>
+                        <td>Rp ${Number(s.total).toLocaleString()}</td>
+                        <td>
+                            <span style="color: ${s.payment_status === 'PAID' ? 'var(--success)' : 'var(--danger)'}">
+                                ${s.payment_status === 'PAID' ? 'LUNAS' : 'PENDING'}
+                            </span>
+                            <br><small style="color: var(--text-muted)">${s.payment_method || '-'}</small>
                         </td>
                         <td>
-                            <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; background: ${a.clock_out ? 'var(--glass)' : 'rgba(228, 168, 83, 0.2)'}">
-                                ${a.clock_out ? 'Selesai' : 'Aktif'}
-                            </span>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="category-btn" onclick="reprintSale('${s.id}')" title="Print Struk" style="padding: 6px; background: var(--glass); display: inline-flex; align-items: center; justify-content: center;">
+                                    <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                <button class="category-btn" onclick="previewReceipt('${s.id}')" title="Preview Struk" style="padding: 6px; background: var(--glass); color: var(--accent); display: inline-flex; align-items: center; justify-content: center;">
+                                    <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+                                </button>
+                            </div>
                         </td>
-                    </tr>
-                `).join('');
-                if (attendanceData.data.length === 0) {
-                    attBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted)">Belum ada data absensi minggu ini</td></tr>';
-                }
+                    </tr>`).join('');
+                refreshIcons();
             }
         }
 
-        // --- NEW: Update AI Smart Audit Insights (v2.5) ---
+        // 2. Fetch Weekly/Monthly Summary
         try {
+            const [weeklyRes, monthlyRes] = await Promise.all([
+                fetch('/api/reports/weekly'),
+                fetch('/api/reports/monthly')
+            ]);
+            const weekly = await weeklyRes.json();
+            const monthly = await monthlyRes.json();
+
+            if (weekly.success) {
+                document.getElementById('weeklyRevenue').innerText = `Rp ${Number(weekly.data.summary.gross_revenue || 0).toLocaleString()}`;
+                document.getElementById('weeklyCount').innerText = `${weekly.data.summary.total_transactions || 0} Transaksi`;
+            }
+            if (monthly.success) {
+                document.getElementById('monthlyRevenue').innerText = `Rp ${Number(monthly.data.summary.gross_revenue || 0).toLocaleString()}`;
+                document.getElementById('monthlyCount').innerText = `${monthly.data.summary.total_transactions || 0} Transaksi`;
+            }
+        } catch (e) { console.warn("Summary Fetch Error:", e); }
+
+        // 3. Fetch Current Inventory Status
+        try {
+            const inventoryRes = await fetch('/api/reports/inventory');
+            const inventoryData = await inventoryRes.json();
+            if (inventoryData.success) {
+                const tbody = document.getElementById('inventoryStatusBody');
+                if (tbody) {
+                    tbody.innerHTML = inventoryData.data.map(m => `
+                        <tr>
+                            <td style="font-weight: 600;">${m.name}</td>
+                            <td style="font-weight: bold; color: ${m.stock <= 100 ? 'var(--danger)' : 'var(--success)'};">
+                                ${Number(m.stock).toLocaleString()}
+                            </td>
+                            <td>${m.unit}</td>
+                        </tr>`).join('');
+                }
+            }
+        } catch (e) { console.warn("Inventory Fetch Error:", e); }
+
+        // 4. Fetch Audit Stok (Opname) 
+        try {
+            const opnameFilter = document.getElementById('opnameFilter').value;
+            const opnameRes = await fetch(`/api/stock/opname/history?filter=${opnameFilter}&date=${selectedDate}`);
+            const opnameData = await opnameRes.json();
+            if (opnameData.success) {
+                const tbody = document.getElementById('reportOpnameBody');
+                if (tbody) {
+                    tbody.innerHTML = opnameData.data.map(h => {
+                        const absDiff = Math.abs(h.difference);
+                        const threshold = (h.material_name || '').toLowerCase().includes('cup') ? 2 : 50;
+                        const isAnomaly = absDiff > threshold;
+                        const isResolved = h.is_resolved === 1;
+                        const diffClass = h.difference < 0 ? 'diff-minus' : (h.difference > 0 ? 'diff-plus' : '');
+                        const diffSign = h.difference > 0 ? '+' : '';
+                        let anomalyTag = isResolved ? '<span class="anomaly-tag" style="background: var(--success);">RESOLVED</span>' : (isAnomaly ? '<span class="anomaly-tag">ANOMALY</span>' : '');
+                        const resolveBtn = (isAnomaly && !isResolved) ? `<button onclick="resolveAnomaly('${h.id}')" class="category-btn no-print" style="font-size: 0.6rem; padding: 2px 5px; margin-left: 10px; border-color: var(--accent); color: var(--accent);">Selesaikan</button>` : '';
+
+                        return `
+                        <tr class="${(isAnomaly && !isResolved) ? 'anomaly-row' : ''}">
+                            <td style="font-weight: 600;">${anomalyTag}${h.material_name}${resolveBtn}</td>
+                            <td>${h.system_stock} ${h.unit}</td>
+                            <td style="font-weight: bold;">${h.physical_stock} ${h.unit}</td>
+                            <td class="${diffClass}">${diffSign}${h.difference} ${h.unit}</td>
+                            <td style="font-size: 0.85rem; color: var(--text-muted)">
+                                ${isResolved ? '<b style="color:var(--success)">[OK BY ' + h.resolved_by + ']</b> ' : ''}${h.note || '-'}
+                            </td>
+                        </tr>`;
+                    }).join('');
+                    if (opnameData.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted)">Tidak ada data audit untuk periode ini</td></tr>';
+                    }
+                }
+            }
+        } catch (e) { console.warn("Opname Fetch Error:", e); }
+
+        // 5. Shift Summary (Skip if no target or route)
+        // loadUsageAnalysis() and others follow...
+        try {
+            // 6. Usage Analysis
+            loadUsageAnalysis();
+
+            // 7. Attendance Logs
+            const attendanceRes = await fetch('/api/auth/attendance');
+            const attendanceData = await attendanceRes.json();
+            if (attendanceData.success && attendanceData.data) {
+                const attBody = document.getElementById('reportAttendanceBody');
+                if (attBody) {
+                    attBody.innerHTML = attendanceData.data.map(a => `
+                        <tr>
+                            <td style="font-weight: 600;">${a.staff_name}</td>
+                            <td style="color: var(--success);">${new Date(a.clock_in).toLocaleString('id-ID')}</td>
+                            <td style="color: ${a.clock_out ? 'var(--text)' : 'var(--accent)'};">
+                                ${a.clock_out ? new Date(a.clock_out).toLocaleString('id-ID') : '<i>Masih Bertugas</i>'}
+                            </td>
+                            <td>
+                                <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; background: ${a.clock_out ? 'var(--glass)' : 'rgba(228, 168, 83, 0.2)'}">
+                                    ${a.clock_out ? 'Selesai' : 'Aktif'}
+                                </span>
+                            </td>
+                        </tr>`).join('');
+                }
+            }
+
+            // 8. Void Logs
+            const voidRes = await fetch('/api/auth/void-logs');
+            const voidData = await voidRes.json();
+            if (voidData.success && voidData.data) {
+                const voidBody = document.getElementById('reportVoidBody');
+                if (voidBody) {
+                    voidBody.innerHTML = voidData.data.map(v => `
+                        <tr>
+                            <td>${new Date(v.created_at).toLocaleTimeString('id-ID')}</td>
+                            <td>${v.staff_name || 'System'}</td>
+                            <td style="font-weight: 600;">${v.product_name}</td>
+                            <td>Rp ${Number(v.price).toLocaleString()}</td>
+                            <td style="color: var(--danger); font-style: italic;">${v.reason}</td>
+                        </tr>`).join('');
+                }
+            }
+
+            // 9. AI Smart Audit
             const aiRes = await fetch('/api/auth/ai-insights');
             const aiData = await aiRes.json();
             if (aiData.success && aiData.data) {
-                const aiContainer = document.getElementById('aiInsightContainer');
                 const aiList = document.getElementById('aiInsightList');
-                if (aiContainer && aiList) {
-                    aiContainer.style.display = 'block';
+                if (aiList) {
                     aiList.innerHTML = aiData.data.map(i => `
                         <div style="margin-bottom: 10px; padding-left: 15px; border-left: 3px solid ${i.severity === 'HIGH' ? 'var(--danger)' : 'var(--accent)'};">
-                            <span style="font-weight: bold; color: ${i.severity === 'HIGH' ? 'var(--danger)' : 'var(--accent)'}; text-transform: uppercase; font-size: 0.8rem;">
-                                [${i.type}]
-                            </span> 
+                            <span style="font-weight: bold; color: ${i.severity === 'HIGH' ? 'var(--danger)' : 'var(--accent)'}; text-transform: uppercase; font-size: 0.8rem;">[${i.type}]</span> 
                             ${i.message}
-                        </div>
-                    `).join('');
+                        </div>`).join('');
                 }
             }
-        } catch (aiErr) {
-            console.warn('AI Insights offline or Container missing:', aiErr);
-            const aiList = document.getElementById('aiInsightList');
-            if (aiList) {
-                aiList.innerHTML = `<div style="color: var(--text-muted); font-style: italic;">
-                    <i data-lucide="brain-circuit" style="width:14px; vertical-align:middle; opacity: 0.5;"></i> 
-                    Server sedang offline atau elemen tidak ditemukan.
-                </div>`;
-                if (typeof lucide !== 'undefined') lucide.createIcons();
-            }
-        }
+        } catch (e) { console.warn("Report Section Error:", e); }
+
+        refreshIcons();
 
     } catch (error) {
         console.error('Report Error:', error);
     }
 }
 
+
 async function reprintSale(id) {
     try {
         const res = await fetch(`/api/sales/reprint/${id}`, { method: 'POST' });
         const result = await res.json();
         if (result.success) {
-            alert('Perintah cetak ulang berhasil dikirim!');
+            if (result.print?.isCloud) {
+                previewReceipt(id);
+            } else {
+                alert('Perintah cetak ulang berhasil dikirim!');
+            }
         } else {
             alert('Gagal cetak ulang: ' + (result.message || result.error || 'Server error'));
         }
@@ -791,6 +940,15 @@ async function previewReceipt(id) {
             document.getElementById('receiptCustomer').innerText = sale.customer_name || '-';
             document.getElementById('receiptTotalText').innerText = `Rp ${Number(sale.total).toLocaleString()}`;
             document.getElementById('receiptMethodText').innerText = sale.payment_method;
+
+            const exchangeRow = document.getElementById('receiptExchangeRow');
+            const exchangeText = document.getElementById('receiptExchangeText');
+            if (sale.qris_exchange > 0 && exchangeRow && exchangeText) {
+                exchangeRow.style.display = 'flex';
+                exchangeText.innerText = `Rp ${Number(sale.qris_exchange).toLocaleString()}`;
+            } else if (exchangeRow) {
+                exchangeRow.style.display = 'none';
+            }
 
             const itemsHtml = sale.items.map(item => `
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
@@ -1116,6 +1274,14 @@ function closePrintPreview() {
     document.getElementById('printModal').style.display = 'none';
 }
 
+function printReport() {
+    window.print();
+}
+
+function printReceiptFromBrowser() {
+    window.print();
+}
+
 // --- Pending Orders Logic ---
 let pendingSalesData = [];
 
@@ -1136,7 +1302,9 @@ function renderPendingTable(data) {
     const tbody = document.getElementById('pendingOrdersBody');
     tbody.innerHTML = data.map(s => `
         <tr>
-            <td>${new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+            <td style="font-size: 0.85rem;">${new Date(s.created_at).toLocaleDateString('id-ID')}</td>
+            <td style="font-weight: bold; color: var(--accent);">${new Date(s.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+            <td style="font-size: 0.85rem; font-weight: 600;">${s.staff_name || '-'}</td>
             <td style="font-weight: 600;">${s.customer_name || 'PELANGGAN UMUM'}</td>
             <td style="font-size: 0.9rem; color: var(--text-muted); max-width: 250px;">${s.items_summary || '-'}</td>
             <td>
@@ -1198,6 +1366,9 @@ async function payPending(salesId, method) {
         const result = await res.json();
         if (result.success) {
             alert('Pembayaran Berhasil Dilunasi!');
+            if (result.print?.isCloud || document.getElementById('checkPrint').checked) {
+                previewReceipt(salesId);
+            }
             loadPendingSales();
         }
     } catch (error) {
@@ -1476,6 +1647,229 @@ async function resolveAnomalyGroup(idsStr) {
         }
     } catch (error) {
         alert("Terjadi kesalahan saat proses massal");
+    }
+}
+
+// --- EXPENSE REPORT LOGIC ---
+function toggleExpenseFields() {
+    const type = document.getElementById('expenseType').value;
+    const materialDiv = document.getElementById('materialSelection');
+    const descriptionDiv = document.getElementById('otherDescription');
+
+    if (type === 'BAHAN_BAKU') {
+        materialDiv.style.display = 'block';
+        descriptionDiv.style.display = 'none';
+    } else {
+        materialDiv.style.display = 'none';
+        descriptionDiv.style.display = 'block';
+    }
+}
+
+function previewImage(input) {
+    const preview = document.getElementById('imgPreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+async function loadExpenseMaterials() {
+    const res = await fetch('/api/stock/materials');
+    const result = await res.json();
+    const select = document.getElementById('expenseMaterialId');
+
+    if (result.success) {
+        select.innerHTML = result.data.map(m => `
+            <option value="${m.id}">${m.name} (${m.unit})</option>
+        `).join('');
+    }
+}
+
+async function submitExpense() {
+    const type = document.getElementById('expenseType').value;
+    const materialId = document.getElementById('expenseMaterialId').value;
+    const itemName = document.getElementById('expenseItemName').value;
+    const qty = document.getElementById('expenseQty').value;
+    const amount = document.getElementById('expenseAmount').value;
+    const imgInput = document.getElementById('expenseImage');
+
+    if (!amount) return alert('Harap isi jumlah pengeluaran');
+    if (type === 'LAINNYA' && !itemName) return alert('Harap isi deskripsi pengeluaran');
+    if (type === 'BAHAN_BAKU' && !qty) return alert('Harap isi jumlah barang');
+
+    let imageBase64 = null;
+    if (imgInput.files && imgInput.files[0]) {
+        const reader = new FileReader();
+        imageBase64 = await new Promise((resolve) => {
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(imgInput.files[0]);
+        });
+    }
+
+    try {
+        const res = await fetch('/api/expenses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: currentUser ? currentUser.id : null,
+                type: type,
+                item_id: type === 'BAHAN_BAKU' ? materialId : null,
+                item_name: type === 'LAINNYA' ? itemName : null,
+                qty: qty || 0,
+                amount: amount,
+                image_base64: imageBase64
+            })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            alert('Laporan belanja berhasil disimpan!');
+            document.getElementById('expenseForm').reset();
+            document.getElementById('imgPreview').style.display = 'none';
+            loadExpenseHistory(); // Refresh riwayat di samping
+        } else {
+            alert('Gagal simpan: ' + result.error);
+        }
+    } catch (e) {
+        console.error('Submit Expense Error:', e);
+        alert('Kesalahan koneksi saat menyimpan laporan: ' + e.message);
+    }
+}
+
+async function loadExpenseHistory() {
+    const res = await fetch('/api/expenses/today');
+    const result = await res.json();
+    const tbody = document.getElementById('expenseHistoryBody');
+    if (result.success) {
+        tbody.innerHTML = result.data.map(e => `
+            <tr>
+                <td>${dayjs(e.created_at).format('HH:mm')}</td>
+                <td>${e.type === 'BAHAN_BAKU' ? e.material_name : e.item_name}</td>
+                <td style="font-weight: bold; color: var(--accent);">${e.staff_name || '-'}</td>
+                <td>${e.qty || '-'}</td>
+                <td>Rp ${Number(e.amount).toLocaleString()}</td>
+                <td style="display: flex; gap: 8px;">
+                    ${e.image_url ? `
+                        <button class="category-btn" onclick="viewExpenseImage('${e.image_url}')" style="padding: 6px; background: var(--surface); border: 1px solid var(--glass); display: inline-flex; align-items: center; justify-content: center;">
+                            <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+                        </button>
+                    ` : ''}
+                    ${!e.is_edited ? `
+                        <button class="category-btn" onclick="editExpense('${e.id}', ${e.qty}, ${e.amount})" style="padding: 4px 10px; font-size: 0.75rem; background: var(--accent); color: var(--secondary); font-weight: bold;">
+                            EDIT
+                        </button>
+                    ` : '<span style="color: var(--text-muted); font-size: 0.7rem;">Edited</span>'}
+                </td>
+            </tr>
+        `).join('');
+        refreshIcons();
+    }
+}
+
+async function viewExpenseImage(url) {
+    const modal = document.getElementById('imageModal');
+    const img = document.getElementById('modalImage');
+    img.src = url;
+    modal.style.display = 'flex';
+}
+
+async function editExpense(id, currentQty, currentAmount) {
+    const newQty = prompt("Masukkan Jumlah/Qty yang benar:", currentQty);
+    if (newQty === null) return;
+    const newAmount = prompt("Masukkan Total Harga yang benar:", currentAmount);
+    if (newAmount === null) return;
+
+    try {
+        const res = await fetch(`/api/expenses/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ qty: newQty, amount: newAmount })
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert(result.message);
+            loadExpenseHistory();
+        } else {
+            alert(result.message);
+        }
+    } catch (e) {
+        alert("Gagal mengedit data");
+    }
+}
+
+async function loadGudangData() {
+    const res = await fetch('/api/expenses/warehouse');
+    const result = await res.json();
+    const tbody = document.getElementById('gudangStockBody');
+    if (result.success) {
+        tbody.innerHTML = result.data.map(m => `
+            <tr>
+                <td style="font-weight: bold;">${m.name}</td>
+                <td style="color: var(--accent); font-size: 1.1rem; font-weight: bold;">${m.stock}</td>
+                <td>${m.unit}</td>
+                <td style="color: var(--text-muted); font-weight: bold;">${m.last_staff || '-'}</td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">${dayjs(m.updated_at).format('DD/MM/YYYY HH:mm')}</td>
+                <td>
+                    ${m.last_image ? `
+                        <button class="category-btn" onclick="viewExpenseImage('${m.last_image}')" style="padding: 6px 12px; font-size: 0.8rem;">
+                            <i data-lucide="eye" style="width: 16px; margin-right: 5px;"></i> Nota
+                        </button>
+                    ` : '-'}
+                </td>
+            </tr>
+        `).join('');
+        refreshIcons();
+    }
+}
+
+// --- QRIS Exchange Shortcut ---
+function openExchangeModal() {
+    document.getElementById('exchangeAmount').value = '';
+    document.getElementById('exchangeModal').style.display = 'flex';
+}
+
+async function submitExchangeShortcut() {
+    const amount = parseInt(document.getElementById('exchangeAmount').value);
+    if (!amount || amount <= 0) return alert('Masukkan nominal yang valid!');
+    if (amount > 20000) return alert('Maksimal nominal tukar adalah Rp 20,000!');
+
+    if (!confirm(`Konfirmasi simpan catatan tukar QRIS senilai Rp ${amount.toLocaleString()}?`)) return;
+
+    try {
+        const payload = {
+            invoice_number: `EXC-${Date.now()}`,
+            items: [], // No products for exchange-only record
+            total: 0,
+            payment_method: 'QRIS',
+            customer_name: 'TUKAR QRIS KE TUNAI',
+            payment_status: 'PAID',
+            should_print: false,
+            qris_exchange: amount,
+            creator_id: currentUser.id
+        };
+
+        const response = await fetch('/api/sales', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Catatan tukar QRIS berhasil disimpan!');
+            document.getElementById('exchangeModal').style.display = 'none';
+            // Refresh dashboard report data
+            if (typeof loadReportData === 'function') loadReportData();
+        } else {
+            alert('Gagal: ' + result.error);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Terjadi kesalahan koneksi.');
     }
 }
 

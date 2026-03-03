@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="js/lucide.min.js"></script>
+    <!-- DayJS -->
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -22,7 +24,10 @@
                 data-lucide="layout-grid"></i></div>
         <div class="nav-item" id="navPending" onclick="switchPage('pending')" title="Pesanan Pending"><i
                 data-lucide="clock"></i></div>
-        <div class="nav-item" id="navStok" onclick="switchPage('stok')" title="Stok"><i data-lucide="package"></i></div>
+        <div class="nav-item" id="navStok" onclick="switchPage('stok')" title="Stok Toko"><i data-lucide="package"></i>
+        </div>
+        <div class="nav-item" id="navGudang" onclick="switchPage('gudang')" title="Stok Gudang"><i
+                data-lucide="container"></i></div>
         <div class="nav-item" id="navReport" onclick="switchPage('report')" title="Laporan"><i
                 data-lucide="bar-chart-2"></i></div>
         <div class="nav-item" id="navBMS" onclick="switchPage('bms')" title="Monitoring Bangunan (BMS)"><i
@@ -39,7 +44,8 @@
         </div>
         <div class="nav-item" onclick="logout()" title="Logout"><i data-lucide="log-out"
                 style="color: var(--danger);"></i></div>
-        <div class="nav-item"><i data-lucide="settings"></i></div>
+        <div class="nav-item" id="navSettings" onclick="switchPage('settings')" title="Settings (Owner Only)"
+            style="display: none;"><i data-lucide="settings"></i></div>
     </nav>
 
     <main>
@@ -123,6 +129,10 @@
                         <option value="1">☀️ Shift Pagi (06-17)</option>
                         <option value="2">🌙 Shift Malam (17-03)</option>
                     </select>
+                    <button class="category-btn" onclick="switchPage('belanja')"
+                        style="background: var(--surface); color: var(--text); border: 1px solid var(--glass);">
+                        <i data-lucide="shopping-cart" style="width: 18px; margin-right: 5px;"></i> Laporan Belanja
+                    </button>
                     <input type="date" id="reportDate" class="search-bar" onchange="loadReportData()"
                         style="width: auto;">
                     <button class="category-btn" onclick="openPrintPreview()"
@@ -274,10 +284,30 @@
                     <div class="card-icon" style="background: rgba(228, 168, 83, 0.1); color: var(--accent);">
                         <i data-lucide="sun"></i>
                     </div>
-                    <div class="card-info">
-                        <span class="label">Shift Harian (06:00 - 03:00)</span>
-                        <h2 id="dailyRevenue">Rp 0</h2>
-                        <span class="sub" id="dailyCount">0 Transaksi</span>
+                    <div class="card-info" style="flex: 1;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span class="label">Shift Harian (06:00 - 03:00)</span>
+                            <button class="category-btn" onclick="openExchangeModal()"
+                                style="padding: 4px 8px; font-size: 0.7rem; background: var(--accent); color: var(--secondary); font-weight: bold; border: none; border-radius: 4px;">
+                                + TUKAR QRIS
+                            </button>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <h2 id="dailyRevenue">Rp 0</h2>
+                            <span class="sub" id="dailyCount">0 Transaksi</span>
+                        </div>
+                        <div
+                            style="margin-top: 5px; font-size: 0.85rem; border-top: 1px solid var(--glass-border); padding-top: 5px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">- TOTAL CASH:</span>
+                                <span id="dailyCash" style="font-weight: 600;">Rp 0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">- TOTAL QRIS:</span>
+                                <span id="dailyQRIS" style="font-weight: 600;">Rp 0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -388,6 +418,38 @@
                 </table>
             </div>
 
+            <div class="card" style="margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: var(--accent);"><i data-lucide="trending-up"
+                            style="width: 18px; margin-right: 8px; vertical-align: middle;"></i>Analisa Efisiensi
+                        Penggunaan
+                        Bahan</h3>
+                    <select id="analysisDays" class="category-btn" onchange="loadUsageAnalysis()"
+                        style="padding: 5px 15px;">
+                        <option value="1">24 Jam Terakhir</option>
+                        <option value="7" selected>7 Hari Terakhir</option>
+                        <option value="30">30 Hari Terakhir</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nama Bahan</th>
+                                <th>Terjual (Resep)</th>
+                                <th>Kehilangan (Opname)</th>
+                                <th>Surplus (Opname)</th>
+                                <th>Efisiensi</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usageAnalysisBody">
+                            <!-- Data analisa penggunaan -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- ADD ATTENDANCE LOGS (v2.4) -->
             <div class="card" style="margin-top: 30px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -410,6 +472,141 @@
                 </table>
             </div>
         </div>
+
+        <!-- GUDANG SECTION -->
+        <div class="product-section" id="gudangPage" style="display: none;">
+            <div class="header">
+                <div>
+                    <h1 style="margin: 0;">Stok Gudang Utama</h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Persediaan bahan baku di gudang utama</p>
+                </div>
+                <button class="category-btn" onclick="loadGudangData()" style="background: var(--surface);">
+                    <i data-lucide="refresh-cw" style="width: 18px; margin-right: 5px;"></i> Refresh
+                </button>
+            </div>
+
+            <div class="card" style="margin-top: 30px;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Bahan Baku</th>
+                            <th>Stok Gudang</th>
+                            <th>Satuan</th>
+                            <th>Petugas Terakhir</th>
+                            <th>Update Terakhir</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gudangStockBody">
+                        <!-- Data loaded from JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BELANJA SECTION -->
+        <div class="product-section" id="belanjaPage" style="display: none;">
+            <div class="header">
+                <div>
+                    <h1 style="margin: 0;">Laporan Pembelanjaan</h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Input pengeluaran outlet hari ini</p>
+                </div>
+                <button class="category-btn" onclick="switchPage('report')" style="background: var(--surface);">
+                    <i data-lucide="arrow-left" style="width: 18px; margin-right: 5px;"></i> Kembali
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; margin-top: 20px;">
+                <div class="card" style="padding: 30px; border: 1px solid var(--glass); height: fit-content;">
+                    <form id="expenseForm">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Tipe
+                                Pengeluaran</label>
+                            <select id="expenseType" class="payment-dropdown" onchange="toggleExpenseFields()"
+                                style="background: var(--surface)">
+                                <option value="BAHAN_BAKU">📦 Bahan Baku (Stok)</option>
+                                <option value="LAINNYA">📝 Lainnya (Operasional, dll)</option>
+                            </select>
+                        </div>
+
+                        <div id="materialSelection" class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Pilih Bahan
+                                Baku</label>
+                            <select id="expenseMaterialId" class="payment-dropdown" style="background: var(--surface)">
+                                <!-- Loaded from JS -->
+                            </select>
+                        </div>
+
+                        <div id="otherDescription" class="form-group" style="margin-bottom: 20px; display: none;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Deskripsi
+                                Pengeluaran</label>
+                            <input type="text" id="expenseItemName" class="search-bar"
+                                style="width: 100%; border: 1px solid var(--glass);"
+                                placeholder="Contoh: Sabun Cuci...">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Jumlah /
+                                Quantity</label>
+                            <input type="number" step="0.01" id="expenseQty" class="search-bar"
+                                style="width: 100%; border: 1px solid var(--glass);" placeholder="0">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Total Harga
+                                (Rp)</label>
+                            <input type="number" id="expenseAmount" class="search-bar"
+                                style="width: 100%; border: 1px solid var(--glass);" placeholder="0">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 30px;">
+                            <label style="display: block; margin-bottom: 15px; font-weight: bold;">Foto
+                                (Opsional)</label>
+                            <div
+                                style="display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 10px; border: 1px dashed var(--glass);">
+                                <input type="file" id="expenseImage" accept="image/*" capture="camera"
+                                    style="display: none;" onchange="previewImage(this)">
+                                <button type="button" class="category-btn"
+                                    onclick="document.getElementById('expenseImage').click()"
+                                    style="padding: 10px 20px; font-size: 0.8rem;">
+                                    <i data-lucide="camera" style="width: 16px; margin-right: 8px;"></i> Ambil Foto
+                                </button>
+                                <img id="imgPreview"
+                                    style="display: none; width: 100%; max-height: 150px; object-fit: contain; border-radius: 5px;">
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-checkout" onclick="submitExpense()"
+                            style="width: 100%; height: 50px; background: var(--success); color: var(--bg); font-weight: bold;">
+                            <i data-lucide="save" style="width: 18px; margin-right: 10px;"></i> SIMPAN LAPORAN
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card" style="padding: 20px; border: 1px solid var(--glass);">
+                    <h3 style="margin-bottom: 20px;"><i data-lucide="history"
+                            style="width: 18px; vertical-align: middle; margin-right: 8px;"></i>Riwayat Belanja Hari Ini
+                    </h3>
+                    <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                        <table class="data-table" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Item</th>
+                                    <th>Petugas</th>
+                                    <th>Qty</th>
+                                    <th>Biaya</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseHistoryBody">
+                                <!-- DataLoaded -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
         </div>
 
@@ -429,7 +626,9 @@
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Tanggal</th>
                             <th>Waktu</th>
+                            <th>Kasir</th>
                             <th>Nama Pelanggan</th>
                             <th>Daftar Menu</th>
                             <th>Status / Nominal</th>
@@ -493,7 +692,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+            <div class="grid-2-col">
                 <!-- Lighting Control -->
                 <div class="card">
                     <h3 style="margin-bottom: 20px;">Kontrol Lampu & AC</h3>
@@ -583,6 +782,100 @@
                     <p style="margin-top: 20px; font-size: 0.8rem; color: var(--text-muted);">
                         *Perangkat akan mati dalam 10 detik setelah tombol ditekan.
                     </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS SECTION (OWNER ONLY) -->
+        <div class="product-section" id="settingsPage" style="display: none;">
+            <div class="header">
+                <h1>Owner Settings & Control</h1>
+                <div style="color: var(--accent); display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                    <i data-lucide="shield-check"></i> Administrator Mode
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                <!-- Activity Logs -->
+                <div class="card" style="grid-column: 1 / -1;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="display: flex; align-items: center; gap: 10px;">
+                            <i data-lucide="activity"></i> Log Aktivitas Pengguna (100 Terakhir)
+                        </h3>
+                        <button class="category-btn" onclick="loadActivityLogs()" style="padding: 5px 15px;">Refresh
+                            Log</button>
+                    </div>
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>User</th>
+                                    <th>Aksi</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityLogBody">
+                                <!-- Data logs -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- App Control Settings -->
+                <div class="card">
+                    <h3 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                        <i data-lucide="sliders"></i> Konfigurasi Sistem
+                    </h3>
+
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--glass); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Default Cetak Struk</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Cetak struk otomatis aktif
+                                    saat kasir buka menu</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settingDefaultPrint"
+                                    onchange="updateAppSetting('default_print', this.checked ? 'ON' : 'OFF')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--glass); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Tombol Shutdown</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Tampilkan menu mematikan
+                                    perangkat di sidebar</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settingShowShutdown"
+                                    onchange="updateAppSetting('show_shutdown', this.checked ? 'ON' : 'OFF')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Maintenance -->
+                <div class="card">
+                    <h3 style="margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                        <i data-lucide="database"></i> Informasi Sistem
+                    </h3>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
+                        <p><b>Versi Aplikasi:</b> v2.6.0-stable</p>
+                        <p><b>Database:</b> MySQL 8.0 / MariaDB</p>
+                        <p><b>Environment:</b> <span id="envDisplay">Local Production</span></p>
+                        <p><b>Last Backup:</b> Belum diatur</p>
+                        <hr style="margin: 15px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <button class="category-btn"
+                            style="width: 100%; justify-content: center; background: var(--glass); color: var(--text-muted); pointer-events: none;">
+                            Fitur Maintenance (Segera Hadir)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -687,15 +980,25 @@
                     <span>METODE:</span>
                     <span id="receiptMethodText"></span>
                 </div>
+                <div id="receiptExchangeRow"
+                    style="display: none; justify-content: space-between; font-size: 0.8rem; color: #444; border-top: 1px dashed #eee; margin-top: 5px; padding-top: 5px;">
+                    <span>TUKAR TUNAI:</span>
+                    <span id="receiptExchangeText"></span>
+                </div>
             </div>
 
             <div style="text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 15px;">
                 <p style="margin: 0; font-size: 0.8rem;">TERIMA KASIH</p>
             </div>
         </div>
-        <div style="text-align: center; margin-top: 20px;">
+        <div style="text-align: center; margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
             <button class="category-btn" onclick="document.getElementById('receiptModal').style.display='none'"
                 style="background: var(--danger); color: white;">TUTUP PREVIEW</button>
+            <button class="category-btn" id="btnReceiptPrint" onclick="printReceiptFromBrowser()"
+                style="background: var(--accent); color: var(--secondary); font-weight: bold;">
+                <i data-lucide="printer" style="width: 14px; vertical-align: middle; margin-right: 5px;"></i>
+                CETAK STRUK
+            </button>
         </div>
     </div>
 
@@ -848,6 +1151,48 @@
     <script>
         lucide.createIcons();
     </script>
+    <!-- Image Viewer Modal -->
+    <div id="imageModal"
+        style="display:none; position: fixed; z-index: 30000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="position: relative; max-width: 90%; max-height: 90%;">
+            <button onclick="document.getElementById('imageModal').style.display='none'"
+                style="position: absolute; top: -40px; right: 0; background: none; border: none; color: white; cursor: pointer; font-size: 1.5rem;">✕
+                Tutup</button>
+            <img id="modalImage" src=""
+                style="width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5);">
+        </div>
+    </div>
+    <!-- Exchange Modal -->
+    <div id="exchangeModal"
+        style="display:none; position: fixed; z-index: 15000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+        <div class="card"
+            style="width: 400px; padding: 25px; border: 1px solid var(--accent); background: var(--surface);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <div style="background: var(--accent); color: var(--secondary); padding: 8px; border-radius: 8px;">
+                    <i data-lucide="refresh-cw" style="width: 20px;"></i>
+                </div>
+                <h3>Catatan Tukar QRIS</h3>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted);">Nominal
+                    Tukar (Max 20rb)</label>
+                <input type="number" id="exchangeAmount" class="payment-dropdown" placeholder="Contoh: 15000"
+                    style="background-image: none; padding-right: 15px; font-size: 1.2rem; font-weight: bold; color: var(--accent);"
+                    min="0" max="20000">
+                <p style="font-size: 0.75rem; color: var(--accent); margin-top: 5px;">* Nominal ini akan ditambahkan ke
+                    saldo QRIS dan dikurangi dari saldo Tunai.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <button class="category-btn" onclick="document.getElementById('exchangeModal').style.display='none'"
+                    style="background: var(--glass); border: 1px solid var(--glass-border);">BATAL</button>
+                <button class="btn-checkout" onclick="submitExchangeShortcut()"
+                    style="margin-top: 0; background: var(--accent); color: var(--secondary); font-weight: bold;">SIMPAN
+                    CATATAN</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

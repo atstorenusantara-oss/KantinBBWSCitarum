@@ -44,12 +44,20 @@ class ReportService {
 
         // Payment Method Breakdown
         const paymentQuery = `
-            SELECT payment_method, SUM(total) as total_amount
+            SELECT 
+                SUM(CASE WHEN payment_method = 'CASH' THEN total ELSE 0 END) as raw_cash,
+                SUM(CASE WHEN payment_method = 'QRIS' THEN total ELSE 0 END) as raw_qris,
+                SUM(qris_exchange) as total_exchange
             FROM sales 
             WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'
-            GROUP BY payment_method
         `;
-        const [payments] = await db.query(paymentQuery, [startTime, endTime]);
+        const [paymentSummary] = await db.query(paymentQuery, [startTime, endTime]);
+        const { raw_cash, raw_qris, total_exchange } = paymentSummary[0];
+
+        const payments = [
+            { payment_method: 'CASH', total_amount: (Number(raw_cash) || 0) - (Number(total_exchange) || 0) },
+            { payment_method: 'QRIS', total_amount: (Number(raw_qris) || 0) + (Number(total_exchange) || 0) }
+        ];
 
         // All products sold for this shift
         const allProductQuery = `

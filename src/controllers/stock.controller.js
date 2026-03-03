@@ -70,6 +70,20 @@ class StockController {
     }
 
     /**
+     * Get usage vs opname analysis
+     */
+    async getUsageAnalysis(req, res) {
+        try {
+            const { days } = req.query;
+            const analysis = await stockService.getUsageAnalysis(days ? parseInt(days) : 7);
+            res.json({ success: true, data: analysis });
+        } catch (error) {
+            console.error('Error in getUsageAnalysis:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
      * Create new stock in (restock)
      */
     async restock(req, res) {

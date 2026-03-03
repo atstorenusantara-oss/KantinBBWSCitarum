@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/connection');
 const { v4: uuidv4 } = require('uuid');
+const settingsService = require('../services/settings.service');
 
 // Auth: Get Users (for login dropdown)
 router.get('/users', async (req, res) => {
@@ -9,7 +10,7 @@ router.get('/users', async (req, res) => {
         const [rows] = await db.query('SELECT username, role FROM users');
         res.json({ success: true, data: rows });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -25,12 +26,15 @@ router.post('/login', async (req, res) => {
             // Create attendance record on login
             await db.query('INSERT INTO attendance (id, user_id, clock_in) VALUES (?, ?, NOW())', [attendanceId, user.id]);
 
+            // Log activity
+            await settingsService.logActivity(user.id, 'LOGIN', `User ${user.username} logged in.`);
+
             res.json({ success: true, user: user, attendance_id: attendanceId });
         } else {
             res.status(401).json({ success: false, message: 'username atau PIN salah' });
         }
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -39,11 +43,16 @@ router.post('/logout', async (req, res) => {
     try {
         const { attendance_id } = req.body;
         if (attendance_id) {
+            // Get user_id before logging
+            const [att] = await db.query('SELECT user_id FROM attendance WHERE id = ?', [attendance_id]);
+            if (att.length > 0) {
+                await settingsService.logActivity(att[0].user_id, 'LOGOUT', `User clocked out.`);
+            }
             await db.query('UPDATE attendance SET clock_out = NOW() WHERE id = ?', [attendance_id]);
         }
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -60,7 +69,7 @@ router.get('/attendance', async (req, res) => {
         `);
         res.json({ success: true, data: rows });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -76,7 +85,7 @@ router.post('/verify-admin', async (req, res) => {
             res.status(401).json({ success: false, message: 'PIN Manager tidak valid' });
         }
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -88,9 +97,11 @@ router.post('/void-log', async (req, res) => {
             'INSERT INTO void_logs (id, user_id, product_name, price, reason) VALUES (?, ?, ?, ?, ?)',
             [uuidv4(), user_id, product_name, price, reason]
         );
+        // Log to general activity log
+        await settingsService.logActivity(user_id, 'VOID_ITEM', `Voided ${product_name} (Rp ${price}) reason: ${reason}`);
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -100,7 +111,7 @@ router.get('/void-logs', async (req, res) => {
         const [rows] = await db.query('SELECT vl.*, u.username as staff_name FROM void_logs vl LEFT JOIN users u ON vl.user_id = u.id ORDER BY vl.created_at DESC');
         res.json({ success: true, data: rows });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -174,7 +185,7 @@ router.get('/ai-insights', async (req, res) => {
 
         res.json({ success: true, data: insights });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 

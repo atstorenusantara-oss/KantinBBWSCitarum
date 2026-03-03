@@ -1,11 +1,15 @@
 const salesService = require('../services/sales.service');
 const printerService = require('../services/printer.service');
+const settingsService = require('../services/settings.service');
 
 class SalesController {
     async create(req, res) {
         try {
             const { should_print, ...salesData } = req.body;
             const result = await salesService.createTransaction(salesData);
+
+            // Log activity
+            await settingsService.logActivity(salesData.creator_id, 'CREATE_SALE', `Created ${salesData.payment_status} sale: ${salesData.invoice_number}`);
 
             let printResult = null;
             if (should_print) {
@@ -48,7 +52,15 @@ class SalesController {
             const { id } = req.params;
             const { payment_method } = req.body;
             const result = await salesService.completePayment(id, payment_method);
-            res.json({ success: true, data: result });
+
+            // Log activity (Try to get actual creator_id if possible, or just log with common id)
+            await settingsService.logActivity(null, 'COMPLETE_SALE', `Completed payment for sale: ${id} with ${payment_method}`);
+
+            // Trigger print after completion
+            const saleData = await salesService.getSaleById(id);
+            const printResult = await printerService.printReceipt(saleData);
+
+            res.json({ success: true, data: result, print: printResult });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
         }
@@ -63,6 +75,9 @@ class SalesController {
             }
 
             const printResult = await printerService.printReceipt(salesData);
+
+            // Log activity
+            await settingsService.logActivity(null, 'REPRINT_SALE', `Reprinted receipt for ${salesData.invoice_number}`);
             res.json({ success: true, message: "Perintah cetak ulang dikirim", print: printResult });
         } catch (error) {
             console.error("Reprint Error:", error);

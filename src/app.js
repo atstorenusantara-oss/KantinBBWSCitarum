@@ -6,7 +6,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static('public')); // Melayani file frontend statis
 
 // Basic Route
@@ -22,6 +23,8 @@ app.use('/api/reports', require('./routes/report.routes.js'));
 app.use('/api/bms', require('./routes/bms.routes.js'));
 app.use('/api/auth', require('./routes/auth.routes.js'));
 app.use('/api/system', require('./routes/system.routes.js'));
+app.use('/api/settings', require('./routes/settings.routes.js'));
+app.use('/api/expenses', require('./routes/expense.routes.js'));
 
 
 app.listen(PORT, () => {

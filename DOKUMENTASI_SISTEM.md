@@ -54,6 +54,10 @@ GCOFFEE_POSv2/
 - **Automatic BOM**: Potong stok bahan & packaging (Cup) sesuai suhu minuman (Panas/Dingin).
 - **AI Smart Audit**: Fitur analisa anomali yang mendeteksi kecurangan atau selisih stok secara otomatis.
 
+### E. Akses Jarak Jauh (Remote Monitoring)
+- **Cloudflare Tunnel**: Memungkinkan owner memonitor dashboard kasir dari mana saja (lewat HP/Laptop luar toko) secara GRATIS dan AMAN tanpa IP Publik.
+- Lihat panduan lengkap di: `ONLINE_VIA_TUNNEL.md`.
+
 ---
 
 ## 5. PANDUAN INSTALASI (KOMPUTER BARU)

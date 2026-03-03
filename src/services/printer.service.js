@@ -47,6 +47,13 @@ class PrinterService {
             printer.println(`BAYAR: Rp ${Number(salesData.total).toLocaleString()}`);
             printer.setTextNormal();
 
+            // QRIS Exchange info
+            if (salesData.qris_exchange > 0) {
+                printer.println("--------------------------------");
+                printer.println(`TUKAR TUNAI: Rp ${Number(salesData.qris_exchange).toLocaleString()}`);
+                printer.println(`(QRIS PAY: Rp ${Number(Number(salesData.total) + Number(salesData.qris_exchange)).toLocaleString()})`);
+            }
+
             printer.alignCenter();
             printer.newLine();
             printer.println("Terima Kasih Atas Kunjungan Anda");
@@ -54,7 +61,19 @@ class PrinterService {
             printer.alignCenter();
             printer.cut();
 
-            // EXECUTION using PowerShell Spooler API (Most reliable on Windows without native driver)
+            // EXECUTION: Only on Windows
+            const isWindows = process.platform === "win32";
+
+            if (!isWindows) {
+                console.log("Not on Windows. Skipping physical print execution.");
+                return {
+                    success: false,
+                    message: "Cloud Mode: Cetak fisik dinonaktifkan. Gunakan cetak dari browser.",
+                    isCloud: true,
+                    printableData: salesData
+                };
+            }
+
             const fs = require('fs');
             const path = require('path');
             const { execSync } = require('child_process');

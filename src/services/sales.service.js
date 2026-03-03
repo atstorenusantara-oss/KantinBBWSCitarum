@@ -4,7 +4,7 @@ const stockService = require('./stock.service');
 
 class SalesService {
     async createTransaction(salesData) {
-        const { invoice_number, items, total, payment_method, customer_name, payment_status } = salesData;
+        const { invoice_number, items, total, payment_method, customer_name, payment_status, qris_exchange } = salesData;
         const salesId = uuidv4();
 
         const connection = await db.getConnection();
@@ -14,9 +14,9 @@ class SalesService {
 
             // 1. Insert into sales table
             await connection.query(
-                `INSERT INTO sales (id, invoice_number, total, payment_method, customer_name, payment_status, creator_id) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [salesId, invoice_number, total, payment_method, customer_name || 'Pelanggan', payment_status || 'PAID', salesData.creator_id || null]
+                `INSERT INTO sales (id, invoice_number, total, payment_method, customer_name, payment_status, creator_id, qris_exchange) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [salesId, invoice_number, total, payment_method, customer_name || 'Pelanggan', payment_status || 'PAID', salesData.creator_id || null, qris_exchange || 0]
             );
 
             // 2. Insert items and reduce stock
@@ -50,8 +50,10 @@ class SalesService {
     async getPendingSales() {
         const [rows] = await db.query(
             `SELECT s.id, s.invoice_number, s.customer_name, s.total, s.payment_method, s.created_at,
+                    u.username as staff_name,
                     GROUP_CONCAT(CONCAT(sub.name, ' (x', sub.sum_qty, ')') SEPARATOR ', ') as items_summary
              FROM sales s
+             LEFT JOIN users u ON s.creator_id = u.id
              JOIN (
                  SELECT si.sales_id, p.name, SUM(si.qty) as sum_qty
                  FROM sales_items si
