@@ -1,6 +1,6 @@
 @echo off
 SETLOCAL
-cd /d %~dp0
+cd /d "%~dp0\.."
 title GCOFFEE POS Server
 
 echo ==========================================

@@ -43,6 +43,48 @@ class StockService {
     }
 
     /**
+     * Restore stock when a sale is deleted/voided
+     * @param {string} salesId 
+     * @param {object} connection - Optional mysql2 connection for transaction
+     */
+    async restoreStockFromSale(salesId, connection = null) {
+        const executor = connection || db;
+
+        // 1. Get all items from the sale
+        const [items] = await executor.query(
+            "SELECT product_id, qty FROM sales_items WHERE sales_id = ?",
+            [salesId]
+        );
+
+        for (const item of items) {
+            // 2. Get recipe details for each product
+            const [recipeDetails] = await executor.query(
+                `SELECT rd.raw_material_id, rd.qty 
+                 FROM recipe_details rd
+                 JOIN recipes r ON rd.recipe_id = r.id
+                 WHERE r.product_id = ?`,
+                [item.product_id]
+            );
+
+            for (const recipeItem of recipeDetails) {
+                const totalRestored = recipeItem.qty * item.qty;
+
+                // 3. Restore raw material stock
+                await executor.query(
+                    "UPDATE raw_materials SET stock = stock + ? WHERE id = ?",
+                    [totalRestored, recipeItem.raw_material_id]
+                );
+
+                // 4. Record stock movement (IN/VOID)
+                await executor.query(
+                    "INSERT INTO stock_movements (id, raw_material_id, type, qty, reference_id, note) VALUES (?, ?, 'IN', ?, ?, ?)",
+                    [uuidv4(), recipeItem.raw_material_id, totalRestored, salesId, `Void/Delete sale of product ${item.product_id}`]
+                );
+            }
+        }
+    }
+
+    /**
      * Process Stock Opname (Point 6.2 in file_analisa.md)
      * @param {string} rawMaterialId 
      * @param {number} physicalStock 

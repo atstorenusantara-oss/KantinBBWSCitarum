@@ -25,6 +25,7 @@ app.use('/api/auth', require('./routes/auth.routes.js'));
 app.use('/api/system', require('./routes/system.routes.js'));
 app.use('/api/settings', require('./routes/settings.routes.js'));
 app.use('/api/expenses', require('./routes/expense.routes.js'));
+app.use('/api/qris', require('./routes/qris.routes.js'));
 
 
 app.listen(PORT, () => {

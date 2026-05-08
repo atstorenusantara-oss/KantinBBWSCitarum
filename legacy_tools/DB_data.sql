@@ -16,6 +16,102 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/`gcoffee_pos` /*!40100 DEFAULT CHARACTER
 
 USE `gcoffee_pos`;
 
+/*Table structure for table `activity_logs` */
+
+DROP TABLE IF EXISTS `activity_logs`;
+
+CREATE TABLE `activity_logs` (
+  `id` varchar(36) NOT NULL,
+  `user_id` varchar(36) DEFAULT NULL,
+  `action` varchar(255) DEFAULT NULL,
+  `note` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `activity_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/*Data for the table `activity_logs` */
+
+insert  into `activity_logs`(`id`,`user_id`,`action`,`note`,`created_at`) values 
+('0060effd-3f77-48c8-96ca-e575688a5fb1','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479139936','2026-03-03 02:18:59'),
+('010d7ba3-7028-4b1a-8425-0659c2a3fc3d','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 23:59:40'),
+('01734b45-0168-43ef-a4fa-67b0deb983ba','e06b6521-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out. Duration: 1 mins, Earned: Rp 150.','2026-03-03 23:59:35'),
+('03141605-2c43-44bf-b5dc-3f127e773b31','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479813572','2026-03-03 02:30:13'),
+('06876411-195d-4a0a-a86d-f38d3646e006','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479109048','2026-03-03 02:18:29'),
+('069f6fcb-3891-4e55-83d4-514894fb9d13','e78057ba-0bdd-11f1-8cab-08979871e6ef','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 20:49:27'),
+('0751178e-047e-4b9f-a302-647b59e5c878','e78057ba-0bdd-11f1-8cab-08979871e6ef','LOGOUT','User clocked out.','2026-03-03 11:25:30'),
+('07b4b617-37a8-42e0-a352-059ae9331200','e06b62e5-05f6-11f1-9a18-507b9db621bd','LOGIN','User Andi logged in.','2026-03-03 03:24:51'),
+('0e4a9518-a250-4144-adb4-afb97c5f6813','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PENDING sale: INV-1772512537182','2026-03-03 11:35:37'),
+('13e3b5f3-eaf5-407b-a68b-7df7dac31ac5','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479220237','2026-03-03 02:20:20'),
+('16912909-0840-44d3-94bc-753edaf9cb23','e06b6521-05f6-11f1-9a18-507b9db621bd','LOGIN_OFF_SCHEDULE','Staff Tamy logged in without schedule (Permission Granted).','2026-03-04 00:33:49'),
+('1823957e-8698-430a-a92e-d8a04436f784','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PENDING sale: INV-1772553048410','2026-03-03 22:50:48'),
+('199187ce-5a12-4286-93fa-426316fe354e','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out.','2026-03-03 00:27:53'),
+('1e410131-9f40-44d1-bcb9-1ba7acf7dfa0','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 00:54:39'),
+('2471180e-c9fc-4972-8e10-46e8ee900321','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772478818440','2026-03-03 02:13:38'),
+('29908f8d-3800-4117-989d-624e8c2751ef','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: EXC-1772518883968','2026-03-03 13:21:23'),
+('2be5f615-d45d-4e9e-953c-badfc94bf619','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: EXC-1772552838066','2026-03-03 22:47:18'),
+('2d4e836a-1e91-4304-bd81-8fb5d256a4a2','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','Owner/Admin Atjas logged in.','2026-03-04 00:25:12'),
+('2e59a34e-9849-482c-afb6-5295213a82f8','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772478791637','2026-03-03 02:13:11'),
+('2f9a1a8f-61f6-4784-a11a-2d90cff82557','e06b6490-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 23:12:07'),
+('36ac779e-dc38-4b55-919b-5b9a7dce514d','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479158756','2026-03-03 02:19:18'),
+('374ca9b3-4095-4071-8123-60ac715fac9a','e06b62e5-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 250/min','2026-03-03 13:47:10'),
+('438d3cd3-0b8e-4245-af2d-fd860095be90','e06b6521-05f6-11f1-9a18-507b9db621bd','LOGIN','User Tamy logged in.','2026-03-03 23:58:45'),
+('460f678b-b2c0-47c4-a4c8-d1f3f0715e01','e06b6490-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 125/min','2026-03-03 14:03:10'),
+('46c1071e-6232-482f-8a0c-6f618527ea7e',NULL,'REPRINT_SALE','Reprinted receipt for INV-1772512537182','2026-03-03 11:36:06'),
+('4c9fd80a-d514-43ba-9e51-6da2caab9991','e06b62e5-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 250/min','2026-03-03 13:50:18'),
+('4ca79f34-2620-4037-b2ca-990dd7215b1e','e06b6490-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 23:11:46'),
+('4d92150b-bd69-4a7c-87de-f4f175514b87','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 03:25:18'),
+('4f56fd3a-6a3d-4ce8-b5a7-0d370325859c','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: EXC-1772518846562','2026-03-03 13:20:46'),
+('537a1334-d40e-4d49-8b4e-479b855931cd','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 22:50:15'),
+('55682d87-cdd1-4386-a430-e1a1c6e0fb06','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479688393','2026-03-03 02:28:08'),
+('55877351-5cf9-4cd0-8a63-607febe1eae3','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','Owner/Admin Atjas logged in.','2026-03-04 00:10:12'),
+('584e9806-2907-456b-b650-f527d529994b','e06b6521-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 20:52:41'),
+('659bc544-f525-4c12-9ff6-bfedd1b8dfef','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772473302582','2026-03-03 00:41:42'),
+('693419a4-bd2f-4c51-83b4-ecc46fac99d0','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 00:27:40'),
+('6a274d67-caeb-4aae-8eec-024c300bd2cf','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479118902','2026-03-03 02:18:38'),
+('6b0bf2e3-1edb-491c-9cb7-e2e50430d9a5','e06b6521-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out. Duration: 1 mins, Earned: Rp 150.','2026-03-04 00:34:17'),
+('6eb11b2c-b0e3-42eb-9355-659f6f6c6b14','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PENDING sale: INV-1772473313323','2026-03-03 00:41:53'),
+('6f058992-7efd-462c-b17e-46058f4a35b8',NULL,'COMPLETE_SALE','Completed payment for sale: a0406d10-52e1-4f8c-bd01-2ce04d13e12a with CASH','2026-03-03 13:21:06'),
+('7561a2a6-178c-4287-ac81-156e97d215d1','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','Owner/Admin Atjas logged in.','2026-03-04 00:21:14'),
+('75654db6-434b-4640-947a-7bf8b9fb71fc','e06b6490-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 23:11:28'),
+('75ba491e-ea72-4e94-98d3-cf89802f1489','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479338122','2026-03-03 02:22:18'),
+('7633b6f6-4140-4469-9a35-7a0660c2b2fc','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772478843952','2026-03-03 02:14:03'),
+('7aa46684-858b-4373-aeab-a5087a436f6b','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out. Duration: 8 mins, Earned: Rp 2000.','2026-03-04 00:19:39'),
+('7c7c299a-8657-4503-a508-8e82fe52daf8','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','Owner/Admin Atjas logged in.','2026-03-04 00:24:58'),
+('7cd77441-c5a9-454f-9a60-10d33b4ddea4','e06b63f6-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 20:51:21'),
+('852a4467-3227-4b52-b4cf-3a931050cd47','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 00:28:39'),
+('870bd6e9-17b9-4a19-ad25-daeb49415a88','e06b62e5-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out.','2026-03-03 03:25:12'),
+('901e3560-cdde-4808-af00-7d5ab6b9501d','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479034660','2026-03-03 02:17:14'),
+('93cdb6d3-9450-48d0-96f3-ec83ea0fb230','e06b62e5-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out. Duration: 1 mins, Earned: Rp 250.','2026-03-03 22:50:06'),
+('99ad13ec-eaee-4e9a-9cd1-d9f875908980','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479605553','2026-03-03 02:26:45'),
+('9cdc9f26-9e20-4afb-bb7c-ddda1958a37f','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: EXC-1772518746174','2026-03-03 13:19:06'),
+('9d4b86fa-6e1c-4965-9c8b-29e1f09ed744','e06b6490-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 14:04:50'),
+('9d9a85b1-849d-4d92-811b-8309fcc7edbe','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772518780830','2026-03-03 13:19:40'),
+('a7692321-5c93-43ca-bdaa-5f25fdfcee46','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479277981','2026-03-03 02:21:17'),
+('a9753676-ba0c-4b24-b840-269c967d9b9f','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','Owner/Admin Atjas logged in.','2026-03-04 00:36:15'),
+('adfed621-ffdb-43f1-81da-868ac3be8fb0','e06b63f6-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out. Duration: 1 mins, Earned: Rp 150.','2026-03-04 00:21:06'),
+('b024bd30-a275-4680-b34a-b5d8319c80d5','e06b6521-05f6-11f1-9a18-507b9db621bd','LOGIN_OFF_SCHEDULE','Staff Tamy logged in off-schedule (Browsing only).','2026-03-04 00:38:40'),
+('b9f1c788-4d32-4382-8868-183ef6b081fa','e06b6521-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 125/min','2026-03-03 20:52:30'),
+('c10fc04e-ee0b-42a5-90e0-30c5a67312ed','e06b6490-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 250/min','2026-03-03 13:47:30'),
+('c276eedf-245d-44ac-9725-37cb49f6df30','e06b542b-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 250/min','2026-03-03 13:50:24'),
+('d00b0734-876e-4659-9c5c-8d273488f0ba','e06b62e5-05f6-11f1-9a18-507b9db621bd','LOGIN','User Andi logged in.','2026-03-03 00:28:06'),
+('d48f5cae-4640-4359-a8e0-fef919b052d2','e06b63f6-05f6-11f1-9a18-507b9db621bd','LOGIN_OFF_SCHEDULE','Staff Cipa logged in without schedule (Permission Granted).','2026-03-04 00:20:46'),
+('d62224f4-c4ce-476d-a738-d1535d58d26b','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','Owner/Admin Atjas logged in.','2026-03-04 00:19:58'),
+('d75d7af6-36e0-4036-9aec-0d0aad5604cf','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','Owner/Admin Atjas logged in.','2026-03-04 00:12:02'),
+('d92636be-dd83-4310-b471-94116ed38a3a','e06b62e5-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out.','2026-03-03 00:28:36'),
+('da6ce14a-8a6a-4343-8196-aee56bdb2a48','e06b63f6-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 23:42:32'),
+('dc07107f-1b1e-4d7a-845a-1651415f3e1f','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 21:14:49'),
+('dfe69f6a-9729-460e-85de-c3e549254a20','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479046047','2026-03-03 02:17:26'),
+('e070cc12-6ac6-4886-8c78-e333a1a3c69c','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 11:25:36'),
+('ecea779c-14e2-4318-beb5-a92a02080a86','e06b6521-05f6-11f1-9a18-507b9db621bd','UPDATE_RATE','Salary rate updated to Rp 150/min','2026-03-03 22:03:50'),
+('efe7aec8-a87c-44f0-9569-5730a36f276e','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out.','2026-03-03 03:24:41'),
+('f11cda21-ada2-48cd-bcd1-6a03e1d2069a','e06b62e5-05f6-11f1-9a18-507b9db621bd','LOGIN','User Andi logged in.','2026-03-03 22:49:50'),
+('f57a5ef2-d77e-4333-a67d-28ad1d4808e6','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: INV-1772479482343','2026-03-03 02:24:42'),
+('f5bff414-0dc3-4fe4-930a-94667528c553','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGIN','User Atjas logged in.','2026-03-03 03:04:48'),
+('f7d8808c-791d-4787-bdde-3e64d7d6db6c','e06b542b-05f6-11f1-9a18-507b9db621bd','LOGOUT','User clocked out. Duration: 1 mins, Earned: Rp 250.','2026-03-04 00:11:00'),
+('fcf1b2c2-7aaf-42a3-9034-ce3a522d530b','e06b542b-05f6-11f1-9a18-507b9db621bd','CREATE_SALE','Created PAID sale: EXC-1772552809516','2026-03-03 22:46:49');
+
 /*Table structure for table `attendance` */
 
 DROP TABLE IF EXISTS `attendance`;
@@ -26,14 +122,28 @@ CREATE TABLE `attendance` (
   `clock_in` timestamp NOT NULL DEFAULT current_timestamp(),
   `clock_out` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `salary_earned` decimal(10,2) DEFAULT 0.00,
+  `duration_minutes` int(11) DEFAULT 0,
+  `overtime_reward` decimal(10,2) DEFAULT 0.00,
+  `late_penalty` decimal(10,2) DEFAULT 0.00,
+  `is_paid` tinyint(1) DEFAULT 0,
+  `status` varchar(20) DEFAULT 'DONE',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*Data for the table `attendance` */
 
-insert  into `attendance`(`id`,`user_id`,`clock_in`,`clock_out`,`created_at`) values 
-('7f4e9739-64c0-4dec-893e-d4c9e5c0c8ac','e06b542b-05f6-11f1-9a18-507b9db621bd','2026-02-18 02:46:19','2026-02-18 02:47:07','2026-02-18 02:46:19'),
-('c34b0eb7-7f4e-4be1-b54a-a67bcaf77b35','e78057ba-0bdd-11f1-8cab-08979871e6ef','2026-02-18 02:47:28',NULL,'2026-02-18 02:47:28');
+insert  into `attendance`(`id`,`user_id`,`clock_in`,`clock_out`,`created_at`,`salary_earned`,`duration_minutes`,`overtime_reward`,`late_penalty`,`is_paid`,`status`) values 
+('09fd9546-21d4-491f-b10b-8c7efedaf76f','e06b6490-05f6-11f1-9a18-507b9db621bd','2026-03-05 16:30:00','2026-03-05 23:59:00','2026-03-03 21:09:05',67350.00,449,0.00,0.00,0,'PLANNED'),
+('0d989ee1-a82d-4df4-9e36-3da5981c31ef','e78057ba-0bdd-11f1-8cab-08979871e6ef','2026-03-03 16:30:00','2026-03-04 00:39:00','2026-03-03 20:47:37',73350.00,489,0.00,0.00,0,'DONE'),
+('14d2de0f-4583-4da6-ac77-b407c73a1e10','e78057ba-0bdd-11f1-8cab-08979871e6ef','2026-02-20 21:20:47','2026-03-03 11:25:30','2026-02-20 21:20:47',0.00,0,0.00,0.00,0,'DONE'),
+('41901fe2-c389-4286-aab1-2a2863bcf07f','e06b63f6-05f6-11f1-9a18-507b9db621bd','2026-03-06 16:30:00','2026-03-06 23:59:00','2026-03-03 20:51:01',67350.00,449,0.00,0.00,0,'PLANNED'),
+('737d8c31-7bba-40a9-b851-00f75ec7d35a','e78057ba-0bdd-11f1-8cab-08979871e6ef','2026-03-07 16:30:00','2026-03-08 02:00:00','2026-03-03 21:09:59',85500.00,570,0.00,0.00,0,'PLANNED'),
+('7f4e9739-64c0-4dec-893e-d4c9e5c0c8ac','e06b542b-05f6-11f1-9a18-507b9db621bd','2026-02-18 02:46:19','2026-02-18 02:47:07','2026-02-18 02:46:19',0.00,0,0.00,0.00,0,'DONE'),
+('b27fd4a7-808e-44fe-a28f-b9b91e9c4185','e06b6521-05f6-11f1-9a18-507b9db621bd','2026-03-04 16:30:00','2026-03-04 23:59:00','2026-03-03 21:04:29',67350.00,449,NULL,0.00,0,'PLANNED'),
+('c34b0eb7-7f4e-4be1-b54a-a67bcaf77b35','e78057ba-0bdd-11f1-8cab-08979871e6ef','2026-02-18 02:47:28','2026-02-20 21:20:33','2026-02-18 02:47:28',0.00,0,0.00,0.00,0,'DONE'),
+('c423f134-e318-4cb3-a796-429b3dfbeaa2','e06b6490-05f6-11f1-9a18-507b9db621bd','2026-03-02 16:30:00','2026-03-02 23:59:00','2026-03-03 14:01:20',67350.00,449,0.00,0.00,0,'DONE'),
+('e507ac4b-bcc3-47c3-b87a-92ff05f79477','e06b63f6-05f6-11f1-9a18-507b9db621bd','2026-03-08 16:30:00','2026-03-08 23:59:00','2026-03-03 21:22:38',67350.00,449,0.00,0.00,0,'PLANNED');
 
 /*Table structure for table `bms_devices` */
 
@@ -76,6 +186,27 @@ CREATE TABLE `bms_logs` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8200 DEFAULT CHARSET=utf8mb4;
 
 /*Data for the table `bms_logs` */
+
+/*Table structure for table `expenses` */
+
+DROP TABLE IF EXISTS `expenses`;
+
+CREATE TABLE `expenses` (
+  `id` varchar(36) NOT NULL,
+  `user_id` varchar(36) DEFAULT NULL,
+  `type` enum('BAHAN_BAKU','LAINNYA','GAJI') NOT NULL,
+  `item_id` varchar(36) DEFAULT NULL,
+  `item_name` varchar(255) DEFAULT NULL,
+  `qty` decimal(10,2) DEFAULT 0.00,
+  `amount` decimal(10,2) DEFAULT 0.00,
+  `note` text DEFAULT NULL,
+  `image_url` text DEFAULT NULL,
+  `is_edited` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/*Data for the table `expenses` */
 
 /*Table structure for table `product_recipes` */
 
@@ -376,23 +507,24 @@ CREATE TABLE `raw_materials` (
 /*Data for the table `raw_materials` */
 
 insert  into `raw_materials`(`id`,`name`,`unit`,`image_url`,`stock`,`min_stock`,`created_at`) values 
-('0c139446-dae8-4173-b865-68f0254e22f6','Creamer Bubuk','gram','/assets/bahan-baku/creamer.jpg',988.00,1000.00,'2026-02-10 02:37:58'),
+('0c139446-dae8-4173-b865-68f0254e22f6','Creamer Bubuk','gram','/assets/bahan-baku/creamer.jpg',712.00,1000.00,'2026-02-10 02:37:58'),
 ('7306a061-035f-11f1-94d2-507b9db621bd','Syrup Caramel','ml','/assets/bahan-baku/sirup-caramel.jpg',975.00,200.00,'2026-02-06 20:26:31'),
-('7306e09a-035f-11f1-94d2-507b9db621bd','Vanilla Powder','gram','/assets/bahan-baku/vanila-powder.jpg',1000.00,100.00,'2026-02-06 20:26:31'),
+('7306e09a-035f-11f1-94d2-507b9db621bd','Vanilla Powder','gram','/assets/bahan-baku/vanila-powder.jpg',950.00,100.00,'2026-02-06 20:26:31'),
 ('7306e13b-035f-11f1-94d2-507b9db621bd','Sirup strawberry','ml','/assets/bahan-baku/sirup-strawbery.jpg',975.00,100.00,'2026-02-06 20:26:31'),
-('7306e1ce-035f-11f1-94d2-507b9db621bd','Sirup Buterscoth','ml','/assets/bahan-baku/buters-scoth.jpg',1000.00,100.00,'2026-02-06 20:26:31'),
-('7306e245-035f-11f1-94d2-507b9db621bd','Sirup Pandan Late','ml','/assets/bahan-baku/pandan-late.jpg',948.00,100.00,'2026-02-06 20:26:31'),
-('7d96767a-123b-4c62-bbbe-a8ca2a2d8b42','Cup Kertas','pcs','/assets/bahan-baku/cup-kertas.jpg',998.00,10.00,'2026-02-06 14:57:19'),
-('81bdf4d1-e3b0-48d7-95dc-63a6f37d5691','Susu Kental Manis','ml','/assets/bahan-baku/skm.jpg',975.00,200.00,'2026-02-06 02:41:56'),
-('86fd48ab-3912-4c00-9921-72a1344ea08f','Cup Plastik','pcs','/assets/bahan-baku/cup-plastik.jpg',998.00,10.00,'2026-02-06 14:57:19'),
-('9d34503c-56ee-4ddf-a61f-43f837157dca','Matcha (Bubuk)','gram','/assets/bahan-baku/macha-bubuk.jpg',1000.00,150.00,'2026-02-06 11:50:11'),
-('a5724b15-1ae9-4837-b76f-e625c211a96f','Thai Tea (Bubuk)','gram','/assets/bahan-baku/thai-tea.jpg',1000.00,150.00,'2026-02-06 11:50:11'),
-('a7a99075-19f6-481c-893e-f8d3ec0fa140','Susu UHT','ml','/assets/bahan-baku/UHT.jpg',700.00,1000.00,'2026-02-06 02:41:56'),
-('c10464fc-e0bc-45ea-b720-f8cead11d263','Biji Kopi','gram','/assets/bahan-baku/biji-kopi.jpg',955.00,200.00,'2026-02-06 02:41:56'),
-('d52b4710-be7e-4b48-bdd0-7a69c9c02c42','Coklat (Bubuk)','gram','/assets/bahan-baku/coklat.jpg',1000.00,100.00,'2026-02-06 11:50:11'),
-('ee2b930f-de5f-4bb2-af86-45c7d3e39ba4','Sirup Hazelnut','ml','/assets/bahan-baku/hazelnut.jpg',980.00,200.00,'2026-02-18 00:48:07'),
-('fd183f89-035e-11f1-94d2-507b9db621bd','Gula Aren Cair','gram','/assets/bahan-baku/gula-aren.jpg',1000.00,100.00,'2026-02-06 20:23:13'),
-('ff0262ad-7c92-42e2-8f75-5df94ba13320','Lemon Tea (Bubuk)','gram','/assets/bahan-baku/lemon-tea.jpg',1000.00,50.00,'2026-02-06 11:50:11');
+('7306e1ce-035f-11f1-94d2-507b9db621bd','Sirup Buterscoth','ml','/assets/bahan-baku/buters-scoth.jpg',825.00,100.00,'2026-02-06 20:26:31'),
+('7306e245-035f-11f1-94d2-507b9db621bd','Sirup Pandan Late','ml','/assets/bahan-baku/pandan-late.jpg',923.00,100.00,'2026-02-06 20:26:31'),
+('7d96767a-123b-4c62-bbbe-a8ca2a2d8b42','Cup Kertas','pcs','/assets/bahan-baku/cup-kertas.jpg',899.00,10.00,'2026-02-06 14:57:19'),
+('81bdf4d1-e3b0-48d7-95dc-63a6f37d5691','Susu Kental Manis','ml','/assets/bahan-baku/skm.jpg',550.00,200.00,'2026-02-06 02:41:56'),
+('86fd48ab-3912-4c00-9921-72a1344ea08f','Cup Plastik','pcs','/assets/bahan-baku/cup-plastik.jpg',966.00,10.00,'2026-02-06 14:57:19'),
+('9d34503c-56ee-4ddf-a61f-43f837157dca','Matcha (Bubuk)','gram','/assets/bahan-baku/macha-bubuk.jpg',940.00,150.00,'2026-02-06 11:50:11'),
+('a5724b15-1ae9-4837-b76f-e625c211a96f','Thai Tea (Bubuk)','gram','/assets/bahan-baku/thai-tea.jpg',975.00,150.00,'2026-02-06 11:50:11'),
+('a7a99075-19f6-481c-893e-f8d3ec0fa140','Susu UHT','ml','/assets/bahan-baku/UHT.jpg',4800.00,1000.00,'2026-02-06 02:41:56'),
+('c10464fc-e0bc-45ea-b720-f8cead11d263','Biji Kopi','gram','/assets/bahan-baku/biji-kopi.jpg',655.00,200.00,'2026-02-06 02:41:56'),
+('d52b4710-be7e-4b48-bdd0-7a69c9c02c42','Coklat (Bubuk)','gram','/assets/bahan-baku/coklat.jpg',952.00,100.00,'2026-02-06 11:50:11'),
+('ee2b930f-de5f-4bb2-af86-45c7d3e39ba4','Sirup Hazelnut','ml','/assets/bahan-baku/hazelnut.jpg',940.00,200.00,'2026-02-18 00:48:07'),
+('fd183f89-035e-11f1-94d2-507b9db621bd','Gula Aren Cair','gram','/assets/bahan-baku/gula-aren.jpg',985.00,100.00,'2026-02-06 20:23:13'),
+('fde6c993-aba9-4f67-ab24-2cdaad89e81c','Red Velvet (Bubuk)','gram',NULL,8.00,100.00,'2026-03-03 02:10:53'),
+('ff0262ad-7c92-42e2-8f75-5df94ba13320','Lemon Tea (Bubuk)','gram','/assets/bahan-baku/lemon-tea.jpg',950.00,50.00,'2026-02-06 11:50:11');
 
 /*Table structure for table `recipe_details` */
 
@@ -413,198 +545,222 @@ CREATE TABLE `recipe_details` (
 /*Data for the table `recipe_details` */
 
 insert  into `recipe_details`(`id`,`recipe_id`,`raw_material_id`,`qty`) values 
+('00b79aa6-83b1-4d8a-98f5-c2a1946b1cfe','cdfa4653-6340-4ce8-aeb9-ebed51848703','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
 ('01a54a37-a787-4f1f-8cdd-8e1ec2f90908','fa3785d1-1161-4107-a95c-48caef4c4757','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('02a50897-0aa3-412a-8bf9-1ac1858cc25b','19918a4a-0db6-43d5-b82c-2ab39ee366c6','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('0345d83a-545d-4525-9e45-5f713b4087f0','3c822f9f-4888-42d8-8092-371fc21279ed','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('034659e4-da8f-4909-9896-fc9102c87a38','acec6242-4c82-4bd2-b4ed-8ce18152cfdb','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('077943d8-d7ca-4772-8fc1-bdc51f4a9fed','59b69c4d-d758-4b03-8c31-d20968c10220','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',18.00),
-('07815e43-ae86-4906-a10c-e4ca53d50ccb','adbfc441-5dc4-46db-8cbe-059d564822a9','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
-('0a210283-aa39-4776-aacc-fdc1fc29f739','37b268f4-e476-47cf-b1d7-2baf3fecc85a','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('0aa7bbdf-e37f-498a-869f-986a1706f5df','3719a11e-c958-4650-96b8-eb06b3e5a6e8','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('0d1ab15a-bce8-44be-985b-7e38438f0fce','1c52bda6-4b55-4550-9ac7-56b68cdd444d','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('05e14474-8c2a-467d-9146-c3a97451b088','3719a11e-c958-4650-96b8-eb06b3e5a6e8','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('06140fe1-949d-40d5-8f7e-09b482438c61','37b268f4-e476-47cf-b1d7-2baf3fecc85a','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('06bec578-704a-4d72-a0b7-d3b3a9431fd8','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('0b2989da-6590-4dd4-9910-c2153b4c00f1','dc1f9071-fc29-45af-bde9-d260826d96ed','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('0cc07f31-dcea-4b20-b138-bbbe8a2d2671','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('0d6b3025-d4c0-431e-9839-1409301dc5f7','fdb88066-ced2-430d-b80f-a57c1f053ddb','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('0d8c739a-1d48-4e6f-9533-23a69cc3c4e5','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('0d91bbef-2804-4ba1-b64a-37872df0e097','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('0e2c371b-7488-476d-be0d-b05e8912f605','24975183-2e80-46de-94f3-50811ca17327','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('0ec8525d-c8e0-4679-a6bf-69f0cde7c237','ea2e3454-97c3-4d00-8aef-4586e9889c75','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('0ffa475a-19b5-46e1-9a95-36056f611132','3719a11e-c958-4650-96b8-eb06b3e5a6e8','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('10dadc9e-7146-4254-bf6c-d00a9e829d9a','26e95cbe-b0f8-44dd-907f-72377303222d','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('1220102b-2af2-4cfb-ab14-221914ce88c1','02179074-10e2-4c08-a11f-d1ca526d5b32','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('159f3f0f-4c27-4223-a3fc-71f996fa0a97','dc1f9071-fc29-45af-bde9-d260826d96ed','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('1601064d-204b-4ff6-b386-8fac478476be','ab92e4f0-a435-47b7-8659-174d982162b8','7306e245-035f-11f1-94d2-507b9db621bd',25.00),
+('125443dd-7b38-4a45-8839-7c03939c0d59','f04c95f6-6412-4d92-abb7-192e46138725','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('13277ec4-2b4e-499a-8488-0761745544dd','24975183-2e80-46de-94f3-50811ca17327','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('1396e330-cc78-4469-b911-927c761ffc3c','11c62233-58e9-4c6d-ba72-f804efc85a1a','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('13e2a02c-6172-42bd-a50f-575620fdd638','0a509d4d-fc23-414a-870b-d2a371c14244','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('1495f0de-5654-4910-b1f4-b64d92c280ce','f39f9c2a-2dce-487e-b225-23fdc2154c39','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('174be636-25b5-409e-90c8-1e02885fa7cb','f39f9c2a-2dce-487e-b225-23fdc2154c39','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('178205c8-5707-4d02-95a9-2a97b97e77d7','11c62233-58e9-4c6d-ba72-f804efc85a1a','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('17ad6e93-233d-4ad9-a4ce-403895b33474','2a8a2734-26e1-444d-81a0-e6edae1164ca','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('186dbb0c-b4eb-4577-b171-58e2ab362181','cdfa4653-6340-4ce8-aeb9-ebed51848703','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('191c1a53-de72-46cc-ad7f-16a3ff8bb5c9','33b449c8-236d-4b1d-bda8-6419d7d43eab','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('193d9989-2330-4e57-a56f-e8847aa1b27d','37b268f4-e476-47cf-b1d7-2baf3fecc85a','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('19e5b3cc-843d-4fef-b82a-47bc667f0ae7','1afa6a2a-0983-4946-be88-82929eb8018b','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('1aa69663-6b9f-4a7b-8d79-ac10310d7534','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('1f780402-6185-4000-9abb-087bd003d338','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('1fe617ae-994c-4e1a-81dc-a70cdf19213e','37b268f4-e476-47cf-b1d7-2baf3fecc85a','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('205801ce-1ef3-477e-8aa0-93c6b32b8aa1','ab92e4f0-a435-47b7-8659-174d982162b8','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('1800e2e5-cf02-4dd5-984b-5fdef0ea5571','f04c95f6-6412-4d92-abb7-192e46138725','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('185e58ae-deb1-44f9-ab09-8a04854353e9','ed382d89-03f1-4aae-9643-83512a977f92','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('19ad204c-b577-4d44-bfd1-94f55ffbf165','107b3aba-6698-4d72-a516-18ecfe631737','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('19add199-ced9-47da-b8b6-ff13efc9dda3','59b69c4d-d758-4b03-8c31-d20968c10220','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
+('19bb71f8-b0dc-4db7-b8a2-fbddfa0777f3','19918a4a-0db6-43d5-b82c-2ab39ee366c6','a5724b15-1ae9-4837-b76f-e625c211a96f',25.00),
+('1a2dac40-317b-4ab3-b722-2dabe44c76fb','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','7306a061-035f-11f1-94d2-507b9db621bd',25.00),
+('1c3febf8-e3db-4bdd-bf8a-904bbb630fbf','74820eca-cbd3-4b2d-985d-82a390a5eca0','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('1d3c28f9-3841-45a4-b382-bf2cf0286d60','74820eca-cbd3-4b2d-985d-82a390a5eca0','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('1dacb34a-481e-46d7-b1c1-9b9aff72d972','37b268f4-e476-47cf-b1d7-2baf3fecc85a','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('1dc05376-e927-4bd7-b6d6-ef55b00eaa0a','ea2e3454-97c3-4d00-8aef-4586e9889c75','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('200454ff-69cd-43b1-b6ed-df499ebe5004','cdfa4653-6340-4ce8-aeb9-ebed51848703','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('215b0338-d66d-48b6-bf60-73efbe0892ca','37b268f4-e476-47cf-b1d7-2baf3fecc85a','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('215b36b2-3ee4-4bd7-8a0d-65060df73da8','adbfc441-5dc4-46db-8cbe-059d564822a9','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('220f621f-bb07-41fa-93d0-df0d9650fb68','ab92e4f0-a435-47b7-8659-174d982162b8','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('222502bb-b03d-4785-a466-d4816a25ab6b','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('222faf38-6304-4232-bd88-a77440a37c33','6996c3c8-4ad4-4380-a78d-93c718b647f0','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('2234b904-24ba-4f6c-a39f-3996cfe9fca9','5a1e968d-b10c-4928-a9a6-7ce1d0e213a2','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('243e062b-e6c7-40b2-8e5f-b80a2be44884','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('25e9c838-aaf6-4005-baec-00dfae70ec4c','e776a32b-2b74-402d-a782-0c4fb6a97242','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('26f82dc6-1544-4b76-91b3-2e0b8e961803','f39f9c2a-2dce-487e-b225-23fdc2154c39','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('275055ce-bddb-483e-ab88-8a05a3df0c82','e6d214df-fd0c-4bcb-9bdd-ca75bce1adc9','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('299942de-efcb-40a9-a8d9-e97e2f6e3aa1','33b449c8-236d-4b1d-bda8-6419d7d43eab','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('2af6adb0-c783-4333-867e-6713e4cc252a','33b449c8-236d-4b1d-bda8-6419d7d43eab','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('2d005ae7-28c8-4eb5-a440-66171396db72','f39f9c2a-2dce-487e-b225-23fdc2154c39','a5724b15-1ae9-4837-b76f-e625c211a96f',25.00),
-('2d77095c-7ad4-4b9f-8a5a-b820f2fe3313','ed382d89-03f1-4aae-9643-83512a977f92','0c139446-dae8-4173-b865-68f0254e22f6',10.00),
-('317e6c4e-8eb5-40ee-b000-ce625fe56b0e','f39f9c2a-2dce-487e-b225-23fdc2154c39','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('33b03b5a-07e8-4dfa-bc90-a0689f39801c','e6d214df-fd0c-4bcb-9bdd-ca75bce1adc9','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('34a09b6a-f792-4db7-98ce-f4b5ed885d0f','3d0bd13b-3526-4b56-a888-3cc89772d870','d52b4710-be7e-4b48-bdd0-7a69c9c02c42',25.00),
-('34baa6c6-a68f-421d-8789-e973a44bfe3e','7fe83d8f-980f-4b33-a974-92c683379612','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('22ac2b98-0718-40a5-b0b6-efdce7b6d9dc','0a509d4d-fc23-414a-870b-d2a371c14244','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('24f72bf8-0df9-46c2-b50a-f494aa1ccbe9','1c52bda6-4b55-4550-9ac7-56b68cdd444d','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('26452cf9-64d4-4452-8780-d76277cbc32f','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('28b90217-f08b-4963-9ab5-45a0589efb30','507f20fa-89d4-4475-9cc5-145440eeb226','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4',25.00),
+('2b0c767c-31f0-4a61-8ec9-2ff2522c60da','ab92e4f0-a435-47b7-8659-174d982162b8','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('2b2021b2-70b1-4a06-8339-376cd8588568','cdfa4653-6340-4ce8-aeb9-ebed51848703','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('2e827f44-391e-4cd9-a8dc-c50cff6c879b','59b69c4d-d758-4b03-8c31-d20968c10220','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('2ed96f6d-213e-4716-b7c3-bf577bf15044','e6d214df-fd0c-4bcb-9bdd-ca75bce1adc9','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('2f363427-ad01-4b43-8222-5e69f915c29a','74aea3c2-a311-4f64-bdab-698f16767910','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('327f190e-c61d-4f49-90e1-0136db25687b','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('32c87fd1-56b5-4f56-abe2-37c5069a9dff','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('33afeb6a-6838-4e3e-bf13-ceaadb44a8c8','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('340b4e3c-e4be-4928-82d3-4062dd7fb997','f04c95f6-6412-4d92-abb7-192e46138725','d52b4710-be7e-4b48-bdd0-7a69c9c02c42',25.00),
+('3498ae6a-df56-4535-93b8-37a6dea85296','74aea3c2-a311-4f64-bdab-698f16767910','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('34f619ba-4fae-4851-b522-01a45ae568e7','507f20fa-89d4-4475-9cc5-145440eeb226','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('34f6be46-bd7f-4af1-b155-de5663cf968f','fdb88066-ced2-430d-b80f-a57c1f053ddb','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('357c7bad-ce7e-4fde-8a2f-43e8d073f18a','19918a4a-0db6-43d5-b82c-2ab39ee366c6','a5724b15-1ae9-4837-b76f-e625c211a96f',25.00),
-('35e24b75-c879-49b5-9a8a-c659b3a92476','11c62233-58e9-4c6d-ba72-f804efc85a1a','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('364c5b60-7714-4c69-8b4d-62ff71464c79','507f20fa-89d4-4475-9cc5-145440eeb226','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('367d826f-6c1a-4e6f-a705-59a3d0079f9b','7fe83d8f-980f-4b33-a974-92c683379612','ff0262ad-7c92-42e2-8f75-5df94ba13320',25.00),
 ('39a282b2-388d-4727-bfd2-57d3f96fbac3','97d7280e-db45-41c5-869a-1e9c63db3684','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('3a01ad10-e9eb-4152-9d7e-9bdf2b628b13','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('412d41a6-5d3a-4d82-b105-63eb2286809c','bf545366-6569-491e-afb0-0cd7c9baa113','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('3a5dacb9-97ee-4093-b715-53795e8e1e64','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
+('3bef6488-51c7-4543-96ad-4b63b81f3e89','02179074-10e2-4c08-a11f-d1ca526d5b32','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('3d064054-c07b-4894-9b4a-bb6ec7d2dbea','02179074-10e2-4c08-a11f-d1ca526d5b32','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('3f30cbf7-21c6-402c-abb5-1d9d009ca2a7','74820eca-cbd3-4b2d-985d-82a390a5eca0','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('42e7d57d-a1cf-47bf-b5bd-26b20b2a6f01','107b3aba-6698-4d72-a516-18ecfe631737','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('43723589-590d-4c64-b4d2-d2c906018cb9','24975183-2e80-46de-94f3-50811ca17327','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('43e3f80f-7edb-4829-aeae-661d27396b0d','19918a4a-0db6-43d5-b82c-2ab39ee366c6','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('4408511d-5bc9-4da8-a838-e0f9e9bf27ee','11c62233-58e9-4c6d-ba72-f804efc85a1a','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('4533454d-01fe-487b-8a1f-f62f83105c02','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','7306a061-035f-11f1-94d2-507b9db621bd',25.00),
+('45029e8b-d8eb-47d8-b87f-848252990a7f','e6d214df-fd0c-4bcb-9bdd-ca75bce1adc9','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('458e3009-592f-4b56-a1f1-0b76294f2ec1','3c822f9f-4888-42d8-8092-371fc21279ed','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
 ('460172a7-a0ba-4d8d-8911-c52c87551667','fa3785d1-1161-4107-a95c-48caef4c4757','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('4cf5620a-7a6d-4d49-a862-17d6022be77c','3c822f9f-4888-42d8-8092-371fc21279ed','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('4d561174-e6c1-401f-ba8b-732f42ccd25e','08a6fc03-54a9-4148-be3f-ef68524f0ff0','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('4d59c948-b7e7-4577-8524-2678fb51f25a','74aea3c2-a311-4f64-bdab-698f16767910','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('4df2d28c-9f6a-4b4d-8b41-2a4569c88aa8','59b69c4d-d758-4b03-8c31-d20968c10220','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
-('4e5613ba-f663-4591-aa18-7fb589eb9fe5','74aea3c2-a311-4f64-bdab-698f16767910','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('4ff61eb2-0517-42aa-a645-0e7d52739a46','dc1f9071-fc29-45af-bde9-d260826d96ed','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('509117b9-e9f1-4c7f-a80a-ef95c7b53113','11c62233-58e9-4c6d-ba72-f804efc85a1a','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('4708ebb5-a9b0-4c08-aa54-8f545250e6b5','33b449c8-236d-4b1d-bda8-6419d7d43eab','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('47462769-1c49-4306-b654-87a10e5f9138','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('4e0cb930-c2eb-47f3-8d03-b4b23bc01ddb','5a1e968d-b10c-4928-a9a6-7ce1d0e213a2','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('50646702-eeba-4df1-8d62-1c90fcdc94d8','bf545366-6569-491e-afb0-0cd7c9baa113','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('50aba350-ab2b-48a6-a205-1d11af331898','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4',25.00),
 ('5111bcc1-c332-48bc-b303-6541b4cd63db','1ea1305b-b66a-44d5-978c-ba5ef6a5e74b','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('51cef11b-9f1c-49ac-8f53-51cc0dc165dc','59b69c4d-d758-4b03-8c31-d20968c10220','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('5229cefb-96f4-46be-b871-4a3695caad07','acec6242-4c82-4bd2-b4ed-8ce18152cfdb','7306e1ce-035f-11f1-94d2-507b9db621bd',25.00),
-('52848ae2-616a-4daa-9515-9af91db3ac61','74820eca-cbd3-4b2d-985d-82a390a5eca0','7306e09a-035f-11f1-94d2-507b9db621bd',25.00),
-('53c89e1b-f45b-4958-b8df-7717b63a46f3','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('5482d956-c179-4802-86f5-e1f878cd0a08','1c52bda6-4b55-4550-9ac7-56b68cdd444d','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('593c468b-dbb1-4368-996d-1d6eaa1d983e','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('5b0610c6-6836-4d80-b006-cfbafb9cb896','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4',20.00),
-('5bb4fef0-7dc7-4a4d-a118-9d8c134db16a','adbfc441-5dc4-46db-8cbe-059d564822a9','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('5d3979ad-21d1-4d54-a2a1-0119cec6c7b2','107b3aba-6698-4d72-a516-18ecfe631737','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
-('62bfb15c-5cb0-4c5b-9c30-fe771fb5a7df','1afa6a2a-0983-4946-be88-82929eb8018b','ff0262ad-7c92-42e2-8f75-5df94ba13320',23.00),
-('6343679c-2f3c-4426-9adc-65f7f1e826f2','0a509d4d-fc23-414a-870b-d2a371c14244','7306e245-035f-11f1-94d2-507b9db621bd',25.00),
-('6373ecca-a1c8-43b5-b545-0c8f645add1f','74aea3c2-a311-4f64-bdab-698f16767910','7306a061-035f-11f1-94d2-507b9db621bd',25.00),
-('63fb1f43-7a7a-4fde-85c0-6df2bb3fd3b1','3d0bd13b-3526-4b56-a888-3cc89772d870','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('53a5eb70-dd6a-4013-b561-2e6f1df58353','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('542a2769-92b5-489d-8039-d9beb5446d69','107b3aba-6698-4d72-a516-18ecfe631737','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('573e97e8-2c5b-43b1-8e0a-0f612db6e87f','7fe83d8f-980f-4b33-a974-92c683379612','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('579bc77b-a5e8-4f9b-bdce-5fccba4600be','bf545366-6569-491e-afb0-0cd7c9baa113','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('57f65a13-c81c-4563-b07a-2a56be9baab1','59b69c4d-d758-4b03-8c31-d20968c10220','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('59c53d53-129b-45fc-9b20-031b29817346','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('604f6fd1-2a3c-4c59-b555-6c4690c65e9c','3d0bd13b-3526-4b56-a888-3cc89772d870','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('61444e66-1caa-4bcd-9ab5-fd40ca498771','11c62233-58e9-4c6d-ba72-f804efc85a1a','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('64390f10-79fe-41d2-9be3-c7fbe36a696b','24975183-2e80-46de-94f3-50811ca17327','7306e1ce-035f-11f1-94d2-507b9db621bd',25.00),
-('64e19429-371b-4358-91c5-c13df2119858','cdfa4653-6340-4ce8-aeb9-ebed51848703','fd183f89-035e-11f1-94d2-507b9db621bd',25.00),
-('66080aeb-93f5-4731-ad64-ba2633614a5c','ea2e3454-97c3-4d00-8aef-4586e9889c75','a5724b15-1ae9-4837-b76f-e625c211a96f',25.00),
+('65738eb1-b0f5-4617-a966-cf124072f151','11c62233-58e9-4c6d-ba72-f804efc85a1a','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('66782239-8f1d-4aa6-971f-68bb933820dd','3c822f9f-4888-42d8-8092-371fc21279ed','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('67f4bda9-b394-419a-9b33-9c89d3a1184f','1ea1305b-b66a-44d5-978c-ba5ef6a5e74b','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
 ('68df967d-bd35-499d-8063-7a9d62b6e3a8','c43ea7a1-73f2-4873-b74d-327f570cf5cc','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('696b0e54-366b-4cec-9263-2541982cf414','f04c95f6-6412-4d92-abb7-192e46138725','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('6a790c25-370d-4e09-86cd-9f2c4341dd7a','cdfa4653-6340-4ce8-aeb9-ebed51848703','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
 ('6b8e2cd5-0302-45dc-8cbf-f508e4d1fb9b','26e95cbe-b0f8-44dd-907f-72377303222d','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('6e33f02a-da32-45b4-8df3-33c09e2fe557','507f20fa-89d4-4475-9cc5-145440eeb226','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('6c933a4b-374d-4b24-8120-f63f5f372f02','ed382d89-03f1-4aae-9643-83512a977f92','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
+('6cd6ed30-5941-4cc8-8ff0-66fb8bcd022e','bf545366-6569-491e-afb0-0cd7c9baa113','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('6d4c9f9c-11e6-4789-861a-3f4ef56b180a','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('6ec03e31-f7c7-4a29-bfd7-391e1ce8ba62','5a1e968d-b10c-4928-a9a6-7ce1d0e213a2','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('6f883db8-0a3c-4cd9-af84-f1faeb1f562d','f39f9c2a-2dce-487e-b225-23fdc2154c39','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
 ('7004d608-16c5-4618-ad1f-75f61ea80b96','46fb6074-f6ad-4400-a39d-0251ad6d2e73','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('706dc647-0808-46ac-8c2d-a9d2776a302e','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
 ('71722e78-e0aa-443b-8488-1d8a4061c98b','2dce90da-adc7-48e0-bb40-60dfa8d05d9a','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('71e86ed0-f028-434a-b5c8-9d80da0b709a','46fb6074-f6ad-4400-a39d-0251ad6d2e73','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('7276314b-a210-40bf-b7d3-ebc805862432','19918a4a-0db6-43d5-b82c-2ab39ee366c6','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('7291a70f-21aa-4c7e-b78a-eb32949c4363','adbfc441-5dc4-46db-8cbe-059d564822a9','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',18.00),
-('73acfe85-a074-4ce5-987d-a91ef346c722','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('74575d4a-88b1-4808-a34f-1c42a3e13908','19918a4a-0db6-43d5-b82c-2ab39ee366c6','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('747e1c1b-5ccc-4319-a508-b08ef1b44873','507f20fa-89d4-4475-9cc5-145440eeb226','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('745d37db-3ae1-42a9-b0c9-2fa886e71f7d','acec6242-4c82-4bd2-b4ed-8ce18152cfdb','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
 ('74a1903c-8b8e-4952-a39b-9d6c5696c6dd','fdb88066-ced2-430d-b80f-a57c1f053ddb','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('74dddcc5-1a21-4c99-b372-31469bdd9da6','ea2e3454-97c3-4d00-8aef-4586e9889c75','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('753a17f8-7362-4755-ac55-bba5c1738255','ab92e4f0-a435-47b7-8659-174d982162b8','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('7706b189-ceb4-43b8-a264-b0058efd23fc','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('77282772-fe77-40c9-8e4d-b26c2c7969c0','e776a32b-2b74-402d-a782-0c4fb6a97242','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('791bab37-7fb9-42ed-bf40-84659879a734','0a509d4d-fc23-414a-870b-d2a371c14244','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('7a224770-25ee-4cc8-a7b4-6d899c78f91b','2dce90da-adc7-48e0-bb40-60dfa8d05d9a','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('7a51b867-e3c1-47f8-a474-a8e03feb6939','59b69c4d-d758-4b03-8c31-d20968c10220','0c139446-dae8-4173-b865-68f0254e22f6',10.00),
 ('7a5e400d-2540-4e24-adff-510b82a41c93','6996c3c8-4ad4-4380-a78d-93c718b647f0','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('7a965d64-11bd-408f-b24e-c4d81d85bbcf','02179074-10e2-4c08-a11f-d1ca526d5b32','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('7da563ca-2022-4a81-b198-0df6c413db0b','3c822f9f-4888-42d8-8092-371fc21279ed','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('7dbd8f86-7ef3-46ee-ae5c-5fdd6c790281','ea2e3454-97c3-4d00-8aef-4586e9889c75','a5724b15-1ae9-4837-b76f-e625c211a96f',25.00),
 ('7dc3aa0c-a0a5-43fc-bea4-09720b5c84ef','acec6242-4c82-4bd2-b4ed-8ce18152cfdb','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('7e3d2479-f424-46a7-9e9f-de36c8aa7d6c','24975183-2e80-46de-94f3-50811ca17327','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('7e61e117-ebf8-47ce-828b-5173b30bc2b8','e4097402-1fa5-4778-86e7-4ae206c42ee2','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
 ('80ede4be-a977-496e-b858-0090c00d67c0','fdb88066-ced2-430d-b80f-a57c1f053ddb','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('81c92acb-1db8-4e2b-ab6d-9445a2322e6f','e776a32b-2b74-402d-a782-0c4fb6a97242','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('81d84f26-2902-428e-938d-bc10c055268b','1c52bda6-4b55-4550-9ac7-56b68cdd444d','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('82aeaadc-899b-44af-9259-e6cb7966d993','adbfc441-5dc4-46db-8cbe-059d564822a9','0c139446-dae8-4173-b865-68f0254e22f6',10.00),
-('82f23684-06d8-4561-a07e-68c6ba0c5455','f39f9c2a-2dce-487e-b225-23fdc2154c39','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('84dcaa22-0c0c-44b4-a519-e9f171914ba4','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('851d343b-fdfd-4b38-9983-ab00b0793b8e','e776a32b-2b74-402d-a782-0c4fb6a97242','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('82bf08df-7ade-4251-8d52-d2fb1e1af20a','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
 ('85b96f7b-f6f6-4d64-9cdc-6b7f0eaf6ff9','acec6242-4c82-4bd2-b4ed-8ce18152cfdb','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('876f550e-0aca-4a0d-aff9-dec216d146d6','3719a11e-c958-4650-96b8-eb06b3e5a6e8','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('887b3cdd-5031-4b1e-919d-b3a928ba4c8d','e776a32b-2b74-402d-a782-0c4fb6a97242','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('889ac8ac-f7ac-4bc9-826c-ce530ad75f9b','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('866d8ed1-8db0-4ac5-b2d7-d23c7451405e','bf545366-6569-491e-afb0-0cd7c9baa113','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
 ('89e19b01-cb37-49f1-b943-8d874b1d536d','fdb88066-ced2-430d-b80f-a57c1f053ddb','7306e1ce-035f-11f1-94d2-507b9db621bd',25.00),
+('8a062016-a912-4da6-831b-cc6adad51832','1afa6a2a-0983-4946-be88-82929eb8018b','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('8b3c31c2-3e69-42bf-827f-732f5f7119d0','2a8a2734-26e1-444d-81a0-e6edae1164ca','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('8b469476-2901-48b6-bd09-e39988a88718','f39f9c2a-2dce-487e-b225-23fdc2154c39','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('8b7c8fa7-6d18-40f9-8dca-3ade77f03b99','59b69c4d-d758-4b03-8c31-d20968c10220','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('8ba02e30-e203-4630-9670-da681ab9c950','6996c3c8-4ad4-4380-a78d-93c718b647f0','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('8d2b5320-5167-4241-963c-6b46dbc419fb','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
-('8dd5f7d1-f6f3-4fcb-aea0-0a62da27ab34','ed382d89-03f1-4aae-9643-83512a977f92','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
-('8f30b6c0-8eb1-43b7-b97f-9160a4e470a5','3c822f9f-4888-42d8-8092-371fc21279ed','fd183f89-035e-11f1-94d2-507b9db621bd',25.00),
-('90c51adb-9b47-4af6-a3b7-c8cc847302db','3c822f9f-4888-42d8-8092-371fc21279ed','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('90d9987c-8e11-4136-84d3-4a638cefcf48','37b268f4-e476-47cf-b1d7-2baf3fecc85a','7306e09a-035f-11f1-94d2-507b9db621bd',25.00),
-('9175aa57-fb5d-4950-abd6-0e5e5bf6b792','ab92e4f0-a435-47b7-8659-174d982162b8','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('8c55e0fa-7080-4a94-8378-431f1da006aa','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('8da7803c-501f-4f94-95b3-1a89d2f721ad','74aea3c2-a311-4f64-bdab-698f16767910','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('8eabbe32-1816-4174-85c0-820f40704aea','1c52bda6-4b55-4550-9ac7-56b68cdd444d','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('8f2f0461-079d-451f-ad94-c9edc75f5436','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('8f7ede7e-2283-404c-9c17-d98a61a29e1d','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('8f81feff-771b-421d-835f-c40b219c18d2','3d0bd13b-3526-4b56-a888-3cc89772d870','d52b4710-be7e-4b48-bdd0-7a69c9c02c42',25.00),
+('8fdd375a-dd75-4ce3-b367-64c70d3ac1f7','0a509d4d-fc23-414a-870b-d2a371c14244','7306e245-035f-11f1-94d2-507b9db621bd',25.00),
+('917cc7b2-0015-424e-9780-20498cce4d1e','37b268f4-e476-47cf-b1d7-2baf3fecc85a','7306e09a-035f-11f1-94d2-507b9db621bd',25.00),
 ('927fad7a-d598-463b-9dfc-381ce7c4106c','2dce90da-adc7-48e0-bb40-60dfa8d05d9a','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('92d2c62e-3396-47c5-a450-3715f27c14d7','bf545366-6569-491e-afb0-0cd7c9baa113','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('953d75e1-fb3b-4f56-b996-df6770e34eba','ed382d89-03f1-4aae-9643-83512a977f92','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('97e21f42-a7e1-4c7b-ba49-3030f25893cd','7fe83d8f-980f-4b33-a974-92c683379612','ff0262ad-7c92-42e2-8f75-5df94ba13320',23.00),
-('9811d884-c86b-4f8d-b1af-d7d2c58b5e68','dc1f9071-fc29-45af-bde9-d260826d96ed','d52b4710-be7e-4b48-bdd0-7a69c9c02c42',25.00),
-('99f04d25-dd08-441d-8d65-7b6bb14ee139','e776a32b-2b74-402d-a782-0c4fb6a97242','fd183f89-035e-11f1-94d2-507b9db621bd',25.00),
-('9a390364-1c78-4370-932b-49f7730420a3','bf545366-6569-491e-afb0-0cd7c9baa113','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('92f8a858-a93c-4a95-914c-fb5c33c008be','3d0bd13b-3526-4b56-a888-3cc89772d870','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('951c005a-967f-4d9d-a50d-852e1e8974ed','19918a4a-0db6-43d5-b82c-2ab39ee366c6','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('97815d4d-f223-4e0e-ab7f-e54cf8bda590','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('987d1115-e6e9-49c0-8c90-8bd0b9514b64','74820eca-cbd3-4b2d-985d-82a390a5eca0','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('9909d9bf-af62-4a7e-8903-67bcec66d222','e776a32b-2b74-402d-a782-0c4fb6a97242','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('99b126e0-b8e1-4ad5-b55c-70361e93be4e','ed382d89-03f1-4aae-9643-83512a977f92','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
 ('9c539563-ed2a-4f27-8a98-bf561255598b','f16d9fb7-daa5-4d0a-933f-d7218bc4b1a1','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('9d4d8ff5-c2b1-48b5-aea2-0ac2b9777e77','ed382d89-03f1-4aae-9643-83512a977f92','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',18.00),
+('9cd714c6-6ade-4904-af22-8e3cc3a74d7d','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('9f51ae7b-ba1a-4415-804d-7c2fef49836e','2dce90da-adc7-48e0-bb40-60dfa8d05d9a','7306e13b-035f-11f1-94d2-507b9db621bd',25.00),
-('a01a9aba-168e-495a-9422-3e9f68982406','74820eca-cbd3-4b2d-985d-82a390a5eca0','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('a08087ae-18b8-4b81-afd8-d2f9fbe5a24b','02179074-10e2-4c08-a11f-d1ca526d5b32','7306e09a-035f-11f1-94d2-507b9db621bd',25.00),
-('a24f4d89-bf5b-42e2-a9a3-62de583e66aa','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('a29b9de6-c5a5-42d1-8008-0928d8b40e72','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','7306a061-035f-11f1-94d2-507b9db621bd',25.00),
-('a527f373-d2f5-4444-b546-6cffaacef7ba','107b3aba-6698-4d72-a516-18ecfe631737','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('a2556d20-0d1e-4d3b-8426-df22a387e3db','33b449c8-236d-4b1d-bda8-6419d7d43eab','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('a2790594-97e8-44ec-82ae-943d7b9767b0','33b449c8-236d-4b1d-bda8-6419d7d43eab','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('a379f495-5afb-4023-8062-d5c85e6034d9','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('a3cdf0eb-9f68-4628-a662-cdfc2b7d77be','02179074-10e2-4c08-a11f-d1ca526d5b32','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('a475e53e-2475-4d3b-9d74-6acebc749347','e6d214df-fd0c-4bcb-9bdd-ca75bce1adc9','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('a49414af-1b64-4d1e-988b-2e7df6cb396c','107b3aba-6698-4d72-a516-18ecfe631737','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
+('a4e7b42c-6b67-41db-856f-be83bc9cd439','3d0bd13b-3526-4b56-a888-3cc89772d870','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('a65f5172-a4fb-4b4e-be27-e736569bc570','3719a11e-c958-4650-96b8-eb06b3e5a6e8','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('a8a20317-4cab-4826-8113-3c7b5d03b3ad','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('aa540d20-9790-4d56-afca-7a01adf31c3c','1c52bda6-4b55-4550-9ac7-56b68cdd444d','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('aa7cc8cf-4c0d-4456-a537-2b84c02532b9','6996c3c8-4ad4-4380-a78d-93c718b647f0','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('ab86d5ef-5acf-400b-8dd9-431047c6120c','1afa6a2a-0983-4946-be88-82929eb8018b','ff0262ad-7c92-42e2-8f75-5df94ba13320',25.00),
+('ac0e6e2b-b1eb-4404-a8cd-8eca5ff5c15a','3c822f9f-4888-42d8-8092-371fc21279ed','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('ac254c51-ca07-4443-8386-4564280606e3','fb07280c-a0a1-47a8-9a7d-fbc0f805e023','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('acb5190e-1353-4ffc-9fa1-b4947cf65a0b','f39f9c2a-2dce-487e-b225-23fdc2154c39','a5724b15-1ae9-4837-b76f-e625c211a96f',25.00),
 ('acd4e0c3-28e7-4633-beed-ea178210759b','acec6242-4c82-4bd2-b4ed-8ce18152cfdb','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('acf8f3da-3ae2-410c-ade8-8f366e705723','e6d214df-fd0c-4bcb-9bdd-ca75bce1adc9','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('b153015a-252a-47f7-8aeb-2b52a66d0901','cdfa4653-6340-4ce8-aeb9-ebed51848703','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('ae196b4c-9fb9-4202-b65b-53decc13ba31','dc1f9071-fc29-45af-bde9-d260826d96ed','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('ae905ee3-7ff7-4c1a-86e0-6d2547981c04','5a1e968d-b10c-4928-a9a6-7ce1d0e213a2','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('afc1a2c0-bc99-4a04-988a-e0dc26c395b0','e6d214df-fd0c-4bcb-9bdd-ca75bce1adc9','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('b03eee72-2560-4ba7-8918-578c6f935e4d','74aea3c2-a311-4f64-bdab-698f16767910','7306a061-035f-11f1-94d2-507b9db621bd',25.00),
+('b167c3b7-eae4-4e39-b892-93e76b450a8e','37b268f4-e476-47cf-b1d7-2baf3fecc85a','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('b1f05565-6da8-458f-84fb-4add02ba9792','ab92e4f0-a435-47b7-8659-174d982162b8','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
 ('b2a43b4a-f57c-411f-a660-d2a1d660e8b0','3b395204-c1f9-4377-82a6-7f263b30d7af','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('b444976e-8e66-4b12-ac9d-15fc4d4f3104','fa3785d1-1161-4107-a95c-48caef4c4757','7306e13b-035f-11f1-94d2-507b9db621bd',25.00),
-('b7a459f7-35bd-413f-813d-42e4f9f7f367','ea2e3454-97c3-4d00-8aef-4586e9889c75','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('b4d7696d-8d84-4bdc-a212-d154cb2eb0ad','cdfa4653-6340-4ce8-aeb9-ebed51848703','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('b5953aa6-df7b-4046-bf19-acf72395733e','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('b5bdc2cc-bc83-460c-beeb-12a87ccd8a9a','ea2e3454-97c3-4d00-8aef-4586e9889c75','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('b7cf281c-012b-41e0-8928-51f667fc8e16','ea2e3454-97c3-4d00-8aef-4586e9889c75','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
 ('b8955fe4-0322-497b-8e48-1e06615ab209','c43ea7a1-73f2-4873-b74d-327f570cf5cc','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('b982f7eb-7e18-456d-a168-cf2bf1712738','02179074-10e2-4c08-a11f-d1ca526d5b32','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('ba024001-312e-4b33-950b-2bd101529118','5a1e968d-b10c-4928-a9a6-7ce1d0e213a2','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('bcc344f6-0def-4f5c-a53e-b846364923a9','5a1e968d-b10c-4928-a9a6-7ce1d0e213a2','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('ba62b5a2-5e33-4930-aecc-4ee64f4ed192','19918a4a-0db6-43d5-b82c-2ab39ee366c6','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('bd2f044c-aa5b-410d-80f8-524f17a3832a','19918a4a-0db6-43d5-b82c-2ab39ee366c6','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
 ('bd693564-8bcb-45f8-9f26-f621ccd013a4','3b395204-c1f9-4377-82a6-7f263b30d7af','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('be45e4e6-5bdd-4876-a5ba-4bd5dfe41296','ed382d89-03f1-4aae-9643-83512a977f92','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('bed1486f-9e9a-4bb4-b1e0-3d3cbd21388f','74820eca-cbd3-4b2d-985d-82a390a5eca0','7306e09a-035f-11f1-94d2-507b9db621bd',25.00),
 ('bfa65695-efd9-45fa-8e5b-17ea99442d53','e4097402-1fa5-4778-86e7-4ae206c42ee2','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('c2240ec6-b02d-4a5e-86d7-7e0cdee0bcb2','107b3aba-6698-4d72-a516-18ecfe631737','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('c401b8fb-9515-4490-be65-7d3ac636935e','74820eca-cbd3-4b2d-985d-82a390a5eca0','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
-('c49df57d-09a7-4265-b00d-be08ca3c0564','3d0bd13b-3526-4b56-a888-3cc89772d870','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('c4a46aeb-b5eb-4385-bc99-af292dc01ff3','0a509d4d-fc23-414a-870b-d2a371c14244','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('c4ad33cc-6321-4083-b4c7-259e84777395','cdfa4653-6340-4ce8-aeb9-ebed51848703','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('c25091d7-34ae-4934-9fef-ca272087d10f','3719a11e-c958-4650-96b8-eb06b3e5a6e8','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('c3e98b67-c7dd-4a52-bf55-bde5042f5e9a','fdb88066-ced2-430d-b80f-a57c1f053ddb','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
 ('c59c5a32-aea9-484b-85dd-bfabd97413fe','2dce90da-adc7-48e0-bb40-60dfa8d05d9a','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('c6c2e60a-6b37-444f-a3c8-7f56359e941a','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
-('ccf120cc-9d4b-4efc-9154-f2c06ad50c24','74aea3c2-a311-4f64-bdab-698f16767910','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('c898c79e-9b2c-496c-a723-4088dcb3b646','1c52bda6-4b55-4550-9ac7-56b68cdd444d','7306e245-035f-11f1-94d2-507b9db621bd',25.00),
+('c8ad4ae0-417a-41bf-b01e-5eaf422c3833','33b449c8-236d-4b1d-bda8-6419d7d43eab','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('c8ca0879-e37e-4eb5-a1aa-218942888d1e','5a1e968d-b10c-4928-a9a6-7ce1d0e213a2','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('c960d3f4-4292-4c2a-9afb-05a4074e335c','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4',25.00),
+('ca8b29ef-81cf-4f85-9ae4-9add7d2ac37f','bf545366-6569-491e-afb0-0cd7c9baa113','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('cacd091c-dc16-4f31-a38d-604b5827b560','0a509d4d-fc23-414a-870b-d2a371c14244','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('ce1a21d4-802a-4709-9e46-00b60cc58c9e','e4097402-1fa5-4778-86e7-4ae206c42ee2','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('ce1bd505-af4c-4bc1-a8db-785378fad0f4','adbfc441-5dc4-46db-8cbe-059d564822a9','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('d0187daf-19dc-4b34-bcf0-bece6a0f59d7','ab92e4f0-a435-47b7-8659-174d982162b8','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('ce296c52-11c0-475f-a431-2d1f5436bcfc','dc1f9071-fc29-45af-bde9-d260826d96ed','d52b4710-be7e-4b48-bdd0-7a69c9c02c42',25.00),
+('cf49eebb-3b44-457e-96b9-a1bfc2be3299','02179074-10e2-4c08-a11f-d1ca526d5b32','7306e09a-035f-11f1-94d2-507b9db621bd',25.00),
+('cf96d38b-eac3-42b0-af97-8d5cba647215','dc1f9071-fc29-45af-bde9-d260826d96ed','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('d034a133-781b-47fd-a592-6adebe2c8b9c','02179074-10e2-4c08-a11f-d1ca526d5b32','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('d0c55e26-3b5b-4821-82a4-13d427f9fa3e','97d7280e-db45-41c5-869a-1e9c63db3684','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
 ('d131f7bc-893d-4c01-9203-1b38b970cce2','26e95cbe-b0f8-44dd-907f-72377303222d','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('d4f40529-0127-4003-8b35-736934531448','ed382d89-03f1-4aae-9643-83512a977f92','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('d57e10bb-71b5-4b56-8d36-51788d31e9a0','107b3aba-6698-4d72-a516-18ecfe631737','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('d170d567-ddda-4032-8ce0-dd8d178f1498','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('d1e7bf03-2167-4b98-aa4c-5543b3be1ec9','507f20fa-89d4-4475-9cc5-145440eeb226','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('d770b271-914e-470b-8db2-8b0a53f88617','33b449c8-236d-4b1d-bda8-6419d7d43eab','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
 ('d77e21d0-8239-4460-bcef-9502e8bfcc6d','1ea1305b-b66a-44d5-978c-ba5ef6a5e74b','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('db43ea39-f673-4007-8e79-c9cf9207d4e1','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4',20.00),
-('db7f70ec-08c4-4657-9471-95d91eebd3fd','0a509d4d-fc23-414a-870b-d2a371c14244','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('dfbb0346-4a2b-46d5-8ce9-08dbb3db5ec7','f04c95f6-6412-4d92-abb7-192e46138725','d52b4710-be7e-4b48-bdd0-7a69c9c02c42',25.00),
-('e0ef830b-5989-49d7-9228-5286b870fe28','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
-('e1424c3e-52d8-4b95-8885-541c0f24c136','507f20fa-89d4-4475-9cc5-145440eeb226','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4',20.00),
+('d7870f99-2a43-4ab4-82c3-e5c1c0c50d6a','e776a32b-2b74-402d-a782-0c4fb6a97242','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('d796dd04-6c7d-4770-97dd-4f87ae3c1202','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
+('d8790dfb-ae5b-4b82-8c71-df9ced432ae7','cdfa4653-6340-4ce8-aeb9-ebed51848703','fd183f89-035e-11f1-94d2-507b9db621bd',15.00),
+('d9aae2d0-49c5-4752-9463-da3cda4358b8','f04c95f6-6412-4d92-abb7-192e46138725','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('dd724015-5e88-4e97-adc4-0c89e3aea4bc','3719a11e-c958-4650-96b8-eb06b3e5a6e8','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
 ('e355891d-6d5e-4fd2-bdb3-e3254bcc7f2d','fa3785d1-1161-4107-a95c-48caef4c4757','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('e641c8d2-ce70-4541-a7a4-bcb92ea491b4','9ed42d99-ebab-4f2a-a184-4a48042c7ee3','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('e47e84ad-0300-4a01-89d3-cca0831d351a','08a6fc03-54a9-4148-be3f-ef68524f0ff0','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('e51ab2d4-c875-40ee-bb19-6537d781a663','e776a32b-2b74-402d-a782-0c4fb6a97242','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
+('e5916a50-c919-43a8-afa3-95926ef28851','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('e596ca12-6416-4d22-bcd3-cc1404d9f230','507f20fa-89d4-4475-9cc5-145440eeb226','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
 ('e72f7f17-130d-4922-a662-3b37be56533a','f16d9fb7-daa5-4d0a-933f-d7218bc4b1a1','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('e7816b8c-01f5-4f1f-bf4c-78fd344ad364','750e0c03-015e-4cd1-892e-5cb6c91ab6e0','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('ed80ad8b-803e-4106-97ef-073d6626b9a7','3346a719-46b3-48aa-8fe3-abfa7f2ebfd1','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('e7f3833b-cdfc-442a-87b2-bbe345383b0b','ab92e4f0-a435-47b7-8659-174d982162b8','7306e245-035f-11f1-94d2-507b9db621bd',25.00),
+('eb5675a2-ec63-4eaa-b7c5-6317427a3f71','adbfc441-5dc4-46db-8cbe-059d564822a9','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('ecd3b6f2-ef5d-4903-94fd-0e243f40478e','57a88fb3-303c-4b29-97be-0f6eed9cb8ec','7306a061-035f-11f1-94d2-507b9db621bd',25.00),
+('ef59fd7b-1d5d-480a-a68b-b9a1e41d45ee','11c62233-58e9-4c6d-ba72-f804efc85a1a','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
+('f09744a5-4421-4328-ad8f-34618aa633ea','adbfc441-5dc4-46db-8cbe-059d564822a9','9d34503c-56ee-4ddf-a61f-43f837157dca',20.00),
+('f1955e60-67d8-4052-87e2-5b859e138b52','1c52bda6-4b55-4550-9ac7-56b68cdd444d','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
 ('f202bb85-4904-4a88-aec7-d54823f68c15','26e95cbe-b0f8-44dd-907f-72377303222d','0c139446-dae8-4173-b865-68f0254e22f6',12.00),
-('f35cd0f3-6dbc-4d9d-8f89-56e3f747ab93','21d2d707-6fa5-4b3c-a0b6-ce193b88d84b','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('f37d5a4b-35e1-4285-9d26-7196232de4dc','59b69c4d-d758-4b03-8c31-d20968c10220','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('f2067e15-bd50-436c-872d-5915ab7d08cf','adbfc441-5dc4-46db-8cbe-059d564822a9','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
+('f43776f5-ea4d-4105-9e0f-af0fa73da161','e776a32b-2b74-402d-a782-0c4fb6a97242','fd183f89-035e-11f1-94d2-507b9db621bd',15.00),
+('f4560dbc-4105-4886-8e40-be9c2a75eb3a','507f20fa-89d4-4475-9cc5-145440eeb226','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
 ('f4a041d7-97fd-4e5d-b0a0-cf80bfea1ad6','1ea1305b-b66a-44d5-978c-ba5ef6a5e74b','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('f4ad715b-9cc8-497c-864e-1e71f614d6ad','f04c95f6-6412-4d92-abb7-192e46138725','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
-('f5c6db71-57bb-482d-8302-2af728ea45b6','0a509d4d-fc23-414a-870b-d2a371c14244','c10464fc-e0bc-45ea-b720-f8cead11d263',15.00),
+('f4d464f4-813e-4e3d-bd95-4811616377a7','3c822f9f-4888-42d8-8092-371fc21279ed','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('f5f1b7db-077a-4b8f-a8ff-38f95cd46969','107b3aba-6698-4d72-a516-18ecfe631737','86fd48ab-3912-4c00-9921-72a1344ea08f',1.00),
 ('f60ae6ca-f05c-4b96-8819-0112cad938bb','1ea1305b-b66a-44d5-978c-ba5ef6a5e74b','7306e13b-035f-11f1-94d2-507b9db621bd',25.00),
 ('f60bade7-7c6d-43c0-9dbb-23fc2a0abdb4','e4097402-1fa5-4778-86e7-4ae206c42ee2','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
 ('f669c6e1-1933-4719-a187-2d1ed29fb001','fa3785d1-1161-4107-a95c-48caef4c4757','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('f9560f9f-b7a1-4628-a4e7-6031df0e2db1','74820eca-cbd3-4b2d-985d-82a390a5eca0','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',1.00),
-('f9a0707e-ab57-44a6-8a8f-14da037ea0cd','1c52bda6-4b55-4550-9ac7-56b68cdd444d','7306e245-035f-11f1-94d2-507b9db621bd',25.00),
+('f9877781-d9e4-42ad-b151-c20cb1c94dfe','08a6fc03-54a9-4148-be3f-ef68524f0ff0','ff0262ad-7c92-42e2-8f75-5df94ba13320',25.00),
 ('fa277ef2-d261-433c-ad25-4a417297b4e2','24975183-2e80-46de-94f3-50811ca17327','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00),
-('fa2cce64-5506-4db8-80fd-cc37bac3dfea','08a6fc03-54a9-4148-be3f-ef68524f0ff0','ff0262ad-7c92-42e2-8f75-5df94ba13320',23.00),
-('fb69ba20-6b52-497a-9ae3-5d01f16437e0','ea2e3454-97c3-4d00-8aef-4586e9889c75','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691',25.00);
+('fb4e8fad-bb43-4a2e-ab18-825c00049576','74aea3c2-a311-4f64-bdab-698f16767910','a7a99075-19f6-481c-893e-f8d3ec0fa140',100.00),
+('fdebfd7b-e98f-4243-959e-0c560f1981bc','3c822f9f-4888-42d8-8092-371fc21279ed','fd183f89-035e-11f1-94d2-507b9db621bd',15.00);
 
 /*Table structure for table `recipes` */
 
@@ -686,15 +842,12 @@ CREATE TABLE `sales` (
   `customer_name` varchar(255) DEFAULT NULL,
   `payment_status` enum('PAID','PENDING') DEFAULT 'PAID',
   `creator_id` varchar(36) DEFAULT NULL,
+  `qris_exchange` decimal(10,2) DEFAULT 0.00,
   PRIMARY KEY (`id`),
   UNIQUE KEY `invoice_number` (`invoice_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*Data for the table `sales` */
-
-insert  into `sales`(`id`,`invoice_number`,`total`,`payment_method`,`created_at`,`customer_name`,`payment_status`,`creator_id`) values 
-('57275169-35af-456b-9357-8ae93eabf94d','INV-1771356909422',57000.00,'QRIS','2026-02-18 02:35:09','PELANGGAN UMUM','PAID','e78057ba-0bdd-11f1-8cab-08979871e6ef'),
-('a8e93c92-50ec-4f72-b1fc-68e0f1964613','INV-1771357687490',13000.00,'CASH','2026-02-18 02:48:07','PELANGGAN UMUM','PENDING','e78057ba-0bdd-11f1-8cab-08979871e6ef');
 
 /*Table structure for table `sales_items` */
 
@@ -715,13 +868,6 @@ CREATE TABLE `sales_items` (
 
 /*Data for the table `sales_items` */
 
-insert  into `sales_items`(`id`,`sales_id`,`product_id`,`qty`,`price`) values 
-('1ba9c71b-3d7e-4c83-9852-68caef0eb052','57275169-35af-456b-9357-8ae93eabf94d','fc6c2f3b-0b8b-48b3-9538-8125fa6c26ce',1,16000.00),
-('3008992b-7249-4383-a59d-955da740d729','57275169-35af-456b-9357-8ae93eabf94d','d838e456-a305-457d-b950-9e376586cb52',1,10000.00),
-('540d8586-3add-478b-b4d4-d8ff6663c446','57275169-35af-456b-9357-8ae93eabf94d','66790402-d047-462c-be40-e3ebd3fe8663',1,16000.00),
-('cc8bd6b7-0003-4e01-89ee-52d0d59c0ee7','a8e93c92-50ec-4f72-b1fc-68e0f1964613','4ae6f38c-dbcc-4604-8ba9-64bc63ce088f',1,13000.00),
-('fb02ada2-66c1-4a84-8428-a04cc488f590','57275169-35af-456b-9357-8ae93eabf94d','c3c607c0-c180-40cd-8cdd-6e29d93dab32',1,15000.00);
-
 /*Table structure for table `settings` */
 
 DROP TABLE IF EXISTS `settings`;
@@ -735,9 +881,12 @@ CREATE TABLE `settings` (
 /*Data for the table `settings` */
 
 insert  into `settings`(`key_name`,`value`) values 
+('default_print','OFF'),
 ('shift_1_end','17:00'),
 ('shift_1_start','06:00'),
-('shift_2_end','03:00');
+('shift_2_end','03:00'),
+('show_shutdown','OFF'),
+('virtual_keyboard','OFF');
 
 /*Table structure for table `stock_movements` */
 
@@ -757,44 +906,6 @@ CREATE TABLE `stock_movements` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*Data for the table `stock_movements` */
-
-insert  into `stock_movements`(`id`,`raw_material_id`,`type`,`qty`,`reference_id`,`note`,`created_at`) values 
-('0057eb63-1a9c-4bcf-b025-6f0e0a740a4f','a5724b15-1ae9-4837-b76f-e625c211a96f','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:14'),
-('04586b0e-d54f-4abb-812f-be23bc41e6c9','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4','OUT',20.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product fc6c2f3b-0b8b-48b3-9538-8125fa6c26ce','2026-02-18 02:35:09'),
-('0c5780c6-b1b5-4e2a-855e-2c6bda9f8722','a7a99075-19f6-481c-893e-f8d3ec0fa140','OUT',100.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product c3c607c0-c180-40cd-8cdd-6e29d93dab32','2026-02-18 02:35:09'),
-('0ce98955-52e5-4036-973c-040b58c21b18','86fd48ab-3912-4c00-9921-72a1344ea08f','OUT',1.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product fc6c2f3b-0b8b-48b3-9538-8125fa6c26ce','2026-02-18 02:35:09'),
-('0de85b85-15f6-4ca1-8638-41aa1094675e','7306a061-035f-11f1-94d2-507b9db621bd','OUT',25.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product 66790402-d047-462c-be40-e3ebd3fe8663','2026-02-18 02:35:09'),
-('190da524-6d01-48a5-a764-a2c16af9bc08','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42','ADJUST',3.00,'21838aed-33fa-4a57-9966-b013eb50049b','Opname Adjustment: ','2026-02-18 02:37:14'),
-('1fc4b1ce-0360-4fc5-97aa-018a0093c209','c10464fc-e0bc-45ea-b720-f8cead11d263','OUT',15.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product fc6c2f3b-0b8b-48b3-9538-8125fa6c26ce','2026-02-18 02:35:09'),
-('2118418b-831a-4d2b-a831-de092b384b3d','7306a061-035f-11f1-94d2-507b9db621bd','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:33:11'),
-('24c2d0e7-dcf0-417b-9d04-a105fd4ead28','7306e09a-035f-11f1-94d2-507b9db621bd','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:33:23'),
-('25be4405-48b3-40f5-a49e-171326506619','7306e245-035f-11f1-94d2-507b9db621bd','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:36:54'),
-('260ab215-0b26-4068-b51b-68e76914e52a','ee2b930f-de5f-4bb2-af86-45c7d3e39ba4','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:40'),
-('2cc0831c-1cab-4a5c-ab86-889d93b8f85c','a7a99075-19f6-481c-893e-f8d3ec0fa140','OUT',100.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product 66790402-d047-462c-be40-e3ebd3fe8663','2026-02-18 02:35:09'),
-('327ae498-0ed4-4c3f-99ee-76e047147717','0c139446-dae8-4173-b865-68f0254e22f6','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:32:07'),
-('34430a89-0d12-40ab-a85a-2035d959d6c3','fd183f89-035e-11f1-94d2-507b9db621bd','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:47'),
-('3f20136e-8938-4df8-87e0-6e3c64e5b204','9d34503c-56ee-4ddf-a61f-43f837157dca','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:09'),
-('41932d9c-ff7b-4a69-9866-72185f25aa44','7306e1ce-035f-11f1-94d2-507b9db621bd','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:33:42'),
-('4dd7d526-f289-479d-bc25-b01b8c426a24','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:33:57'),
-('597f6d2b-32dd-4f6b-b07c-74900b1a2414','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42','OUT',1.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product 66790402-d047-462c-be40-e3ebd3fe8663','2026-02-18 02:35:09'),
-('65a0ed40-48e0-4f53-bfbb-261f01110c15','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691','OUT',25.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product c3c607c0-c180-40cd-8cdd-6e29d93dab32','2026-02-18 02:35:09'),
-('6aa31654-6638-4948-89f2-e86d2e402224','c10464fc-e0bc-45ea-b720-f8cead11d263','OUT',15.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product 66790402-d047-462c-be40-e3ebd3fe8663','2026-02-18 02:35:09'),
-('6b8ecda8-8d00-4205-8694-569c7a50e4f7','86fd48ab-3912-4c00-9921-72a1344ea08f','OUT',1.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product d838e456-a305-457d-b950-9e376586cb52','2026-02-18 02:35:09'),
-('74449ec5-c798-47ed-849f-cb5e90e72f7f','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42','IN',3.00,NULL,'Restock/Stock In','2026-02-18 02:38:38'),
-('832a4c46-4de7-4cd9-b324-6c37041c43f5','c10464fc-e0bc-45ea-b720-f8cead11d263','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:30:14'),
-('87827fc5-1a1b-4a75-b5fd-a92ad655cdaf','81bdf4d1-e3b0-48d7-95dc-63a6f37d5691','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:01'),
-('88e8cd90-0126-48ac-8e55-b639aefb65aa','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42','OUT',1.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product c3c607c0-c180-40cd-8cdd-6e29d93dab32','2026-02-18 02:35:09'),
-('90546091-4423-4e84-b91d-3e15ce469b11','a7a99075-19f6-481c-893e-f8d3ec0fa140','OUT',100.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product fc6c2f3b-0b8b-48b3-9538-8125fa6c26ce','2026-02-18 02:35:09'),
-('a0206f07-599e-47e1-99da-cb0f91ee96d0','7306e13b-035f-11f1-94d2-507b9db621bd','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:33:32'),
-('bd8cc608-b21a-44b3-bbe1-2bc1ab499e28','0c139446-dae8-4173-b865-68f0254e22f6','OUT',12.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product c3c607c0-c180-40cd-8cdd-6e29d93dab32','2026-02-18 02:35:09'),
-('c1723c7b-de08-4b8f-a917-b05165d80de5','d52b4710-be7e-4b48-bdd0-7a69c9c02c42','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:31'),
-('c73f4be4-3889-4340-9604-b956ae332736','ff0262ad-7c92-42e2-8f75-5df94ba13320','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:52'),
-('ceb803f2-ea65-4460-8842-f2f7547e30f0','a7a99075-19f6-481c-893e-f8d3ec0fa140','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:19'),
-('cfdb9f22-aec8-476a-967a-9f09440492c1','7306e245-035f-11f1-94d2-507b9db621bd','ADJUST',52.00,'45c0c27b-7aa6-46f4-85d1-2736f3e176f4','Opname Adjustment: ','2026-02-18 02:48:41'),
-('d29b2473-7032-469e-994b-ffee19a8372b','c10464fc-e0bc-45ea-b720-f8cead11d263','OUT',15.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product d838e456-a305-457d-b950-9e376586cb52','2026-02-18 02:35:09'),
-('e5fa17ab-9614-4903-9943-1c382cd364c8','c10464fc-e0bc-45ea-b720-f8cead11d263','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:25'),
-('e90263d9-8502-48b3-8978-5150f50da276','7306e13b-035f-11f1-94d2-507b9db621bd','OUT',25.00,'57275169-35af-456b-9357-8ae93eabf94d','Sale of product c3c607c0-c180-40cd-8cdd-6e29d93dab32','2026-02-18 02:35:09'),
-('eb3f4a6b-0ba3-4fd9-8f10-95c1d3434b23','86fd48ab-3912-4c00-9921-72a1344ea08f','IN',1000.00,NULL,'Restock/Stock In','2026-02-18 02:34:05');
 
 /*Table structure for table `stock_opnames` */
 
@@ -817,10 +928,6 @@ CREATE TABLE `stock_opnames` (
 
 /*Data for the table `stock_opnames` */
 
-insert  into `stock_opnames`(`id`,`raw_material_id`,`system_stock`,`physical_stock`,`difference`,`note`,`created_at`,`is_resolved`,`resolved_by`) values 
-('21838aed-33fa-4a57-9966-b013eb50049b','7d96767a-123b-4c62-bbbe-a8ca2a2d8b42',998.00,995.00,-3.00,'[ANOMALY 3.0] ','2026-02-18 02:37:14',1,'Atjas'),
-('45c0c27b-7aa6-46f4-85d1-2736f3e176f4','7306e245-035f-11f1-94d2-507b9db621bd',1000.00,948.00,-52.00,'[ANOMALY 52.0] ','2026-02-18 02:48:41',1,'Atjas');
-
 /*Table structure for table `users` */
 
 DROP TABLE IF EXISTS `users`;
@@ -829,21 +936,23 @@ CREATE TABLE `users` (
   `id` varchar(36) NOT NULL,
   `username` varchar(50) NOT NULL,
   `pin` varchar(10) NOT NULL,
-  `role` enum('ADMIN','KASIR') NOT NULL,
+  `role` enum('ADMIN','KASIR','OWNER') NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `rate_per_minute` decimal(10,2) DEFAULT 250.00,
+  `allow_off_schedule` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*Data for the table `users` */
 
-insert  into `users`(`id`,`username`,`pin`,`role`,`created_at`) values 
-('e06b542b-05f6-11f1-9a18-507b9db621bd','Atjas','1221','ADMIN','2026-02-10 03:35:31'),
-('e06b62e5-05f6-11f1-9a18-507b9db621bd','Andi','1111','KASIR','2026-02-10 03:35:31'),
-('e06b63f6-05f6-11f1-9a18-507b9db621bd','Cipa','2222','KASIR','2026-02-10 03:35:31'),
-('e06b6490-05f6-11f1-9a18-507b9db621bd','Arya','3333','KASIR','2026-02-10 03:35:31'),
-('e06b6521-05f6-11f1-9a18-507b9db621bd','Tamy','4444','KASIR','2026-02-10 03:35:31'),
-('e78057ba-0bdd-11f1-8cab-08979871e6ef','fila','5555','KASIR','2026-02-17 15:51:52');
+insert  into `users`(`id`,`username`,`pin`,`role`,`created_at`,`rate_per_minute`,`allow_off_schedule`) values 
+('e06b542b-05f6-11f1-9a18-507b9db621bd','Atjas','1221','ADMIN','2026-02-10 03:35:31',250.00,0),
+('e06b62e5-05f6-11f1-9a18-507b9db621bd','Andi','1111','KASIR','2026-02-10 03:35:31',250.00,0),
+('e06b63f6-05f6-11f1-9a18-507b9db621bd','Cipa','2222','KASIR','2026-02-10 03:35:31',150.00,0),
+('e06b6490-05f6-11f1-9a18-507b9db621bd','Arya','3333','KASIR','2026-02-10 03:35:31',150.00,0),
+('e06b6521-05f6-11f1-9a18-507b9db621bd','Tamy','4444','KASIR','2026-02-10 03:35:31',150.00,1),
+('e78057ba-0bdd-11f1-8cab-08979871e6ef','fila','5555','KASIR','2026-02-17 15:51:52',150.00,0);
 
 /*Table structure for table `void_logs` */
 
@@ -860,6 +969,22 @@ CREATE TABLE `void_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*Data for the table `void_logs` */
+
+/*Table structure for table `warehouse_stock` */
+
+DROP TABLE IF EXISTS `warehouse_stock`;
+
+CREATE TABLE `warehouse_stock` (
+  `id` varchar(36) NOT NULL,
+  `raw_material_id` varchar(36) DEFAULT NULL,
+  `stock` decimal(10,2) DEFAULT 0.00,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `raw_material_id` (`raw_material_id`),
+  CONSTRAINT `warehouse_stock_ibfk_1` FOREIGN KEY (`raw_material_id`) REFERENCES `raw_materials` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/*Data for the table `warehouse_stock` */
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

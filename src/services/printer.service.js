@@ -84,7 +84,7 @@ class PrinterService {
 
             try {
                 const printerName = process.env.PRINTER_NAME || "RONGTA 58mm Series Printer";
-                const scriptPath = path.join(process.cwd(), 'print_raw.ps1');
+                const scriptPath = path.join(process.cwd(), 'legacy_tools', 'print_raw.ps1');
 
                 // Call the PowerShell script
                 execSync(`powershell -ExecutionPolicy Bypass -File "${scriptPath}" "${printerName}" "${tempFile}"`, { encoding: 'utf8' });

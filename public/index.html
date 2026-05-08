@@ -13,6 +13,8 @@
     <script src="js/lucide.min.js"></script>
     <!-- DayJS -->
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -24,10 +26,9 @@
                 data-lucide="layout-grid"></i></div>
         <div class="nav-item" id="navPending" onclick="switchPage('pending')" title="Pesanan Pending"><i
                 data-lucide="clock"></i></div>
-        <div class="nav-item" id="navStok" onclick="switchPage('stok')" title="Stok Toko"><i data-lucide="package"></i>
+        <div class="nav-item" id="navStok" onclick="switchPage('stok')" title="Stok (Opname/Gudang/Belanja)"><i
+                data-lucide="package"></i>
         </div>
-        <div class="nav-item" id="navGudang" onclick="switchPage('gudang')" title="Stok Gudang"><i
-                data-lucide="container"></i></div>
         <div class="nav-item" id="navReport" onclick="switchPage('report')" title="Laporan"><i
                 data-lucide="bar-chart-2"></i></div>
         <div class="nav-item" id="navBMS" onclick="switchPage('bms')" title="Monitoring Bangunan (BMS)"><i
@@ -46,6 +47,8 @@
                 style="color: var(--danger);"></i></div>
         <div class="nav-item" id="navSettings" onclick="switchPage('settings')" title="Settings (Owner Only)"
             style="display: none;"><i data-lucide="settings"></i></div>
+        <div class="nav-item" id="navOwner" onclick="switchPage('owner')" title="Owner Dashboard"
+            style="display: none;"><i data-lucide="trending-up" style="color: var(--accent);"></i></div>
     </nav>
 
     <main>
@@ -77,16 +80,35 @@
         <!-- STOCK SECTION -->
         <div class="product-section" id="stokPage" style="display: none;">
             <div class="header">
-                <h1>Manajemen Stok (Opname)</h1>
+                <h1>Stok & Operasional</h1>
+            </div>
+
+            <!-- Sub Nav -->
+            <div
+                style="display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;">
+                <button class="category-btn" onclick="switchPage('stok')" id="subNavStok"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="package" style="width: 18px;"></i> Stok Opname
+                </button>
+                <button class="category-btn" onclick="switchPage('gudang')" id="subNavGudang"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="container" style="width: 18px;"></i> Stok Gudang
+                </button>
+                <button class="category-btn" onclick="switchPage('belanja')" id="subNavBelanja"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="shopping-cart" style="width: 18px;"></i> Laporan Belanja
+                </button>
             </div>
 
             <div class="opname-container">
                 <div>
-                    <h3
-                        style="margin-bottom: 20px; color: var(--accent); display: flex; align-items: center; gap: 12px;">
-                        <div class="header-icon"><i data-lucide="package" style="width: 20px;"></i></div>
-                        Pilih Bahan Baku untuk Opname
-                    </h3>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; color: var(--accent); display: flex; align-items: center; gap: 12px;">
+                            <div class="header-icon"><i data-lucide="package" style="width: 20px;"></i></div>
+                            Pilih Bahan Baku untuk Opname
+                        </h3>
+                    </div>
                     <div id="materialGrid"
                         style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;">
                         <!-- Material cards will be loaded here -->
@@ -129,10 +151,6 @@
                         <option value="1">☀️ Shift Pagi (06-17)</option>
                         <option value="2">🌙 Shift Malam (17-03)</option>
                     </select>
-                    <button class="category-btn" onclick="switchPage('belanja')"
-                        style="background: var(--surface); color: var(--text); border: 1px solid var(--glass);">
-                        <i data-lucide="shopping-cart" style="width: 18px; margin-right: 5px;"></i> Laporan Belanja
-                    </button>
                     <input type="date" id="reportDate" class="search-bar" onchange="loadReportData()"
                         style="width: auto;">
                     <button class="category-btn" onclick="openPrintPreview()"
@@ -476,11 +494,26 @@
         <!-- GUDANG SECTION -->
         <div class="product-section" id="gudangPage" style="display: none;">
             <div class="header">
-                <div>
-                    <h1 style="margin: 0;">Stok Gudang Utama</h1>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Persediaan bahan baku di gudang utama</p>
-                </div>
-                <button class="category-btn" onclick="loadGudangData()" style="background: var(--surface);">
+                <h1>Stok Gudang Utama</h1>
+            </div>
+
+            <!-- Sub Nav -->
+            <div
+                style="display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;">
+                <button class="category-btn" onclick="switchPage('stok')" id="subNavStok2"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="package" style="width: 18px;"></i> Stok Opname
+                </button>
+                <button class="category-btn" onclick="switchPage('gudang')" id="subNavGudang2"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="container" style="width: 18px;"></i> Stok Gudang
+                </button>
+                <button class="category-btn" onclick="switchPage('belanja')" id="subNavBelanja2"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="shopping-cart" style="width: 18px;"></i> Laporan Belanja
+                </button>
+                <button class="category-btn" onclick="loadGudangData()"
+                    style="background: var(--surface); margin-left: auto;">
                     <i data-lucide="refresh-cw" style="width: 18px; margin-right: 5px;"></i> Refresh
                 </button>
             </div>
@@ -507,12 +540,23 @@
         <!-- BELANJA SECTION -->
         <div class="product-section" id="belanjaPage" style="display: none;">
             <div class="header">
-                <div>
-                    <h1 style="margin: 0;">Laporan Pembelanjaan</h1>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Input pengeluaran outlet hari ini</p>
-                </div>
-                <button class="category-btn" onclick="switchPage('report')" style="background: var(--surface);">
-                    <i data-lucide="arrow-left" style="width: 18px; margin-right: 5px;"></i> Kembali
+                <h1>Laporan Pembelanjaan</h1>
+            </div>
+
+            <!-- Sub Nav -->
+            <div
+                style="display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;">
+                <button class="category-btn" onclick="switchPage('stok')" id="subNavStok3"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="package" style="width: 18px;"></i> Stok Opname
+                </button>
+                <button class="category-btn" onclick="switchPage('gudang')" id="subNavGudang3"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="container" style="width: 18px;"></i> Stok Gudang
+                </button>
+                <button class="category-btn" onclick="switchPage('belanja')" id="subNavBelanja3"
+                    style="background: var(--surface); color: var(--text); border: 1px solid var(--glass); display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <i data-lucide="shopping-cart" style="width: 18px;"></i> Laporan Belanja
                 </button>
             </div>
 
@@ -584,9 +628,43 @@
                 </div>
 
                 <div class="card" style="padding: 20px; border: 1px solid var(--glass);">
-                    <h3 style="margin-bottom: 20px;"><i data-lucide="history"
-                            style="width: 18px; vertical-align: middle; margin-right: 8px;"></i>Riwayat Belanja Hari Ini
-                    </h3>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <h3 style="margin: 0;"><i data-lucide="history"
+                                style="width: 18px; vertical-align: middle; margin-right: 8px;"></i>Riwayat Belanja</h3>
+
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="expenseRangeFilter" class="payment-dropdown" onchange="toggleExpenseDateRange()"
+                                style="background: var(--surface); height: 35px; width: 120px; font-size: 0.8rem; padding: 0 10px;">
+                                <option value="today">Hari Ini</option>
+                                <option value="weekly" selected>7 Hari Terakhir</option>
+                                <option value="custom">Pilih Tanggal</option>
+                                <option value="all">Semua</option>
+                            </select>
+                            <div id="expenseCustomRange" style="display: none; gap: 5px; align-items: center;">
+                                <input type="date" id="expenseStartDate" class="search-bar"
+                                    style="height: 35px; width: 130px; font-size: 0.8rem; padding: 0 8px; border: 1px solid var(--glass);"
+                                    onchange="loadExpenseHistory()">
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">s/d</span>
+                                <input type="date" id="expenseEndDate" class="search-bar"
+                                    style="height: 35px; width: 130px; font-size: 0.8rem; padding: 0 8px; border: 1px solid var(--glass);"
+                                    onchange="loadExpenseHistory()">
+                            </div>
+                            <select id="expenseStaffFilter" class="payment-dropdown" onchange="loadExpenseHistory()"
+                                style="background: var(--surface); height: 35px; width: 120px; font-size: 0.8rem; padding: 0 10px;">
+                                <option value="">Semua Petugas</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="totalExpenseSummary"
+                        style="background: rgba(228, 168, 83, 0.1); padding: 12px; border-radius: 10px; border: 1px solid var(--accent); margin-bottom: 20px; text-align: right;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">TOTAL PENGELUARAN:
+                        </span>
+                        <span id="totalExpenseAmount"
+                            style="font-size: 1.25rem; color: var(--accent); font-weight: 900; margin-left: 10px;">Rp
+                            0</span>
+                    </div>
                     <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                         <table class="data-table" style="font-size: 0.85rem;">
                             <thead>
@@ -787,6 +865,93 @@
         </div>
 
         <!-- SETTINGS SECTION (OWNER ONLY) -->
+        <!-- OWNER DASHBOARD SECTION -->
+        <div class="product-section" id="ownerPage" style="display: none;">
+            <div class="header">
+                <div>
+                    <h1>Dashboard Owner</h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Analisa Performa & Keuangan Real-time</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="ownerReportFilter" class="category-btn" onchange="loadOwnerData()"
+                        style="padding: 10px 15px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-weight: bold;">
+                        <option value="day">☀️ Hari Ini</option>
+                        <option value="week">📅 7 Hari Terakhir</option>
+                        <option value="month">🗓️ Bulan Ini</option>
+                    </select>
+                    <button class="category-btn" onclick="openBaristaModal()"
+                        style="background: var(--surface); color: var(--accent); border: 1px solid var(--accent); font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="users" style="width: 18px;"></i> Jadwal Barista
+                    </button>
+                    <button class="category-btn" onclick="loadOwnerData()" style="padding: 10px 20px;">
+                        <i data-lucide="refresh-cw" style="width: 18px; margin-right: 5px;"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="report-grid">
+                <div class="card status-card" style="border-left: 5px solid var(--accent);">
+                    <div class="card-icon" style="background: rgba(228, 168, 83, 0.1); color: var(--accent);">
+                        <i data-lucide="dollar-sign"></i>
+                    </div>
+                    <div class="card-info">
+                        <span class="label" id="labelTotalRevenue">Total Omset (Hari Ini)</span>
+                        <h2 id="ownerTotalRevenue">Rp 0</h2>
+                        <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.8;">
+                            Cash: <span id="ownerCashRevenue">0</span> | QRIS: <span id="ownerQRISRevenue">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card status-card" style="border-left: 5px solid var(--danger);">
+                    <div class="card-icon" style="background: rgba(255, 95, 95, 0.1); color: var(--danger);">
+                        <i data-lucide="arrow-down-circle"></i>
+                    </div>
+                    <div class="card-info">
+                        <span class="label" id="labelTotalExpense">Total Pengeluaran (Hari Ini)</span>
+                        <h2 id="ownerTotalExpense">Rp 0</h2>
+                        <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.8;">
+                            Bahan: <span id="ownerMaterialExpense">0</span> | Gaji: <span
+                                id="ownerSalaryExpense">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card status-card" style="border-left: 5px solid var(--success);">
+                    <div class="card-icon" style="background: rgba(103, 255, 158, 0.1); color: var(--success);">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                    <div class="card-info">
+                        <span class="label" id="labelProfit">Estimasi Keuntungan (Hari Ini)</span>
+                        <h2 id="ownerProfit">Rp 0</h2>
+                        <span class="sub">Revenue - Expenses</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts & Breakdown -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-top: 25px;">
+                <div class="card">
+                    <h3>Tren Keuangan (7 Hari Terakhir)</h3>
+                    <div style="height: 300px; margin-top: 20px;">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Alokasi Biaya</h3>
+                    <div
+                        style="height: 250px; margin-top: 20px; display: flex; align-items: center; justify-content: center;">
+                        <canvas id="expenseCircleChart"></canvas>
+                    </div>
+                    <div style="margin-top: 20px; font-size: 0.85rem;" id="ownerExpenseList">
+                        <!-- Breakdown list -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="product-section" id="settingsPage" style="display: none;">
             <div class="header">
                 <h1>Owner Settings & Control</h1>
@@ -854,6 +1019,20 @@
                             <label class="switch">
                                 <input type="checkbox" id="settingShowShutdown"
                                     onchange="updateAppSetting('show_shutdown', this.checked ? 'ON' : 'OFF')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--glass); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Keyboard Virtual</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Aktifkan keyboard di layar
+                                    saat memilih input</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="settingVirtualKeyboard"
+                                    onchange="updateAppSetting('virtual_keyboard', this.checked ? 'ON' : 'OFF')">
                                 <span class="slider round"></span>
                             </label>
                         </div>
@@ -1136,6 +1315,46 @@
         </div>
     </div>
 
+    <!-- QRIS MODAL (v2.5) -->
+    <div id="qrisModal"
+        style="display:none; position: fixed; z-index: 18000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+        <div class="card"
+            style="width: 450px; text-align: center; border: 2px solid var(--accent); background: var(--bg); padding: 30px; position: relative;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;">
+                <div style="background: var(--accent); color: var(--secondary); padding: 10px; border-radius: 12px; display: flex;">
+                    <i data-lucide="qr-code" style="width: 25px;"></i>
+                </div>
+                <h3>Pembayaran QRIS Dinamis</h3>
+            </div>
+            
+            <p id="qrisAmount" style="font-size: 1.5rem; font-weight: 900; color: var(--accent); margin-bottom: 5px;">Rp 0</p>
+            <p id="qrisInvoice" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">#INV-000</p>
+
+            <div style="background: white; padding: 15px; border-radius: 15px; display: inline-block; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <img id="qrisImage" src="" style="width: 250px; height: 250px; display: block;">
+            </div>
+
+            <div style="background: rgba(228, 168, 83, 0.1); border: 1px solid var(--accent); border-radius: 10px; padding: 15px; margin-bottom: 25px; text-align: left;">
+                <div style="display: flex; gap: 10px; align-items: flex-start;">
+                    <i data-lucide="info" style="width: 18px; color: var(--accent); flex-shrink: 0; margin-top: 2px;"></i>
+                    <p style="font-size: 0.8rem; line-height: 1.4; color: var(--text);">
+                        Silakan scan menggunakan <b>GOPAY, OVO, DANA, BCA, atau Mobile Banking</b> lainnya. 
+                        Nominal akan muncul otomatis. Klik tombol di bawah setelah bayar.
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <button class="category-btn" onclick="closeQRISModal()"
+                    style="background: var(--glass); border: 1px solid var(--glass-border);">BATAL / TUTUP</button>
+                <button class="btn-checkout" onclick="confirmQRISPayment()" id="btnConfirmQRIS"
+                    style="margin-top: 0; background: var(--success); color: var(--bg); font-weight: 800;">
+                    <i data-lucide="check-circle" style="width: 18px; margin-right: 8px;"></i> SAYA SUDAH BAYAR
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- VIRTUAL KEYBOARD PANEL -->
     <div id="vkPanel" class="vk-panel">
         <div class="vk-header">
@@ -1162,6 +1381,126 @@
                 style="width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5);">
         </div>
     </div>
+    <!-- Barista & Salary Modal -->
+    <div id="baristaModal"
+        style="display:none; position: fixed; z-index: 16000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+        <div class="card"
+            style="width: 1200px; max-width: 95vw; max-height: 90vh; overflow-y: auto; padding: 30px; border: 1px solid var(--accent); background: var(--surface);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: var(--accent); color: var(--secondary); padding: 8px; border-radius: 8px;">
+                        <i data-lucide="users" style="width: 24px;"></i>
+                    </div>
+                    <h3>Manajemen Jadwal & Gaji Barista</h3>
+                </div>
+                <button class="category-btn" onclick="document.getElementById('baristaModal').style.display='none'"
+                    style="background: none; border: none; color: var(--text-muted); cursor: pointer;">✕ Tutup</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+                <!-- Left Side: Rates & Manual Input -->
+                <div style="display: flex; flex-direction: column; gap: 25px;">
+                    <!-- Manual Input Form -->
+                    <div
+                        style="background: rgba(228, 168, 83, 0.05); padding: 18px; border-radius: 12px; border: 1px dashed var(--accent);">
+                        <h4 style="margin-bottom: 12px; color: var(--accent); font-size: 0.9rem;">Input Shift Manual
+                        </h4>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: block;">Barista</label>
+                            <select id="manualShiftUser" class="payment-dropdown"
+                                style="background: var(--surface); height: 42px; font-size: 0.9rem; padding: 0 12px;">
+                                <!-- Populated from JS -->
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label
+                                    style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: block;">Jam
+                                    Masuk</label>
+                                <input type="datetime-local" id="manualShiftIn" class="payment-dropdown"
+                                    style="background-image: none; width: 100%; height: 42px; font-size: 0.9rem; padding: 0 12px; background: var(--surface);">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label
+                                    style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: block;">Jam
+                                    Pulang</label>
+                                <input type="datetime-local" id="manualShiftOut" class="payment-dropdown"
+                                    style="background-image: none; width: 100%; height: 42px; font-size: 0.9rem; padding: 0 12px; background: var(--surface);">
+                            </div>
+                        </div>
+                        <button class="btn-checkout" onclick="submitManualShift()"
+                            style="margin-top: 5px; width: 100%; padding: 12px; font-size: 0.9rem; background: var(--accent); color: var(--secondary); font-weight: 800; border-radius: 12px;">
+                            SIMPAN DATA SHIFT
+                        </button>
+                    </div>
+
+                    <!-- Rates Settings -->
+                    <div>
+                        <div id="baristaRatesList" style="display: flex; flex-direction: column; gap: 15px;">
+                            <!-- JS populated -->
+                        </div>
+                        <button class="category-btn" onclick="syncAllSalaries()"
+                            style="margin-top: 20px; width: 100%; justify-content: center; background: rgba(228, 168, 83, 0.1); color: var(--accent); border: 1px dashed var(--accent); padding: 12px; font-weight: 800;">
+                            <i data-lucide="refresh-cw" style="width: 16px; margin-right: 8px;"></i>
+                            Sinkronkan Semua Gaji (Recalculate)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Side: Shift Log -->
+                <div>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <h4 style="margin: 0; color: var(--accent);">Shift Log</h4>
+                            <select id="attendanceRange" class="payment-dropdown" onchange="renderAttendanceLog()"
+                                style="background: var(--surface); height: 35px; width: 140px; font-size: 0.8rem; padding: 0 10px;">
+                                <option value="1">Hari Ini</option>
+                                <option value="7" selected>7 Hari Terakhir</option>
+                                <option value="30">Bulan Ini</option>
+                            </select>
+                            <select id="attendanceUserFilter" class="payment-dropdown" onchange="renderAttendanceLog()"
+                                style="background: var(--surface); height: 35px; width: 140px; font-size: 0.8rem; padding: 0 10px;">
+                                <option value="">Semua Kasir</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div id="totalUnpaidSalary"
+                                style="font-size: 0.85rem; color: var(--success); font-weight: 800; background: var(--success)22; padding: 5px 12px; border-radius: 8px;">
+                                Belum Dibayar: Rp 0
+                            </div>
+                            <button class="category-btn" onclick="toggleSalaryVisibility()"
+                                style="padding: 5px 12px; font-size: 0.75rem; background: var(--glass); display: flex; align-items: center; gap: 6px;">
+                                <i data-lucide="eye-off" id="hideSalaryIcon" style="width: 14px;"></i>
+                                <span id="hideSalaryText">Hide Angka Gaji</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container"
+                        style="background: rgba(255,255,255,0.02); border-radius: 10px; max-height: 500px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr
+                                    style="text-align: left; border-bottom: 1px solid var(--glass-border); font-size: 0.8rem; color: var(--text-muted);">
+                                    <th style="padding: 10px;">Barista</th>
+                                    <th style="padding: 10px;">Mulai</th>
+                                    <th style="padding: 10px;">Selesai</th>
+                                    <th style="padding: 10px;">Gaji</th>
+                                    <th style="padding: 10px;">Status</th>
+                                    <th style="padding: 10px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="baristaShiftLog" style="font-size: 0.8rem;">
+                                <!-- JS populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Exchange Modal -->
     <div id="exchangeModal"
         style="display:none; position: fixed; z-index: 15000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">

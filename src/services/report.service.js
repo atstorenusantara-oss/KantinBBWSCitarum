@@ -177,6 +177,85 @@ class ReportService {
         `);
         return rows;
     }
+
+    async getOwnerSummary(filter = 'day') {
+        let startTime, endTime;
+        if (filter === 'week') {
+            startTime = dayjs().subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            endTime = dayjs().endOf('day').format('YYYY-MM-DD HH:mm:ss');
+        } else if (filter === 'month') {
+            startTime = dayjs().startOf('month').format('YYYY-MM-DD HH:mm:ss');
+            endTime = dayjs().endOf('month').format('YYYY-MM-DD HH:mm:ss');
+        } else {
+            startTime = dayjs().startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            endTime = dayjs().endOf('day').format('YYYY-MM-DD HH:mm:ss');
+        }
+
+        // Revenue Breakdown
+        const [revenue] = await db.query(`
+            SELECT 
+                SUM(CASE WHEN payment_method = 'CASH' THEN total ELSE 0 END) - SUM(qris_exchange) as cash_revenue,
+                SUM(CASE WHEN payment_method = 'QRIS' THEN total ELSE 0 END) + SUM(qris_exchange) as qris_revenue,
+                SUM(total) as total_revenue
+            FROM sales 
+            WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'
+        `, [startTime, endTime]);
+
+        // Expenses breakdown
+        const [expenses] = await db.query(`
+            SELECT 
+                SUM(CASE WHEN type = 'BAHAN_BAKU' THEN amount ELSE 0 END) as raw_material,
+                SUM(CASE WHEN type = 'LAINNYA' THEN amount ELSE 0 END) as others,
+                SUM(amount) as manual_total
+            FROM expenses
+            WHERE created_at BETWEEN ? AND ?
+        `, [startTime, endTime]);
+
+        // Attendance-based Salary
+        const [attSalary] = await db.query(`
+            SELECT SUM(salary_earned) as total_attendance_salary 
+            FROM attendance 
+            WHERE (clock_out BETWEEN ? AND ?) OR (clock_out IS NULL AND clock_in BETWEEN ? AND ?)
+        `, [startTime, endTime, startTime, endTime]);
+
+        const totalSalary = Number(attSalary[0].total_attendance_salary || 0);
+        const totalExpense = (Number(expenses[0]?.manual_total || 0)) + totalSalary;
+
+        // Chart Data (Last 7 Days - Always 7 days trend)
+        const chartData = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = dayjs().subtract(i, 'day');
+            const start = d.startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            const end = d.endOf('day').format('YYYY-MM-DD HH:mm:ss');
+
+            const [rev] = await db.query(`SELECT SUM(total) as total FROM sales WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'`, [start, end]);
+            const [manualExp] = await db.query(`SELECT SUM(amount) as total FROM expenses WHERE created_at BETWEEN ? AND ?`, [start, end]);
+            const [atsExp] = await db.query(`SELECT SUM(salary_earned) as total FROM attendance WHERE (clock_out BETWEEN ? AND ?) OR (clock_out IS NULL AND clock_in BETWEEN ? AND ?)`, [start, end, start, end]);
+
+            const dayRev = Number(rev[0].total || 0);
+            const dayExp = (Number(manualExp[0].total || 0)) + (Number(atsExp[0].total || 0));
+
+            chartData.push({
+                date: d.format('DD MMM'),
+                income: dayRev,
+                expense: dayExp
+            });
+        }
+
+        return {
+            today: {
+                revenue: revenue[0] || { cash_revenue: 0, qris_revenue: 0, total_revenue: 0 },
+                expense: {
+                    raw_material: expenses[0]?.raw_material || 0,
+                    salary: totalSalary,
+                    others: expenses[0]?.others || 0,
+                    total_expense: totalExpense
+                },
+                profit: (Number(revenue[0]?.total_revenue || 0)) - totalExpense
+            },
+            chart: chartData
+        };
+    }
 }
 
 module.exports = new ReportService();

@@ -135,6 +135,30 @@ class SalesService {
             connection.release();
         }
     }
+
+    async deleteSale(salesId) {
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // 1. Restore stock
+            await stockService.restoreStockFromSale(salesId, connection);
+
+            // 2. Delete sales items
+            await connection.query("DELETE FROM sales_items WHERE sales_id = ?", [salesId]);
+
+            // 3. Delete sale record
+            await connection.query("DELETE FROM sales WHERE id = ?", [salesId]);
+
+            await connection.commit();
+            return { success: true };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
 }
 
 module.exports = new SalesService();

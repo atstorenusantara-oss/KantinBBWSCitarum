@@ -61,7 +61,44 @@ async function init() {
     // Show/hide settings based on role
     updateSidebarVisibility();
 
+    // Periodic session check (Every 1 minute)
+    setInterval(checkSessionStatus, 60000);
+    checkSessionStatus(); // Initial check
+
     refreshIcons();
+}
+
+async function checkSessionStatus() {
+    if (!currentUser) return;
+    if (currentUser.role === 'OWNER' || currentUser.role === 'ADMIN') return;
+
+    try {
+        const res = await fetch(`/api/auth/shift-status/${currentUser.id}?attendance_id=${currentAttendanceId}`);
+        const data = await res.json();
+        
+        if (data.success && !data.valid) {
+            // Auto logout without confirmation
+            if (currentAttendanceId) {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ attendance_id: currentAttendanceId })
+                });
+            }
+
+            // Clear session
+            currentUser = null;
+            currentAttendanceId = null;
+            localStorage.removeItem('gc_currentUser');
+            localStorage.removeItem('gc_attendanceId');
+
+            document.getElementById('loginModal').style.display = 'flex';
+            updateSidebarVisibility(); 
+            alert('🔐 ' + (data.message || 'Shift Anda berakhir. Otomatis logout.'));
+        }
+    } catch (e) {
+        console.warn('Session check failed:', e);
+    }
 }
 
 function initTheme() {
@@ -291,6 +328,7 @@ function attemptLogin() {
 
                 document.getElementById('loginModal').style.display = 'none';
                 document.getElementById('loginPin').value = '';
+
                 const staffName = currentUser.username.toUpperCase();
                 document.getElementById('sidebarUser').innerText = staffName;
                 document.getElementById('headerStaffKasir').innerText = staffName;
@@ -299,27 +337,36 @@ function attemptLogin() {
                 // Show/hide owner menu
                 updateSidebarVisibility();
 
-                alert(`Absen Masuk Berhasil! Selamat bekerja, ${currentUser.username}!`);
+                alert(`Login Berhasil! Selamat bekerja, ${currentUser.username}!`);
+                if (typeof refreshIcons === 'function') refreshIcons();
             } else {
                 alert(data.message);
             }
-        });
+        })
+        .catch(err => alert('Gagal menghubungi server'));
 }
 
 function updateSidebarVisibility() {
     const navSettings = document.getElementById('navSettings');
-    if (navSettings) {
-        navSettings.style.display = (currentUser && currentUser.role === 'ADMIN') ? 'flex' : 'none';
-    }
+    const navOwner = document.getElementById('navOwner');
+    const isBoss = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER');
+
+    if (navSettings) navSettings.style.display = isBoss ? 'flex' : 'none';
+    if (navOwner) navOwner.style.display = isBoss ? 'flex' : 'none';
 }
 
 async function logout() {
-    if (currentAttendanceId && confirm('Konfirmasi Absen Pulang (Logout)?')) {
-        await fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ attendance_id: currentAttendanceId })
-        });
+    const isBoss = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER');
+    const msg = currentAttendanceId ? 'Konfirmasi Absen Pulang (Logout)?' : 'Konfirmasi Keluar (Logout)?';
+
+    if (confirm(msg)) {
+        if (currentAttendanceId) {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ attendance_id: currentAttendanceId })
+            });
+        }
 
         // Clear session
         currentUser = null;
@@ -328,6 +375,7 @@ async function logout() {
         localStorage.removeItem('gc_attendanceId');
 
         document.getElementById('loginModal').style.display = 'flex';
+        updateSidebarVisibility(); // Hide admin menus
     }
 }
 
@@ -413,26 +461,34 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
         });
 
         const result = await response.json();
+        console.log("Pay Sales Response:", result);
+        
         if (result.success) {
-            let msg = paymentStatus === 'PAID' ? 'Transaksi Berhasil!' : 'Pesanan disimpan ke daftar Pending.';
+            // NEW: QRIS Handling (v2.5)
+            if (result.qris) {
+                console.log("Triggering QRIS Modal with:", result.qris);
+                showQRISModal(result.qris, payload.total, payload.invoice_number);
+            } else {
+                let msg = paymentStatus === 'PAID' ? 'Transaksi Berhasil!' : 'Pesanan disimpan ke daftar Pending.';
 
-            if (result.print && result.print.success) {
-                msg += `\n${result.print.message}`;
-            } else if (shouldPrint) {
-                if (result.print?.isCloud) {
-                    msg += `\n☁️ Mode Cloud: Membuka struk untuk cetak manual...`;
-                    previewReceipt(result.data.id);
-                } else {
-                    msg += `\n⚠️ Gagal mencetak struk: ${result.print?.error || 'Sedang simulasi server'}`;
+                if (result.print && result.print.success) {
+                    msg += `\n${result.print.message}`;
+                } else if (shouldPrint) {
+                    if (result.print?.isCloud) {
+                        msg += `\n☁️ Mode Cloud: Membuka struk untuk cetak manual...`;
+                        previewReceipt(result.data.id);
+                    } else {
+                        msg += `\n⚠️ Gagal mencetak struk: ${result.print?.error || 'Sedang simulasi server'}`;
+                    }
                 }
-            }
 
-            alert(`${msg}\nCustomer: ${customerName}\nInvoice: ${payload.invoice_number}`);
-            cart = [];
-            document.getElementById('customerName').value = '';
-            document.getElementById('paymentStatus').value = 'PAID';
-            togglePaymentSelection();
-            updateCart();
+                alert(`${msg}\nCustomer: ${customerName}\nInvoice: ${payload.invoice_number}`);
+                cart = [];
+                document.getElementById('customerName').value = '';
+                document.getElementById('paymentStatus').value = 'PAID';
+                togglePaymentSelection();
+                updateCart();
+            }
         } else {
             alert('Gagal: ' + result.error);
         }
@@ -440,6 +496,77 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
         alert('Terjadi kesalahan koneksi ke server.');
     }
 });
+
+// --- QRIS Frontend Integration (v2.5) ---
+let currentQRISInvoice = null;
+
+function showQRISModal(qris, amount, invoice) {
+    currentQRISInvoice = invoice;
+    document.getElementById('qrisAmount').innerText = `Rp ${Number(amount).toLocaleString()}`;
+    document.getElementById('qrisInvoice').innerText = `#${invoice}`;
+    document.getElementById('qrisImage').src = qris.qr_image;
+    document.getElementById('qrisModal').style.display = 'flex';
+    refreshIcons();
+}
+
+function closeQRISModal() {
+    if (confirm("Pastikan pelanggan belum membayar sebelum menutup. Lanjut?")) {
+        document.getElementById('qrisModal').style.display = 'none';
+        // Clear cart anyway because transaction was already saved in DB (just unpaid)
+        // Staff can find it in Pending or Report later.
+        resetPOS();
+    }
+}
+
+async function confirmQRISPayment() {
+    const btn = document.getElementById('btnConfirmQRIS');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> MEMVERIFIKASI...';
+    refreshIcons();
+
+    try {
+        const response = await fetch(`/api/qris/verify/${currentQRISInvoice}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                payer_name: document.getElementById('customerName').value || 'Pelanggan QRIS',
+                payer_note: 'Verified from POS'
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert("✓ " + result.message);
+            document.getElementById('qrisModal').style.display = 'none';
+            
+            if (typeof activePage !== 'undefined' && activePage === 'pending') {
+                loadPendingSales();
+            } else {
+                resetPOS();
+            }
+        } else {
+            alert(result.message || "Gagal verifikasi pembayaran.");
+        }
+    } catch (error) {
+        alert("Terjadi kesalahan sistem saat verifikasi.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        refreshIcons();
+    }
+}
+
+function resetPOS() {
+    cart = [];
+    document.getElementById('customerName').value = '';
+    document.getElementById('paymentStatus').value = 'PAID';
+    togglePaymentSelection();
+    updateCart();
+    renderProducts();
+}
 
 // --- Navigation Logic ---
 function switchPage(page) {
@@ -452,6 +579,7 @@ function switchPage(page) {
         'bms': document.getElementById('bmsPage'),
         'system': document.getElementById('systemPage'),
         'settings': document.getElementById('settingsPage'),
+        'owner': document.getElementById('ownerPage'),
         'belanja': document.getElementById('belanjaPage'),
         'gudang': document.getElementById('gudangPage')
     };
@@ -465,11 +593,12 @@ function switchPage(page) {
         'bms': document.getElementById('navBMS'),
         'system': document.getElementById('navSystem'),
         'settings': document.getElementById('navSettings'),
+        'owner': document.getElementById('navOwner'),
         'gudang': document.getElementById('navGudang')
     };
 
     // Access Control
-    if (page === 'settings' && (!currentUser || currentUser.role !== 'ADMIN')) {
+    if ((page === 'settings' || page === 'owner') && (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'OWNER'))) {
         alert('Akses Dibatalkan: Menu ini hanya untuk Owner/Admin!');
         return;
     }
@@ -484,6 +613,27 @@ function switchPage(page) {
     if (pages[page]) pages[page].style.display = 'block';
     if (navItems[page]) navItems[page].classList.add('active');
 
+    // Sub-navigation active state
+    const subNavs = {
+        'stok': ['subNavStok', 'subNavStok2', 'subNavStok3'],
+        'gudang': ['subNavGudang', 'subNavGudang2', 'subNavGudang3'],
+        'belanja': ['subNavBelanja', 'subNavBelanja2', 'subNavBelanja3']
+    };
+
+    // Reset all sub-nav buttons
+    Object.values(subNavs).flat().forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
+
+    // Set active sub-nav buttons
+    if (subNavs[page]) {
+        subNavs[page].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('active');
+        });
+    }
+
     // Cart visibility
     cartSection.style.display = (page === 'kasir') ? 'flex' : 'none';
 
@@ -494,8 +644,10 @@ function switchPage(page) {
     if (page === 'pending') loadPendingSales();
     if (page === 'bms') loadBMSData();
     if (page === 'settings') loadActivityLogs();
+    if (page === 'owner') loadOwnerData();
     if (page === 'belanja') {
         loadExpenseMaterials();
+        loadExpenseFilters();
         loadExpenseHistory();
     }
     if (page === 'gudang') loadGudangData();
@@ -522,11 +674,17 @@ async function loadAppSettings() {
                 checkPrint.checked = settings.default_print === 'ON';
             }
 
-            // Sync to Settings Page UI if it's open (or just always sync)
+            // Sync to Settings Page UI
             const uiDefaultPrint = document.getElementById('settingDefaultPrint');
             const uiShowShutdown = document.getElementById('settingShowShutdown');
+            const uiVirtualKeyboard = document.getElementById('settingVirtualKeyboard');
+
             if (uiDefaultPrint) uiDefaultPrint.checked = settings.default_print === 'ON';
             if (uiShowShutdown) uiShowShutdown.checked = settings.show_shutdown === 'ON';
+            if (uiVirtualKeyboard) uiVirtualKeyboard.checked = settings.virtual_keyboard !== 'OFF'; // Default ON
+
+            // Store in global or local cache if needed
+            window.appSettings = settings;
         }
     } catch (err) {
         console.error('Load settings error:', err);
@@ -760,6 +918,11 @@ async function loadReportData() {
                                 <button class="category-btn" onclick="previewReceipt('${s.id}')" title="Preview Struk" style="padding: 6px; background: var(--glass); color: var(--accent); display: inline-flex; align-items: center; justify-content: center;">
                                     <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
                                 </button>
+                                ${(currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER')) ? `
+                                <button class="category-btn" onclick="deleteSale('${s.id}', true)" title="Hapus Transaksi" style="padding: 6px; background: var(--glass); color: var(--danger); display: inline-flex; align-items: center; justify-content: center;">
+                                    <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                ` : ''}
                             </div>
                         </td>
                     </tr>`).join('');
@@ -1321,6 +1484,11 @@ function renderPendingTable(data) {
                     <button class="category-btn" onclick="reprintSale('${s.id}')" title="Cetak Struk" style="background: var(--glass); padding: 6px 10px;">
                         <i data-lucide="printer" style="width: 14px;"></i>
                     </button>
+                    ${(currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER')) ? `
+                    <button class="category-btn" onclick="deleteSale('${s.id}')" title="Hapus Pesanan" style="background: var(--danger); padding: 6px 10px; color: white; border: none;">
+                        <i data-lucide="trash-2" style="width: 14px;"></i>
+                    </button>
+                    ` : ''}
                 </div>
             </td>
         </tr>
@@ -1365,6 +1533,16 @@ async function payPending(salesId, method) {
         });
         const result = await res.json();
         if (result.success) {
+            // NEW: Handle QRIS response for Pending payment
+            if (result.qris) {
+                // Find total from local data if possible, or just use what we have in modal text
+                const total = document.getElementById('paymentAmountText').innerText.replace(/[^0-9]/g, '');
+                // Find invoice number from current view
+                const sale = pendingSalesData.find(s => s.id === salesId);
+                showQRISModal(result.qris, total, sale?.invoice_number || 'PENDING');
+                return;
+            }
+
             alert('Pembayaran Berhasil Dilunasi!');
             if (result.print?.isCloud || document.getElementById('checkPrint').checked) {
                 previewReceipt(salesId);
@@ -1373,6 +1551,34 @@ async function payPending(salesId, method) {
         }
     } catch (error) {
         alert('Gagal memproses pembayaran.');
+    }
+}
+
+async function deleteSale(salesId, isReport = false) {
+    const msg = isReport 
+        ? 'Apakah Anda yakin ingin menghapus transaksi ini? Stok akan dikembalikan dan data keuangan akan disesuaikan.' 
+        : 'Apakah Anda yakin ingin menghapus pesanan pending ini? Stok yang telah terpotong akan dikembalikan ke sistem.';
+    
+    if (!confirm(msg)) return;
+
+    try {
+        const res = await fetch(`/api/sales/${salesId}`, {
+            method: 'DELETE'
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert('Penghapusan Berhasil!');
+            if (isReport) {
+                loadReportData();
+                if (activePage === 'owner') loadOwnerData();
+            } else {
+                loadPendingSales();
+            }
+        } else {
+            alert('Gagal menghapus: ' + result.message);
+        }
+    } catch (error) {
+        alert('Terjadi kesalahan saat menghapus data.');
     }
 }
 
@@ -1475,6 +1681,11 @@ function initVK() {
 }
 
 function showVK(target, type) {
+    // Check if VK is enabled in settings
+    if (window.appSettings && window.appSettings.virtual_keyboard === 'OFF') {
+        return;
+    }
+
     vkTarget = target;
     const panel = document.getElementById('vkPanel');
     const title = document.getElementById('vkTitle');
@@ -1655,13 +1866,16 @@ function toggleExpenseFields() {
     const type = document.getElementById('expenseType').value;
     const materialDiv = document.getElementById('materialSelection');
     const descriptionDiv = document.getElementById('otherDescription');
+    const nameInput = document.getElementById('expenseItemName');
 
     if (type === 'BAHAN_BAKU') {
         materialDiv.style.display = 'block';
         descriptionDiv.style.display = 'none';
+        nameInput.placeholder = "Sabun, Kopi, dll";
     } else {
         materialDiv.style.display = 'none';
         descriptionDiv.style.display = 'block';
+        nameInput.placeholder = "Contoh: Sabun Cuci...";
     }
 }
 
@@ -1740,33 +1954,92 @@ async function submitExpense() {
     }
 }
 
+async function loadExpenseFilters() {
+    const staffFilter = document.getElementById('expenseStaffFilter');
+    if (staffFilter.options.length > 1) return;
+
+    // Set default dates for custom range
+    document.getElementById('expenseStartDate').value = dayjs().subtract(7, 'day').format('YYYY-MM-DD');
+    document.getElementById('expenseEndDate').value = dayjs().format('YYYY-MM-DD');
+
+    try {
+        const res = await fetch('/api/auth/full-users');
+        const result = await res.json();
+        if (result.success) {
+            result.data.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.innerText = u.username;
+                staffFilter.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Failed to load expense filters:', e);
+    }
+}
+
+function toggleExpenseDateRange() {
+    const range = document.getElementById('expenseRangeFilter').value;
+    const customDiv = document.getElementById('expenseCustomRange');
+    customDiv.style.display = (range === 'custom') ? 'flex' : 'none';
+    loadExpenseHistory();
+}
+
 async function loadExpenseHistory() {
-    const res = await fetch('/api/expenses/today');
-    const result = await res.json();
-    const tbody = document.getElementById('expenseHistoryBody');
-    if (result.success) {
-        tbody.innerHTML = result.data.map(e => `
-            <tr>
-                <td>${dayjs(e.created_at).format('HH:mm')}</td>
-                <td>${e.type === 'BAHAN_BAKU' ? e.material_name : e.item_name}</td>
-                <td style="font-weight: bold; color: var(--accent);">${e.staff_name || '-'}</td>
-                <td>${e.qty || '-'}</td>
-                <td>Rp ${Number(e.amount).toLocaleString()}</td>
-                <td style="display: flex; gap: 8px;">
-                    ${e.image_url ? `
-                        <button class="category-btn" onclick="viewExpenseImage('${e.image_url}')" style="padding: 6px; background: var(--surface); border: 1px solid var(--glass); display: inline-flex; align-items: center; justify-content: center;">
-                            <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
-                        </button>
-                    ` : ''}
-                    ${!e.is_edited ? `
-                        <button class="category-btn" onclick="editExpense('${e.id}', ${e.qty}, ${e.amount})" style="padding: 4px 10px; font-size: 0.75rem; background: var(--accent); color: var(--secondary); font-weight: bold;">
-                            EDIT
-                        </button>
-                    ` : '<span style="color: var(--text-muted); font-size: 0.7rem;">Edited</span>'}
-                </td>
-            </tr>
-        `).join('');
-        refreshIcons();
+    const range = document.getElementById('expenseRangeFilter').value;
+    const userId = document.getElementById('expenseStaffFilter').value;
+    const startDate = document.getElementById('expenseStartDate').value;
+    const endDate = document.getElementById('expenseEndDate').value;
+
+    try {
+        let url = `/api/expenses/history?range=${range}&userId=${userId}`;
+        if (range === 'custom') {
+            url += `&startDate=${startDate}&endDate=${endDate}`;
+        }
+        const res = await fetch(url);
+        const result = await res.json();
+        const tbody = document.getElementById('expenseHistoryBody');
+        const totalDisplay = document.getElementById('totalExpenseAmount');
+
+        if (result.success) {
+            let total = 0;
+            tbody.innerHTML = result.data.map(e => {
+                const amountVal = Number(e.amount || 0);
+                total += amountVal;
+                return `
+                <tr>
+                    <td>${dayjs(e.created_at).format('HH:mm')} ${range !== 'today' ? `<br><small style="color:var(--text-muted);">${dayjs(e.created_at).format('DD/MM')}</small>` : ''}</td>
+                    <td>${e.type === 'BAHAN_BAKU' ? e.material_name : e.item_name}</td>
+                    <td style="font-weight: bold; color: var(--accent);">${e.staff_name || '-'}</td>
+                    <td>${e.qty || '-'}</td>
+                    <td>${formatIDR(amountVal)}</td>
+                    <td style="display: flex; gap: 8px;">
+                        ${e.image_url ? `
+                            <button class="category-btn" onclick="viewExpenseImage('${e.image_url}')" title="Lihat Bukti" style="padding: 6px; background: var(--surface); border: 1px solid var(--glass); display: inline-flex; align-items: center; justify-content: center;">
+                                <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+                            </button>
+                        ` : ''}
+                        ${(!e.is_edited && (currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER'))) ? `
+                            <button class="category-btn" onclick="editExpense('${e.id}', ${e.qty}, ${e.amount})" style="padding: 4px 10px; font-size: 0.75rem; background: var(--accent); color: var(--secondary); font-weight: bold;">
+                                EDIT
+                            </button>
+                        ` : ''}
+                        ${(currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER')) ? `
+                            <button class="category-btn" onclick="deleteExpense('${e.id}')" title="Hapus Data" style="padding: 6px; background: var(--glass); display: inline-flex; align-items: center; justify-content: center; color: var(--danger); border: 1px solid var(--glass);">
+                                <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                            </button>
+                        ` : ''}
+                        ${(e.is_edited) ? '<span style="color: var(--text-muted); font-size: 0.7rem; align-items: center; display: flex;">Edited</span>' : ''}
+                    </td>
+                </tr>
+            `;
+            }).join('');
+
+            totalDisplay.innerText = formatIDR(total);
+            if (typeof refreshIcons === 'function') refreshIcons();
+        }
+    } catch (e) {
+        console.error('Load Expense History Error:', e);
     }
 }
 
@@ -1801,6 +2074,26 @@ async function editExpense(id, currentQty, currentAmount) {
     }
 }
 
+async function deleteExpense(id) {
+    if (!confirm('Apakah Anda yakin ingin menghapus data belanja ini? Jika ini adalah bahan baku, stok gudang akan disesuaikan kembali.')) return;
+
+    try {
+        const res = await fetch(`/api/expenses/${id}`, {
+            method: 'DELETE'
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert(result.message);
+            loadExpenseHistory();
+            if (activePage === 'gudang') loadGudangData();
+        } else {
+            alert(result.message);
+        }
+    } catch (e) {
+        alert("Gagal menghapus data");
+    }
+}
+
 async function loadGudangData() {
     const res = await fetch('/api/expenses/warehouse');
     const result = await res.json();
@@ -1823,6 +2116,135 @@ async function loadGudangData() {
             </tr>
         `).join('');
         refreshIcons();
+    }
+}
+
+// --- Owner Dashboard Logic ---
+let financeChartInstance = null;
+let expenseCircleChartInstance = null;
+
+async function loadOwnerData() {
+    try {
+        const filter = document.getElementById('ownerReportFilter')?.value || 'day';
+        const res = await fetch(`/api/reports/owner/summary?filter=${filter}`);
+        const result = await res.json();
+        if (!result.success) return alert('Gagal memuat data owner: ' + result.error);
+
+        const data = result.data;
+        const { today, chart } = data;
+
+        const labels = {
+            'day': '(Hari Ini)',
+            'week': '(7 Hari Terakhir)',
+            'month': '(Bulan Ini)'
+        };
+        const currentLabel = labels[filter] || '(Hari Ini)';
+        document.getElementById('labelTotalRevenue').innerText = `Total Omset ${currentLabel}`;
+        document.getElementById('labelTotalExpense').innerText = `Total Pengeluaran ${currentLabel}`;
+        document.getElementById('labelProfit').innerText = `Estimasi Keuntungan ${currentLabel}`;
+
+        // 1. Update Summary Cards
+        document.getElementById('ownerTotalRevenue').innerText = `Rp ${Number(today.revenue.total_revenue).toLocaleString()}`;
+        document.getElementById('ownerCashRevenue').innerText = `Rp ${Number(today.revenue.cash_revenue).toLocaleString()}`;
+        document.getElementById('ownerQRISRevenue').innerText = `Rp ${Number(today.revenue.qris_revenue).toLocaleString()}`;
+
+        document.getElementById('ownerTotalExpense').innerText = `Rp ${Number(today.expense.total_expense).toLocaleString()}`;
+        document.getElementById('ownerMaterialExpense').innerText = `Rp ${Number(today.expense.raw_material).toLocaleString()}`;
+        document.getElementById('ownerSalaryExpense').innerText = `Rp ${Number(today.expense.salary).toLocaleString()}`;
+
+        const profit = today.profit;
+        const profitEl = document.getElementById('ownerProfit');
+        profitEl.innerText = `Rp ${Number(profit).toLocaleString()}`;
+        profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+        // 2. Render Finance Trend Chart (Line Chart)
+        const ctxFinance = document.getElementById('financeChart').getContext('2d');
+        if (financeChartInstance) financeChartInstance.destroy();
+        financeChartInstance = new Chart(ctxFinance, {
+            type: 'line',
+            data: {
+                labels: chart.map(c => c.date),
+                datasets: [
+                    {
+                        label: 'Pemasukan',
+                        data: chart.map(c => c.income),
+                        borderColor: '#E4A853',
+                        backgroundColor: 'rgba(228, 168, 83, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Pengeluaran',
+                        data: chart.map(c => c.expense),
+                        borderColor: '#ff5f5f',
+                        backgroundColor: 'rgba(255, 95, 95, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#E0E0E0' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#B0B0B0' } },
+                    y: { ticks: { color: '#B0B0B0' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+
+        // 3. Render Expense Allocation (Doughnut Chart)
+        const ctxCircle = document.getElementById('expenseCircleChart').getContext('2d');
+        if (expenseCircleChartInstance) expenseCircleChartInstance.destroy();
+
+        const expData = [
+            Number(today.expense.raw_material || 0),
+            Number(today.expense.salary || 0),
+            Number(today.expense.others || 0)
+        ];
+
+        expenseCircleChartInstance = new Chart(ctxCircle, {
+            type: 'doughnut',
+            data: {
+                labels: ['Bahan Baku', 'Gaji', 'Lainnya'],
+                datasets: [{
+                    data: expData,
+                    backgroundColor: ['#E4A853', '#67ff9e', '#ff5f5f'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // 4. Expense List Breakdown
+        const listEl = document.getElementById('ownerExpenseList');
+        const total = today.expense.total_expense || 1; // avoid div by zero
+        listEl.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>📦 Bahan Baku</span>
+                <b>Rp ${Number(today.expense.raw_material).toLocaleString()} (${((today.expense.raw_material / total) * 100).toFixed(0)}%)</b>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>👥 Gaji Karyawan</span>
+                <b>Rp ${Number(today.expense.salary).toLocaleString()} (${((today.expense.salary / total) * 100).toFixed(0)}%)</b>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>📝 Operasional Lain</span>
+                <b>Rp ${Number(today.expense.others).toLocaleString()} (${((today.expense.others / total) * 100).toFixed(0)}%)</b>
+            </div>
+        `;
+
+    } catch (e) {
+        console.error(e);
+        alert('Gagal memuat dashboard owner.');
     }
 }
 
@@ -1871,6 +2293,325 @@ async function submitExchangeShortcut() {
         console.error(e);
         alert('Terjadi kesalahan koneksi.');
     }
+}
+
+// --- Global Helpers ---
+function formatIDR(amount) {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount).replace('Rp', 'Rp ');
+}
+
+// --- Barista & Salary Management ---
+let editingShiftId = null;
+let salaryHidden = false;
+
+function toggleSalaryVisibility() {
+    salaryHidden = !salaryHidden;
+    const icon = document.getElementById('hideSalaryIcon');
+    const text = document.getElementById('hideSalaryText');
+    if (salaryHidden) {
+        icon.setAttribute('data-lucide', 'eye');
+        text.innerText = 'Show Angka Gaji';
+    } else {
+        icon.setAttribute('data-lucide', 'eye-off');
+        text.innerText = 'Hide Angka Gaji';
+    }
+    lucide.createIcons();
+    renderAttendanceLog();
+}
+
+async function openBaristaModal() {
+    document.getElementById('baristaModal').style.display = 'flex';
+    editingShiftId = null;
+
+    document.getElementById('manualShiftIn').value = dayjs().format('YYYY-MM-DDTHH:mm');
+    document.getElementById('manualShiftOut').value = dayjs().format('YYYY-MM-DDTHH:mm');
+
+    try {
+        const userRes = await fetch('/api/auth/full-users');
+        const userData = await userRes.json();
+        const ratesList = document.getElementById('baristaRatesList');
+        const userSelect = document.getElementById('manualShiftUser');
+
+        if (userData.success) {
+            ratesList.innerHTML = userData.data.map(u => `
+                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: 800; font-size: 1rem; color: var(--text);">${u.username}</span>
+                        <span style="font-size: 0.65rem; color: var(--primary-light); background: rgba(150, 114, 89, 0.2); padding: 2px 8px; border-radius: 4px; font-weight: bold;">${u.role}</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <div style="position: relative; flex: 1;">
+                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">Rp/Min</span>
+                            <input type="number" id="rate_${u.id}" value="${u.rate_per_minute || 0}" 
+                                class="payment-dropdown" style="background-image: none; padding-left: 55px; height: 40px; font-size: 1rem; width: 100%; font-weight: bold; color: var(--accent);">
+                        </div>
+                        <button class="category-btn" onclick="saveUserRate('${u.id}')" 
+                                style="padding: 0 15px; background: var(--accent); color: var(--secondary); border: none; font-weight: 800; font-size: 0.8rem; border-radius: 10px;">SET</button>
+                    </div>
+
+                    ${u.role !== 'ADMIN' && u.role !== 'OWNER' ? `
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(228, 168, 83, 0.05); border-radius: 8px; border: 1px solid rgba(228,168,83,0.1);">
+                        <input type="checkbox" id="perm_${u.id}" ${u.allow_off_schedule ? 'checked' : ''} 
+                            onchange="toggleLoginPermission('${u.id}', this.checked)"
+                            style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="perm_${u.id}" style="font-size: 0.75rem; color: var(--accent); cursor: pointer; font-weight: bold;">Izin Login Luar Jadwal</label>
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            userSelect.innerHTML = userData.data.map(u => `
+                <option value="${u.id}">${u.username}</option>
+            `).join('');
+
+            const userFilter = document.getElementById('attendanceUserFilter');
+            userFilter.innerHTML = '<option value="">Semua Kasir</option>' + userData.data.map(u => `
+                <option value="${u.id}">${u.username}</option>
+            `).join('');
+        }
+        renderAttendanceLog();
+    } catch (e) {
+        console.error(e);
+        alert('Gagal memuat manajemen barista.');
+    }
+}
+
+async function renderAttendanceLog() {
+    try {
+        const daysRange = document.getElementById('attendanceRange').value;
+        const userFilterId = document.getElementById('attendanceUserFilter').value;
+
+        const attRes = await fetch('/api/auth/attendance');
+        const attData = await attRes.json();
+        const shiftLog = document.getElementById('baristaShiftLog');
+        const totalUnpaidDisplay = document.getElementById('totalUnpaidSalary');
+
+        if (attData.success) {
+            // Client-side filtering
+            let filtered = attData.data;
+            const cutoffDate = dayjs().subtract(parseInt(daysRange), 'day').startOf('day');
+
+            filtered = filtered.filter(a => dayjs(a.clock_in).isAfter(cutoffDate));
+            if (userFilterId) {
+                filtered = filtered.filter(a => a.user_id === userFilterId);
+            }
+
+            const sortedData = filtered.sort((a, b) => new Date(b.clock_in) - new Date(a.clock_in));
+
+            let totalUnpaid = 0;
+
+            if (sortedData.length === 0) {
+                shiftLog.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Belum ada riwayat shift</td></tr>';
+            } else {
+                shiftLog.innerHTML = sortedData.map(a => {
+                    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                    const dayName = days[new Date(a.clock_in).getDay()];
+                    const salaryValue = Number(a.salary_earned || 0);
+                    const displaySalary = salaryHidden ? '****' : formatIDR(salaryValue);
+
+                    if (!a.is_paid && a.clock_out) {
+                        totalUnpaid += salaryValue;
+                    }
+
+                    const payIcon = a.is_paid ? 'check-circle' : 'circle';
+                    const payColor = a.is_paid ? 'var(--success)' : 'var(--text-muted)';
+                    const payLabel = a.is_paid ? 'PAID' : 'UNPAID';
+
+                    return `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; ${a.is_paid ? 'opacity: 0.6;' : ''}" onmouseover="this.style.background='rgba(255,255,255,0.01)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 15px 10px; font-weight: 800; color: var(--text);">${a.staff_name}</td>
+                        <td style="padding: 15px 10px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+                            <span style="color: var(--primary-light);">${dayName}</span><br>${dayjs(a.clock_in).format('DD/MM HH:mm')}
+                        </td>
+                        <td style="padding: 15px 10px; font-size: 0.8rem; color: var(--text-muted);">
+                            ${a.clock_out ? dayjs(a.clock_out).format('DD/MM HH:mm') : '<span style="background: var(--success)22; color: var(--success); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.7rem;">AKTIF</span>'}
+                        </td>
+                        <td style="padding: 15px 10px; color: var(--accent); font-weight: 800; font-size: 1rem;">
+                            ${displaySalary}
+                            ${!salaryHidden && (a.overtime_reward > 0 || a.late_penalty > 0) ? `
+                                <div style="display: flex; gap: 5px; margin-top: 4px;">
+                                    ${a.overtime_reward > 0 ? `<span style="font-size: 0.65rem; background: var(--success)22; color: var(--success); padding: 1px 4px; border-radius: 3px;">+${(a.overtime_reward).toLocaleString()}</span>` : ''}
+                                    ${a.late_penalty > 0 ? `<span style="font-size: 0.65rem; background: var(--danger)22; color: var(--danger); padding: 1px 4px; border-radius: 3px;">-${(a.late_penalty).toLocaleString()}</span>` : ''}
+                                </div>
+                            ` : ''}
+                        </td>
+                        <td style="padding: 15px 10px;">
+                            <div onclick="togglePaymentStatus('${a.id}', ${a.is_paid || 0})" style="cursor: pointer; display: flex; align-items: center; gap: 8px; color: ${payColor}; font-weight: 800; font-size: 0.75rem; background: ${a.is_paid ? 'var(--success)11' : 'rgba(255,255,255,0.05)'}; padding: 6px 12px; border-radius: 20px; width: fit-content; transition: 0.2s; border: 1px solid ${a.is_paid ? 'var(--success)44' : 'transparent'};" onmouseover="this.style.background='${a.is_paid ? 'var(--success)22' : 'rgba(255,255,255,0.1)'}'">
+                                <i data-lucide="${payIcon}" style="width: 16px;"></i> ${payLabel}
+                            </div>
+                        </td>
+                        <td style="padding: 15px 10px;">
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="inputOvertime('${a.id}', ${a.overtime_reward || 0}, '${a.clock_in}', '${a.clock_out}')" title="Input Lembur" style="background: var(--success); filter: brightness(0.8); border: none; color: var(--bg); cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.filter='brightness(1)'" onmouseout="this.style.filter='brightness(0.8)'"><i data-lucide="plus" style="width:16px;"></i></button>
+                                <button onclick="inputLate('${a.id}', ${a.late_penalty || 0}, '${a.clock_in}', '${a.clock_out}')" title="Input Potongan Telat" style="background: var(--danger); filter: brightness(0.8); border: none; color: white; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.filter='brightness(1)'" onmouseout="this.style.filter='brightness(0.8)'"><i data-lucide="minus" style="width:16px;"></i></button>
+                                <button onclick="editShiftManual('${a.id}', '${a.user_id}', '${a.clock_in}', '${a.clock_out}')" title="Edit Shift" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-muted)'"><i data-lucide="edit-2" style="width:14px;"></i></button>
+                                <button onclick="deleteShift('${a.id}')" title="Hapus Shift" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'"><i data-lucide="trash-2" style="width:14px;"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `
+                }).join('');
+            }
+            totalUnpaidDisplay.innerHTML = `Belum Dibayar: <span style="font-size: 1.2rem; color: var(--success);">${formatIDR(totalUnpaid)}</span>`;
+            if (typeof refreshIcons === 'function') refreshIcons();
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function syncAllSalaries() {
+    if (!confirm('Ini akan menghitung ulang seluruh log shift berdasarkan Rate Gaji yang aktif sekarang. Lanjutkan?')) return;
+    try {
+        const res = await fetch('/api/auth/attendance/sync', { method: 'POST' });
+        const result = await res.json();
+        if (result.success) {
+            alert('Hasil sinkronisasi: Seluruh data log telah diperbarui sesuai rate aktif.');
+            renderAttendanceLog();
+            if (activePage === 'owner') loadOwnerData();
+        }
+    } catch (e) { alert('Gagal sinkronisasi'); }
+}
+
+async function togglePaymentStatus(id, currentStatus) {
+    try {
+        const res = await fetch(`/api/auth/attendance/${id}/pay`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isPaid: !currentStatus })
+        });
+        const result = await res.json();
+        if (result.success) {
+            renderAttendanceLog();
+        }
+    } catch (e) { alert('Gagal memperbarui status pembayaran'); }
+}
+
+async function submitManualShift() {
+    const userId = document.getElementById('manualShiftUser').value;
+    const clockIn = document.getElementById('manualShiftIn').value;
+    const clockOut = document.getElementById('manualShiftOut').value;
+    if (!clockIn || !clockOut) return alert('Jam masuk dan pulang harus diisi!');
+    try {
+        let url = '/api/auth/attendance/manual';
+        let method = 'POST';
+        let body = { userId, clockIn, clockOut };
+        if (editingShiftId) {
+            url = `/api/auth/attendance/${editingShiftId}`;
+            method = 'PUT';
+            body = { clockIn, clockOut };
+        }
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert(result.message);
+            editingShiftId = null;
+            renderAttendanceLog();
+            if (activePage === 'owner') loadOwnerData();
+        } else alert(result.message);
+    } catch (e) { alert('Gagal menyimpan shift.'); }
+}
+
+function editShiftManual(id, userId, cin, cout) {
+    editingShiftId = id;
+    document.getElementById('manualShiftUser').value = userId;
+    document.getElementById('manualShiftIn').value = dayjs(cin).format('YYYY-MM-DDTHH:mm');
+    if (cout && cout !== 'null') {
+        document.getElementById('manualShiftOut').value = dayjs(cout).format('YYYY-MM-DDTHH:mm');
+    }
+    alert('Mode Edit Aktif. Silakan ubah waktu dan klik Simpan.');
+}
+
+async function deleteShift(id) {
+    if (!confirm('Anda yakin ingin menghapus data shift ini?')) return;
+    try {
+        const res = await fetch(`/api/auth/attendance/${id}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+            renderAttendanceLog();
+            if (activePage === 'owner') loadOwnerData();
+        }
+    } catch (e) { alert('Gagal menghapus data.'); }
+}
+
+async function inputOvertime(id, current, cin, cout) {
+    const amount = prompt(" Tambahkan Bonus Lembur (Nominal Rp):", current);
+    if (amount === null) return;
+    try {
+        const res = await fetch(`/api/auth/attendance/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                overtimeReward: parseFloat(amount),
+                clockIn: cin,
+                clockOut: cout === 'null' ? new Date().toISOString() : cout
+            })
+        });
+        const result = await res.json();
+        if (result.success) {
+            renderAttendanceLog();
+            if (activePage === 'owner') loadOwnerData();
+        }
+    } catch (e) { alert('Gagal input lembur'); }
+}
+
+async function inputLate(id, current, cin, cout) {
+    const amount = prompt(" Masukkan Potongan Terlambat (Nominal Rp):", current);
+    if (amount === null) return;
+    try {
+        const res = await fetch(`/api/auth/attendance/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                latePenalty: parseFloat(amount),
+                clockIn: cin,
+                clockOut: cout === 'null' ? new Date().toISOString() : cout
+            })
+        });
+        const result = await res.json();
+        if (result.success) {
+            renderAttendanceLog();
+            if (activePage === 'owner') loadOwnerData();
+        }
+    } catch (e) { alert('Gagal input potongan'); }
+}
+
+async function saveUserRate(userId) {
+    const rate = document.getElementById(`rate_${userId}`).value;
+    if (!rate || rate < 0) return alert('Masukkan rate yang valid!');
+    try {
+        const res = await fetch('/api/auth/update-rate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, rate: parseFloat(rate) })
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert('Rate gaji berhasil diperbarui!');
+            openBaristaModal();
+            if (activePage === 'owner') loadOwnerData();
+        }
+    } catch (e) { alert('Gagal menyimpan rate.'); }
+}
+
+async function toggleLoginPermission(userId, allow) {
+    try {
+        const res = await fetch('/api/auth/toggle-login-permission', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, allow })
+        });
+        const result = await res.json();
+        if (!result.success) alert('Gagal memperbarui izin.');
+    } catch (e) { alert('Terjadi kesalahan.'); }
 }
 
 // Init on load

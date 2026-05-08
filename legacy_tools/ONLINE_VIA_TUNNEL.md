@@ -3,7 +3,7 @@
 Metode ini membuat PC/Laptop toko Anda bisa diakses dari internet secara aman dan gratis tanpa perlu hosting cloud atau IP Publik Statis.
 
 ## 1. Persiapan File
-Anda sudah memiliki file `cloudflared-windows-amd64.exe` di folder root project ini. Kita akan menggunakan file tersebut untuk setup.
+Anda sudah memiliki file `cloudflared-windows-amd64.exe` di dalam folder `legacy_tools/`. Kita akan menggunakan file tersebut untuk setup.
 
 ---
 
@@ -13,7 +13,7 @@ Gunakan cara ini jika hanya ingin ngetes sebentar. URL akan berubah setiap kali 
 1.  Buka **Command Prompt (CMD)** di folder project ini.
 2.  Ketik perintah:
     ```bash
-    .\cloudflared-windows-amd64.exe tunnel --url http://localhost:3000
+    .\legacy_tools\cloudflared-windows-amd64.exe tunnel --url http://localhost:3000
     ```
 3.  Cari tulisan yang mirip seperti ini:
     `+  https://random-word-xyz.trycloudflare.com`
@@ -43,7 +43,7 @@ Metode ini tetap jalan meskipun PC restart, karena Cloudflare akan berjalan seba
     ```
 3.  Jalankan perintah instalasi service (Ganti `[TOKEN_ANDA]` dengan token yang dicopy tadi):
     ```cmd
-    .\cloudflared-windows-amd64.exe service install [TOKEN_ANDA]
+    .\legacy_tools\cloudflared-windows-amd64.exe service install [TOKEN_ANDA]
     ```
 4.  Buka **Services.msc** di Windows, cari service bernama **Cloudflared**, pastikan statusnya **Running**.
 

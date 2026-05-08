@@ -25,12 +25,9 @@ GCOFFEE_POSv2/
 ├── jalankan_pos_otomatis.bat  # Launcher cerdas (Cek server lalu buka Kiosk Chrome)
 ├── aktifkan_autorun.bat       # Script untuk mendaftarkan program ke Startup Windows
 ├── .env                       # Konfigurasi Database & Nama Printer
+├── legacy_tools/              # Folder Utility, Backup & Script Lama
 ├── public/                    # Frontend (UI/UX)
-│   ├── js/script.js           # Logika Utama & Keyboard Virtual v2
-│   └── index.html             # Struktur Dashboard Kasir
 └── src/                       # Backend (API & Logika Bisnis)
-    ├── services/              # BOM Logic & Printer Service
-    └── routes/                # API Endpoints (inc. System Shutdown)
 ```
 
 ---
@@ -56,7 +53,7 @@ GCOFFEE_POSv2/
 
 ### E. Akses Jarak Jauh (Remote Monitoring)
 - **Cloudflare Tunnel**: Memungkinkan owner memonitor dashboard kasir dari mana saja (lewat HP/Laptop luar toko) secara GRATIS dan AMAN tanpa IP Publik.
-- Lihat panduan lengkap di: `ONLINE_VIA_TUNNEL.md`.
+- Lihat panduan lengkap di: `legacy_tools/ONLINE_VIA_TUNNEL.md`.
 
 ---
 
@@ -70,4 +67,4 @@ GCOFFEE_POSv2/
 
 ---
 
-*Dokumentasi Sistem G-Coffee POS v2.5 | Update: 11 Februari 2026*
+*Dokumentasi Sistem G-Coffee POS v2.5 | Terakhir Diperbarui: 29 Maret 2026 (Struktur Folder Baru)*

@@ -52,6 +52,16 @@ class ReportController {
             res.status(500).json({ success: false, error: error.message });
         }
     }
+
+    async getOwnerSummary(req, res) {
+        try {
+            const { filter } = req.query;
+            const report = await reportService.getOwnerSummary(filter || 'day');
+            res.json({ success: true, data: report });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
 }
 
 module.exports = new ReportController();

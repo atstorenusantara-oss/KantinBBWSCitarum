@@ -9,7 +9,7 @@ echo.
 
 :: 1. Jalankan Server di jendela terpisah
 echo [1/3] Menjalankan Server Node.js...
-start "G-Coffee POS Server" cmd /c "jalankan_server.bat"
+start "G-Coffee POS Server" cmd /c "legacy_tools\jalankan_server.bat"
 
 :: 2. Loop cek apakah server sudah aktif (Port 3000)
 echo [2/3] Menunggu server merespon di http://localhost:3000...
@@ -22,7 +22,7 @@ if %ERRORLEVEL% equ 0 (
 )
 echo . (menunggu...)
 timeout /t 2 /nobreak > nul
-goto cek_server
+goto cek_server 
 
 :: 3. Buka Chrome dalam mode Kiosk (Full screen total)
 :buka_chrome

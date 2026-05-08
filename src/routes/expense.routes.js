@@ -127,12 +127,77 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+router.get('/history', async (req, res) => {
+    try {
+        const { range, userId, startDate, endDate } = req.query;
+        let query = `
+            SELECT e.*, rm.name as material_name, u.username as staff_name
+            FROM expenses e 
+            LEFT JOIN raw_materials rm ON e.item_id = rm.id 
+            LEFT JOIN users u ON e.user_id = u.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (range === 'today') {
+            query += " AND DATE(e.created_at) = CURDATE()";
+        } else if (range === 'weekly') {
+            query += " AND e.created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+        } else if (range === 'custom' && startDate && endDate) {
+            query += " AND DATE(e.created_at) BETWEEN ? AND ?";
+            params.push(startDate, endDate);
+        }
+
+        if (userId && userId !== '') {
+            query += " AND e.user_id = ?";
+            params.push(userId);
+        }
+
+        query += " ORDER BY e.created_at DESC";
+        const [rows] = await db.query(query, params);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 router.get('/', async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM expenses ORDER BY created_at DESC');
         res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        const { id } = req.params;
+
+        // Get expense details before deleting
+        const [expense] = await conn.query('SELECT * FROM expenses WHERE id = ?', [id]);
+        if (!expense.length) return res.status(404).json({ success: false, message: 'Data tidak ditemukan' });
+
+        const data = expense[0];
+
+        // If it was a warehouse item, subtract from warehouse stock
+        if (data.type === 'BAHAN_BAKU' && data.item_id) {
+            await conn.query('UPDATE warehouse_stock SET stock = stock - ? WHERE raw_material_id = ?', [data.qty || 0, data.item_id]);
+        }
+
+        // Delete expense record
+        await conn.query('DELETE FROM expenses WHERE id = ?', [id]);
+
+        await conn.commit();
+        res.json({ success: true, message: 'Data belanja berhasil dihapus dan stok gudang disesuaikan' });
+    } catch (error) {
+        await conn.rollback();
+        console.error('Delete Expense Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        conn.release();
     }
 });
 
