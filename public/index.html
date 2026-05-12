@@ -57,7 +57,7 @@
         <div class="product-section" id="kasirPage">
             <div class="header">
                 <div style="display: flex; flex-direction: column;">
-                    <h1 style="margin: 0;">G-Coffee Menu</h1>
+                    <h1 style="margin: 0;">Kantin BBWS Citarum</h1>
                     <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: bold;">Kasir: <span
                             id="headerStaffKasir">-</span></span>
                 </div>
@@ -181,7 +181,8 @@
                         </button>
                         <button class="category-btn" onclick="exportToPDF(this)"
                             style="background: #e74c3c; color: white; font-weight: bold;">
-                            <i data-lucide="file-down" style="width: 14px; vertical-align: middle; margin-right: 5px;"></i> EXPORT PDF
+                            <i data-lucide="file-down"
+                                style="width: 14px; vertical-align: middle; margin-right: 5px;"></i> EXPORT PDF
                         </button>
                         <button class="category-btn" onclick="printReport()"
                             style="background: var(--accent); color: var(--bg); font-weight: bold;">
@@ -198,7 +199,9 @@
                             <div
                                 style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 15px;">
                                 <h2 style="margin: 0; font-size: 1.5rem;">KANTIN BBWS CITARUM</h2>
-                                <h3 id="printStandName" style="margin: 5px 0; font-weight: bold; font-size: 1.1rem; color: var(--accent);">Semua Stand</h3>
+                                <h3 id="printStandName"
+                                    style="margin: 5px 0; font-weight: bold; font-size: 1.1rem; color: var(--accent);">
+                                    Semua Stand</h3>
                                 <h3 style="margin: 5px 0; font-weight: normal; font-size: 1rem;">LAPORAN RINGKAS HARIAN
                                 </h3>
                                 <p id="printTimestamp"
@@ -758,15 +761,21 @@
                         <option value="ALL">🏢 Semua Stand</option>
                         <!-- Options akan diisi via JS -->
                     </select>
-                    <select id="ownerReportFilter" class="category-btn" onchange="loadOwnerData()"
-                        style="padding: 10px 15px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-weight: bold;">
-                        <option value="day">☀️ Hari Ini</option>
-                        <option value="week">📅 7 Hari Terakhir</option>
-                        <option value="month">🗓️ Bulan Ini</option>
-                    </select>
+                    <div
+                        style="display: flex; gap: 5px; align-items: center; background: var(--surface); padding: 5px; border-radius: 8px; border: 1px solid var(--accent);">
+                        <input type="date" id="ownerStartDate" class="search-bar" onchange="loadOwnerData()"
+                            style="padding: 5px; width: 130px; border: none; background: transparent; color: var(--text);">
+                        <span style="color: var(--accent); font-weight: bold;">-</span>
+                        <input type="date" id="ownerEndDate" class="search-bar" onchange="loadOwnerData()"
+                            style="padding: 5px; width: 130px; border: none; background: transparent; color: var(--text);">
+                    </div>
                     <button class="category-btn" onclick="openBaristaModal()"
                         style="background: var(--surface); color: var(--accent); border: 1px solid var(--accent); font-weight: bold; display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="users" style="width: 18px;"></i> Jadwal Kasir
+                    </button>
+                    <button class="category-btn" onclick="exportOwnerPDF()"
+                        style="background: #e74c3c; color: white; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="file-down" style="width: 18px;"></i> Export PDF
                     </button>
                     <button class="category-btn" onclick="loadOwnerData()" style="padding: 10px 20px;">
                         <i data-lucide="refresh-cw" style="width: 18px; margin-right: 5px;"></i> Refresh Data
@@ -1158,7 +1167,7 @@
         style="display:flex; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: var(--bg); align-items: center; justify-content: center;">
         <div class="card" style="width: 400px; text-align: center; border: 1px solid var(--primary);">
             <div class="logo" style="margin: 0 auto 20px auto; width: 60px; height: 60px; font-size: 1.5rem;">GC</div>
-            <h2 style="margin-bottom: 20px;">G-Coffee POS Login</h2>
+            <h2 style="margin-bottom: 20px;">Kantin BBWS Citarum Login</h2>
             <div class="form-group" style="text-align: left; margin-bottom: 20px;">
                 <label>Pilih User</label>
                 <select id="loginUser" class="payment-dropdown" style="background: var(--surface)">
@@ -1206,24 +1215,29 @@
         <div class="card"
             style="width: 450px; text-align: center; border: 2px solid var(--accent); background: var(--bg); padding: 30px; position: relative;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;">
-                <div style="background: var(--accent); color: var(--secondary); padding: 10px; border-radius: 12px; display: flex;">
+                <div
+                    style="background: var(--accent); color: var(--secondary); padding: 10px; border-radius: 12px; display: flex;">
                     <i data-lucide="qr-code" style="width: 25px;"></i>
                 </div>
                 <h3>Pembayaran QRIS Dinamis</h3>
             </div>
-            
-            <p id="qrisAmount" style="font-size: 1.5rem; font-weight: 900; color: var(--accent); margin-bottom: 5px;">Rp 0</p>
+
+            <p id="qrisAmount" style="font-size: 1.5rem; font-weight: 900; color: var(--accent); margin-bottom: 5px;">Rp
+                0</p>
             <p id="qrisInvoice" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">#INV-000</p>
 
-            <div style="background: white; padding: 15px; border-radius: 15px; display: inline-block; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div
+                style="background: white; padding: 15px; border-radius: 15px; display: inline-block; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
                 <img id="qrisImage" src="" style="width: 250px; height: 250px; display: block;">
             </div>
 
-            <div style="background: rgba(228, 168, 83, 0.1); border: 1px solid var(--accent); border-radius: 10px; padding: 15px; margin-bottom: 25px; text-align: left;">
+            <div
+                style="background: rgba(228, 168, 83, 0.1); border: 1px solid var(--accent); border-radius: 10px; padding: 15px; margin-bottom: 25px; text-align: left;">
                 <div style="display: flex; gap: 10px; align-items: flex-start;">
-                    <i data-lucide="info" style="width: 18px; color: var(--accent); flex-shrink: 0; margin-top: 2px;"></i>
+                    <i data-lucide="info"
+                        style="width: 18px; color: var(--accent); flex-shrink: 0; margin-top: 2px;"></i>
                     <p style="font-size: 0.8rem; line-height: 1.4; color: var(--text);">
-                        Silakan scan menggunakan <b>GOPAY, OVO, DANA, BCA, atau Mobile Banking</b> lainnya. 
+                        Silakan scan menggunakan <b>GOPAY, OVO, DANA, BCA, atau Mobile Banking</b> lainnya.
                         Nominal akan muncul otomatis. Klik tombol di bawah setelah bayar.
                     </p>
                 </div>

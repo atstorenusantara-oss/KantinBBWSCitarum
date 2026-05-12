@@ -1069,8 +1069,130 @@ async function loadReportData() {
         refreshIcons();
 
     } catch (error) {
-        console.error('Report Error:', error);
+        console.error('Owner Data Error:', error);
     }
+}
+
+function exportOwnerPDF() {
+    const ownerPage = document.getElementById('ownerPage');
+    if (!ownerPage) {
+        alert('Konten dashboard owner tidak ditemukan.');
+        return;
+    }
+
+    const standFilterEl = document.getElementById('ownerStandFilter');
+    const standName = standFilterEl?.options[standFilterEl.selectedIndex]?.text || 'Semua Stand';
+    const startDate = document.getElementById('ownerStartDate')?.value || '';
+    const endDate = document.getElementById('ownerEndDate')?.value || '';
+    const titleText = `Dashboard Owner Kantin BBWS Citarum - ${standName} (${startDate} s/d ${endDate})`;
+
+    // Clone the ownerPage so we can modify it for print without affecting the UI
+    const printContent = ownerPage.cloneNode(true);
+    
+    // Remove unnecessary elements from the clone (like the header controls, Jadwal Kasir button, etc)
+    const headerControls = printContent.querySelector('.header > div:last-child');
+    if (headerControls) headerControls.remove();
+    
+    // Convert charts to images if possible, or just remove them and keep text data
+    // Since chart.js canvases don't clone easily, we'll hide the canvas elements 
+    // and rely on the summary cards, or we can try to extract the dataURL
+    const canvases = printContent.querySelectorAll('canvas');
+    const originalCanvases = ownerPage.querySelectorAll('canvas');
+    
+    canvases.forEach((canvas, index) => {
+        if(originalCanvases[index]) {
+            const img = document.createElement('img');
+            img.src = originalCanvases[index].toDataURL('image/png');
+            img.style.maxWidth = '100%';
+            canvas.parentNode.replaceChild(img, canvas);
+        }
+    });
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${titleText}</title>
+            <style>
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body {
+                    font-family: 'Courier New', Courier, monospace;
+                    background: #fff;
+                    color: #000;
+                    padding: 20px;
+                    font-size: 12px;
+                }
+                .header h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+                .header p { text-align: center; margin-bottom: 20px; }
+                
+                .report-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                    margin-bottom: 20px;
+                }
+                
+                .card {
+                    border: 1px solid #ccc;
+                    padding: 15px;
+                    border-radius: 8px;
+                }
+                
+                .card h2 { font-size: 1.2rem; margin: 10px 0; }
+                .label { font-weight: bold; font-size: 0.9rem; }
+                
+                .chart-container {
+                    margin-top: 20px;
+                    border: 1px solid #ccc;
+                    padding: 15px;
+                    border-radius: 8px;
+                }
+
+                @media print {
+                    body { padding: 10px; }
+                    @page { margin: 10mm; size: A4 landscape; }
+                }
+            </style>
+        </head>
+        <body>
+            <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 20px;">
+                <h2 style="font-size: 1.5rem;">KANTIN BBWS CITARUM</h2>
+                <h3 style="font-size: 1.1rem; margin: 5px 0;">LAPORAN DASHBOARD OWNER</h3>
+                <p style="font-size: 1rem; margin-top: 5px;">Stand: <strong>${standName}</strong></p>
+                <p style="font-size: 0.9rem;">Periode: ${startDate} s/d ${endDate}</p>
+            </div>
+            
+            ${printContent.querySelector('.report-grid').outerHTML}
+            
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 2;">
+                    ${printContent.querySelectorAll('.chart-container')[0]?.outerHTML || ''}
+                </div>
+                <div style="flex: 1;">
+                    ${printContent.querySelectorAll('.chart-container')[1]?.outerHTML || ''}
+                </div>
+            </div>
+
+            <script>
+                window.onload = function() {
+                    window.focus();
+                    window.print();
+                };
+            </scr` + `ipt>
+        </body>
+        </html>
+    `;
+
+    const popup = window.open('', '_blank', 'width=1000,height=900,scrollbars=yes');
+    if (!popup) {
+        alert('Browser memblokir popup. Izinkan popup untuk situs ini lalu coba lagi.');
+        return;
+    }
+    popup.document.open();
+    popup.document.write(htmlContent);
+    popup.document.close();
 }
 
 
@@ -1455,50 +1577,79 @@ function printReport() {
 }
 
 function exportToPDF(btn) {
-    if (typeof html2pdf === 'undefined') {
-        alert('Maaf, fitur PDF belum siap. Mohon refresh halaman dan coba lagi.');
+    const printContent = document.getElementById('printContent');
+    if (!printContent) {
+        alert('Konten laporan tidak ditemukan.');
         return;
     }
 
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '⌛ MENYIAPKAN...';
-    btn.disabled = true;
+    const standFilterEl = document.getElementById('reportStandFilter');
+    const standName = standFilterEl?.options[standFilterEl.selectedIndex]?.text || 'Laporan';
+    const dateInput = document.getElementById('reportDate');
+    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+    const titleText = `Laporan Kantin BBWS Citarum - ${standName} - ${date}`;
 
-    // Tunggu sebentar agar UI tombol berubah sebelum proses berat dimulai
-    setTimeout(() => {
-        const element = document.getElementById('printContent');
-        const standFilterEl = document.getElementById('reportStandFilter');
-        const standName = standFilterEl?.options[standFilterEl.selectedIndex]?.text || 'Laporan';
-        const cleanName = standName.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "_");
-        const dateInput = document.getElementById('reportDate');
-        const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
-        
-        const opt = {
-            margin:       10,
-            filename:     `Laporan_${cleanName}_${date}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { 
-                scale: 2, 
-                useCORS: true, 
-                backgroundColor: '#ffffff',
-                scrollY: 0
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${titleText}</title>
+            <style>
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body {
+                    font-family: 'Courier New', Courier, monospace;
+                    background: #fff;
+                    color: #000;
+                    padding: 20px;
+                    font-size: 12px;
+                }
+                h2 { font-size: 1.4rem; text-align: center; }
+                h3 { font-size: 1rem; text-align: center; }
+                .print-layout-container {
+                    display: flex;
+                    gap: 30px;
+                    align-items: flex-start;
+                }
+                .print-column { flex: 1; }
+                .second-column-wrapper {
+                    flex: 1;
+                    border-left: 1px dashed #ccc;
+                    padding-left: 20px;
+                }
+                p { margin: 5px 0; }
+                .no-print { display: none !important; }
+                @media print {
+                    body { padding: 10px; }
+                    @page { margin: 10mm; size: A4; }
+                    .no-print { display: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+            ${printContent.innerHTML}
+            <script>
+                // Hapus tombol-tombol yang punya kelas no-print
+                document.querySelectorAll('.no-print').forEach(el => el.remove());
+                // Buka dialog print otomatis
+                window.onload = function() {
+                    window.focus();
+                    window.print();
+                };
+            </scr` + `ipt>
+        </body>
+        </html>
+    `;
 
-        // Gunakan pattern .then() untuk kompatibilitas lebih baik
-        html2pdf().set(opt).from(element).save().then(() => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            if (typeof refreshIcons === 'function') refreshIcons();
-        }).catch(err => {
-            console.error('PDF Error:', err);
-            alert('Gagal membuat PDF. Coba gunakan tombol Cetak Laporan lalu pilih Save as PDF.');
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            if (typeof refreshIcons === 'function') refreshIcons();
-        });
-    }, 100);
+    const popup = window.open('', '_blank', 'width=800,height=900,scrollbars=yes');
+    if (!popup) {
+        alert('Browser memblokir popup. Izinkan popup untuk situs ini lalu coba lagi.');
+        return;
+    }
+    popup.document.open();
+    popup.document.write(htmlContent);
+    popup.document.close();
 }
 
 function printReceiptFromBrowser() {
@@ -2200,23 +2351,26 @@ async function loadOwnerData() {
             }
         }
 
-        const filter = document.getElementById('ownerReportFilter')?.value || 'day';
+        const startDateInput = document.getElementById('ownerStartDate');
+        const endDateInput = document.getElementById('ownerEndDate');
+        
+        // Default to today if empty
+        if (!startDateInput.value) startDateInput.value = new Date().toISOString().split('T')[0];
+        if (!endDateInput.value) endDateInput.value = new Date().toISOString().split('T')[0];
+
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
         const standId = standFilterEl?.value || 'ALL';
         
-        const res = await fetch(`/api/reports/owner/summary?filter=${filter}&stand_id=${standId}`);
+        const res = await fetch(`/api/reports/owner/summary?start_date=${startDate}&end_date=${endDate}&stand_id=${standId}`);
         const result = await res.json();
         if (!result.success) return alert('Gagal memuat data owner: ' + result.error);
 
         const data = result.data;
         const { today, chart } = data;
 
-        const labels = {
-            'day': '(Hari Ini)',
-            'week': '(7 Hari Terakhir)',
-            'month': '(Bulan Ini)'
-        };
         const standName = standId === 'ALL' ? 'Semua Stand' : standFilterEl.options[standFilterEl.selectedIndex].text;
-        const currentLabel = `${labels[filter] || '(Hari Ini)'} - ${standName}`;
+        const currentLabel = `(${startDate} s/d ${endDate}) - ${standName}`;
         
         document.getElementById('labelTotalRevenue').innerText = `Total Omset ${currentLabel}`;
         document.getElementById('labelTotalExpense').innerText = `Total Pengeluaran ${currentLabel}`;

@@ -183,14 +183,12 @@ class ReportService {
         return rows;
     }
 
-    async getOwnerSummary(filter = 'day', standId = 'ALL') {
+    async getOwnerSummary(startDateStr, endDateStr, standId = 'ALL') {
         let startTime, endTime;
-        if (filter === 'week') {
-            startTime = dayjs().subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
-            endTime = dayjs().endOf('day').format('YYYY-MM-DD HH:mm:ss');
-        } else if (filter === 'month') {
-            startTime = dayjs().startOf('month').format('YYYY-MM-DD HH:mm:ss');
-            endTime = dayjs().endOf('month').format('YYYY-MM-DD HH:mm:ss');
+        
+        if (startDateStr && endDateStr) {
+            startTime = dayjs(startDateStr).startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            endTime = dayjs(endDateStr).endOf('day').format('YYYY-MM-DD HH:mm:ss');
         } else {
             startTime = dayjs().startOf('day').format('YYYY-MM-DD HH:mm:ss');
             endTime = dayjs().endOf('day').format('YYYY-MM-DD HH:mm:ss');

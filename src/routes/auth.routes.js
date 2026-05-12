@@ -408,16 +408,8 @@ router.get('/shift-status/:userId', async (req, res) => {
                 const now = new Date();
                 const shiftEnd = new Date(shift.clock_out);
 
-                // Check if now > shiftEnd (with a 10 min grace period maybe?)
-                // Let's stick to the exact end time
-                if (now > shiftEnd) {
-                    return res.json({ 
-                        success: true, 
-                        valid: false, 
-                        reason: 'SHIFT_ENDED', 
-                        message: 'Masa shift Anda telah berakhir. Silakan logout.' 
-                    });
-                }
+                // Fitur masa aktif / auto-logout dinonaktifkan sesuai request
+                // Tetap return valid walau waktu shift sudah habis
                 return res.json({ success: true, valid: true, reason: 'IN_SHIFT' });
             }
         }

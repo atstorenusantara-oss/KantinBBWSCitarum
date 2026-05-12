@@ -58,8 +58,8 @@ class ReportController {
 
     async getOwnerSummary(req, res) {
         try {
-            const { filter, stand_id } = req.query;
-            const report = await reportService.getOwnerSummary(filter || 'day', stand_id || 'ALL');
+            const { start_date, end_date, stand_id } = req.query;
+            const report = await reportService.getOwnerSummary(start_date, end_date, stand_id || 'ALL');
             res.json({ success: true, data: report });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
