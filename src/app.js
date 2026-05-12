@@ -20,7 +20,7 @@ app.use('/api/sales', require('./routes/sales.routes.js'));
 app.use('/api/products', require('./routes/product.routes.js'));
 app.use('/api/stock', require('./routes/stock.routes.js'));
 app.use('/api/reports', require('./routes/report.routes.js'));
-app.use('/api/bms', require('./routes/bms.routes.js'));
+
 app.use('/api/auth', require('./routes/auth.routes.js'));
 app.use('/api/system', require('./routes/system.routes.js'));
 app.use('/api/settings', require('./routes/settings.routes.js'));

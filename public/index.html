@@ -31,8 +31,7 @@
         </div>
         <div class="nav-item" id="navReport" onclick="switchPage('report')" title="Laporan"><i
                 data-lucide="bar-chart-2"></i></div>
-        <div class="nav-item" id="navBMS" onclick="switchPage('bms')" title="Monitoring Bangunan (BMS)"><i
-                data-lucide="building-2"></i></div>
+
         <div class="nav-item" id="navSystem" onclick="switchPage('system')" title="Sistem"><i data-lucide="power"
                 style="color: var(--danger);"></i></div>
         <div class="nav-item"
@@ -720,120 +719,7 @@
             </div>
         </div>
 
-        <!-- BMS SECTION (BUILDING MANAGEMENT SYSTEM) -->
-        <div class="product-section" id="bmsPage" style="display: none;">
-            <div class="header">
-                <h1>Building Management System</h1>
-                <div style="color: var(--success); display: flex; align-items: center; gap: 8px; font-weight: 600;">
-                    <div
-                        style="width: 10px; height: 10px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite;">
-                    </div>
-                    Sistem Terhubung Real-time
-                </div>
-            </div>
 
-            <div class="report-grid">
-                <!-- Power Usage Card -->
-                <div class="card status-card">
-                    <div class="card-icon" style="background: rgba(228, 168, 83, 0.1); color: var(--accent);">
-                        <i data-lucide="zap"></i>
-                    </div>
-                    <div class="card-info">
-                        <span class="label">Total Daya Listrik</span>
-                        <h2>1.250 <span style="font-size: 1rem; color: var(--text-muted);">Watts</span></h2>
-                        <span class="sub" style="color: var(--text-muted);">Tegangan Stabil 220V</span>
-                    </div>
-                </div>
-
-                <!-- Temperature Card -->
-                <div class="card status-card">
-                    <div class="card-icon" style="background: rgba(103, 255, 158, 0.1); color: var(--success);">
-                        <i data-lucide="thermometer"></i>
-                    </div>
-                    <div class="card-info">
-                        <span class="label">Suhu Area Bar</span>
-                        <h2>24.5 <span style="font-size: 1rem; color: var(--text-muted);">°C</span></h2>
-                        <span class="sub" style="color: var(--success);">Optimal</span>
-                    </div>
-                </div>
-
-                <!-- Water Card -->
-                <div class="card status-card">
-                    <div class="card-icon" style="background: rgba(95, 180, 255, 0.1); color: #5fb4ff;">
-                        <i data-lucide="droplet"></i>
-                    </div>
-                    <div class="card-info">
-                        <span class="label">Persediaan Air</span>
-                        <h2>85 <span style="font-size: 1rem; color: var(--text-muted);">%</span></h2>
-                        <span class="sub" style="color: #5fb4ff;">Aman</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid-2-col">
-                <!-- Lighting Control -->
-                <div class="card">
-                    <h3 style="margin-bottom: 20px;">Kontrol Lampu & AC</h3>
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--glass); border-radius: 12px;">
-                            <div style="display: flex; gap: 15px; align-items: center;">
-                                <i data-lucide="lightbulb" style="color: var(--accent);"></i>
-                                <span>Lampu Area Indoor</span>
-                            </div>
-                            <button class="category-btn active" style="padding: 5px 15px;">ON</button>
-                        </div>
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--glass); border-radius: 12px;">
-                            <div style="display: flex; gap: 15px; align-items: center;">
-                                <i data-lucide="lightbulb" style="color: var(--text-muted);"></i>
-                                <span>Lampu Area Outdoor</span>
-                            </div>
-                            <button class="category-btn" style="padding: 5px 15px;">OFF</button>
-                        </div>
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--glass); border-radius: 12px;">
-                            <div style="display: flex; gap: 15px; align-items: center;">
-                                <i data-lucide="wind" style="color: var(--success);"></i>
-                                <span>AC Central (Bar)</span>
-                            </div>
-                            <button class="category-btn active" style="padding: 5px 15px;">ON</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Device Health -->
-                <div class="card">
-                    <h3 style="margin-bottom: 20px;">Health Check Perangkat</h3>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Perangkat</th>
-                                <th>Koneksi</th>
-                                <th>Baterai</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Smart Meter Utama</td>
-                                <td><span style="color: var(--success);">● Active</span></td>
-                                <td>-</td>
-                            </tr>
-                            <tr>
-                                <td>Sensor Suhu #1</td>
-                                <td><span style="color: var(--success);">● Active</span></td>
-                                <td>92%</td>
-                            </tr>
-                            <tr>
-                                <td>Control Relay AC</td>
-                                <td><span style="color: var(--danger);">● Offline</span></td>
-                                <td>-</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <!-- SYSTEM SECTION -->
         <div class="product-section" id="systemPage" style="display: none;">

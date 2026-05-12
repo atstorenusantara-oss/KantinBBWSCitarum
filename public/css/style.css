@@ -608,8 +608,7 @@ main {
         gap: 20px !important;
     }
 
-    #settingsPage>div[style*="grid-template-columns"],
-    #bmsPage>div[style*="grid-template-columns"] {
+    #settingsPage>div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
         gap: 20px !important;
     }
