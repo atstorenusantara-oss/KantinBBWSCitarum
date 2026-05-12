@@ -19,59 +19,41 @@ router.post('/login', async (req, res) => {
     try {
         const { username, pin } = req.body;
 
-        const [rows] = await db.query('SELECT id, username, role, allow_off_schedule FROM users WHERE username = ? AND pin = ?', [username, pin]);
+        const [rows] = await db.query(`
+            SELECT u.id, u.username, u.role, u.stand_id,
+                   s.name as stand_name, s.code as stand_code, s.owner_name
+            FROM users u
+            LEFT JOIN stands s ON u.stand_id = s.id
+            WHERE u.username = ? AND u.pin = ?
+        `, [username, pin]);
 
         if (rows.length === 0) {
-            return res.status(401).json({ success: false, message: 'username atau PIN salah' });
+            return res.status(401).json({ success: false, message: 'Username atau PIN salah' });
         }
 
         const user = rows[0];
 
-        // Owner/Admin can always login but DONT create attendance record
+        // Owner/Admin langsung login tanpa attendance
         if (user.role === 'ADMIN' || user.role === 'OWNER') {
             await settingsService.logActivity(user.id, 'LOGIN', `Owner/Admin ${user.username} logged in.`);
-            return res.json({ success: true, user: user, attendance_id: null });
+            return res.json({ success: true, user, attendance_id: null });
         }
 
-        // --- Staff Login Restriction ---
-
-        // 1. Check for existing PLANNED shift for today/soon
-        const [planned] = await db.query(`
-            SELECT * FROM attendance 
-            WHERE user_id = ? AND status = 'PLANNED' 
-            AND clock_in BETWEEN DATE_SUB(NOW(), INTERVAL 4 HOUR) AND DATE_ADD(NOW(), INTERVAL 12 HOUR)
-            ORDER BY clock_in ASC LIMIT 1
-        `, [user.id]);
-
-        if (planned.length > 0) {
-            const shift = planned[0];
-            // Use the existing PLANNED record: set status to ACTIVE and update clock_in to actual time.
-            // This fulfillment of the plan avoids "menambah" (adding) duplicate rows in the log.
-            await db.query('UPDATE attendance SET clock_in = NOW(), status = "ACTIVE" WHERE id = ?', [shift.id]);
-            await settingsService.logActivity(user.id, 'LOGIN_SCHEDULED', `Staff ${user.username} started scheduled shift (${shift.id}).`);
-            return res.json({ success: true, user: user, attendance_id: shift.id });
-        }
-
-        // 2. If no schedule, check if Owner granted "allow_off_schedule"
-        if (user.allow_off_schedule) {
-            // Permission only allows login for browsing/checks, but DOES NOT create an attendance record.
-            // This prevents "menambah" (adding) clutter rows to the Shift Log.
-            await settingsService.logActivity(user.id, 'LOGIN_OFF_SCHEDULE', `Staff ${user.username} logged in off-schedule (Browsing only).`);
-            return res.json({ success: true, user: user, attendance_id: null });
-        }
-
-        // No schedule found and no permission
-        return res.status(403).json({
-            success: false,
-            code: 'NO_SCHEDULE',
-            message: 'Tidak ada jadwal aktif. Hubungi Admin untuk diberikan Izin Login.'
-        });
+        // Kasir: buat attendance record langsung (tidak ada jadwal)
+        const attendanceId = uuidv4();
+        await db.query(
+            `INSERT INTO attendance (id, user_id, clock_in, status) VALUES (?, ?, NOW(), 'ACTIVE')`,
+            [attendanceId, user.id]
+        );
+        await settingsService.logActivity(user.id, 'LOGIN', `Kasir ${user.username} (${user.stand_name || '-'}) login.`);
+        return res.json({ success: true, user, attendance_id: attendanceId });
 
     } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
 
 // Auth: Logout (Clock out)
 router.post('/logout', async (req, res) => {

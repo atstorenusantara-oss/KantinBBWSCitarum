@@ -1,10 +1,9 @@
 const db = require('../database/connection');
 const { v4: uuidv4 } = require('uuid');
-const stockService = require('./stock.service');
 
 class SalesService {
     async createTransaction(salesData) {
-        const { invoice_number, items, total, payment_method, customer_name, payment_status, qris_exchange } = salesData;
+        const { invoice_number, items, total, payment_method, customer_name, payment_status, qris_exchange, stand_id } = salesData;
         const salesId = uuidv4();
 
         const connection = await db.getConnection();
@@ -12,26 +11,20 @@ class SalesService {
         try {
             await connection.beginTransaction();
 
-            // 1. Insert into sales table
+            // 1. Insert into sales table (with stand_id)
             await connection.query(
-                `INSERT INTO sales (id, invoice_number, total, payment_method, customer_name, payment_status, creator_id, qris_exchange) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [salesId, invoice_number, total, payment_method, customer_name || 'Pelanggan', payment_status || 'PAID', salesData.creator_id || null, qris_exchange || 0]
+                `INSERT INTO sales (id, invoice_number, total, payment_method, customer_name, payment_status, creator_id, qris_exchange, stand_id) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [salesId, invoice_number, total, payment_method, customer_name || 'Pelanggan', payment_status || 'PAID', salesData.creator_id || null, qris_exchange || 0, stand_id || null]
             );
 
-            // 2. Insert items and reduce stock
+            // 2. Insert items (no BOM/stock deduction - kantin mode)
             for (const item of items) {
                 const itemId = uuidv4();
-
-                // Insert sales item
                 await connection.query(
-                    `INSERT INTO sales_items (id, sales_id, product_id, qty, price) 
-                     VALUES (?, ?, ?, ?, ?)`,
+                    `INSERT INTO sales_items (id, sales_id, product_id, qty, price) VALUES (?, ?, ?, ?, ?)`,
                     [itemId, salesId, item.product_id, item.qty, item.price]
                 );
-
-                // REDUCE STOCK logic (Integrated)
-                await stockService.reduceStockFromSale(item.product_id, item.qty, salesId, connection);
             }
 
             await connection.commit();
@@ -41,7 +34,6 @@ class SalesService {
             await connection.rollback();
             console.error('Transaction Error:', error);
             throw error;
-
         } finally {
             connection.release();
         }

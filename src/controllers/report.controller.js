@@ -4,10 +4,11 @@ const salesService = require('../services/sales.service');
 class ReportController {
     async getDaily(req, res) {
         try {
-            const { date, shift } = req.query; // YYYY-MM-DD, shift: 1 or 2
+            const { date, shift, stand_id } = req.query; // YYYY-MM-DD, shift: 1 or 2
             const report = await reportService.getDailyReport(
                 date || new Date().toISOString().split('T')[0],
-                shift || 1
+                shift || 1,
+                stand_id || 'ALL'
             );
             res.json({ success: true, data: report });
         } catch (error) {
@@ -17,7 +18,8 @@ class ReportController {
 
     async getWeekly(req, res) {
         try {
-            const report = await reportService.getWeeklyReport();
+            const { stand_id } = req.query;
+            const report = await reportService.getWeeklyReport(stand_id || 'ALL');
             res.json({ success: true, data: report });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
@@ -26,7 +28,8 @@ class ReportController {
 
     async getMonthly(req, res) {
         try {
-            const report = await reportService.getMonthlyReport();
+            const { stand_id } = req.query;
+            const report = await reportService.getMonthlyReport(stand_id || 'ALL');
             res.json({ success: true, data: report });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
@@ -55,8 +58,8 @@ class ReportController {
 
     async getOwnerSummary(req, res) {
         try {
-            const { filter } = req.query;
-            const report = await reportService.getOwnerSummary(filter || 'day');
+            const { filter, stand_id } = req.query;
+            const report = await reportService.getOwnerSummary(filter || 'day', stand_id || 'ALL');
             res.json({ success: true, data: report });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });

@@ -5,17 +5,7 @@ let currentUser = null;
 let currentAttendanceId = null;
 let pendingVoid = null;
 let activePage = 'kasir';
-
-// Mock data for initial visual (if DB is empty)
-const mockProducts = [
-    { id: '1', name: 'Es Kopi Susu Aren', price: 18000, category: 'Milk Based', img: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=300&h=300&auto=format&fit=crop' },
-    { id: '2', name: 'Americano', price: 15000, category: 'Espresso Based', img: 'assets/img/americano.jpg' },
-    { id: '3', name: 'V60 Gayo', price: 25000, category: 'Manual Brew', img: 'https://images.unsplash.com/photo-1544787210-22c1ec479ec5?q=80&w=300&h=300&auto=format&fit=crop' },
-    { id: '4', name: 'Matcha Latte', price: 22000, category: 'Non-Coffee', img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=300&h=300&auto=format&fit=crop' },
-    { id: '5', name: 'Caramel Macchiato', price: 28000, category: 'Milk Based', img: 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?q=80&w=300&h=300&auto=format&fit=crop' },
-    { id: '6', name: 'French Fries', price: 15000, category: 'Snack', img: 'https://images.unsplash.com/photo-1630384066272-11751df163cc?q=80&w=300&h=300&auto=format&fit=crop' },
-    { id: '7', name: 'Croissant', price: 20000, category: 'Snack', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=300&h=300&auto=format&fit=crop' }
-];
+let currentStandCategories = []; // Kategori dinamis sesuai stand
 
 function refreshIcons() {
     if (typeof lucide !== 'undefined') {
@@ -28,7 +18,6 @@ function refreshIcons() {
 }
 
 async function init() {
-    // Load persisted session from localStorage
     const savedUser = localStorage.getItem('gc_currentUser');
     const savedAttendance = localStorage.getItem('gc_attendanceId');
 
@@ -37,35 +26,83 @@ async function init() {
         currentAttendanceId = savedAttendance;
     }
 
-    // Show login modal if not logged in
     if (!currentUser) {
         document.getElementById('loginModal').style.display = 'flex';
     } else {
         document.getElementById('loginModal').style.display = 'none';
-        const staffName = currentUser.username.toUpperCase();
-        document.getElementById('sidebarUser').innerText = staffName;
-        document.getElementById('headerStaffKasir').innerText = staffName;
-        document.getElementById('headerStaffPending').innerText = staffName;
-        console.log(`Session restored: ${currentUser.username}`);
+        updateHeaderInfo();
+        console.log(`Session restored: ${currentUser.username} (${currentUser.stand_name || 'Admin'})`);
     }
 
     await fetchProducts();
-    await fetchUsers(); // Fetch users from DB
-    await loadAppSettings(); // Load system settings
-    setupCategoryListeners();
+    await fetchUsers();
+    await loadAppSettings();
+    await loadStandCategories(); // Load dynamic categories
     renderProducts();
 
-    initTheme(); // Load saved theme
-    initVK(); // Initialize virtual keyboard
-
-    // Show/hide settings based on role
+    initTheme();
+    initVK();
     updateSidebarVisibility();
 
-    // Periodic session check (Every 1 minute)
     setInterval(checkSessionStatus, 60000);
-    checkSessionStatus(); // Initial check
-
+    checkSessionStatus();
     refreshIcons();
+}
+
+// Update header info dengan nama kasir dan stand
+function updateHeaderInfo() {
+    if (!currentUser) return;
+    const staffName = currentUser.username.toUpperCase();
+    const standLabel = currentUser.stand_name ? ` — ${currentUser.stand_name}` : ' — Semua Stand';
+    const el = document.getElementById('sidebarUser');
+    if (el) el.innerText = currentUser.stand_code || staffName.substring(0, 2);
+    const hKasir = document.getElementById('headerStaffKasir');
+    if (hKasir) hKasir.innerText = staffName + standLabel;
+    const hPending = document.getElementById('headerStaffPending');
+    if (hPending) hPending.innerText = staffName + standLabel;
+    // Update title header stand
+    const standTitle = document.getElementById('headerStandTitle');
+    if (standTitle) standTitle.innerText = currentUser.stand_name || 'Kantin BBWS Citarum';
+}
+
+// Load kategori dinamis berdasarkan stand kasir
+async function loadStandCategories() {
+    try {
+        const standId = currentUser && currentUser.stand_id;
+        if (!standId) {
+            currentStandCategories = [];
+            return;
+        }
+        const res = await fetch(`/api/products/categories?stand_id=${standId}`);
+        const result = await res.json();
+        if (result.success) {
+            currentStandCategories = result.data;
+            renderCategoryButtons(currentStandCategories);
+        }
+    } catch (e) {
+        console.warn('Gagal load kategori:', e);
+    }
+}
+
+// Render tombol kategori secara dinamis
+function renderCategoryButtons(categories) {
+    const container = document.querySelector('.categories');
+    if (!container) return;
+    container.innerHTML = `<button class="category-btn active" onclick="filterCategory('Semua', this)">Semua</button>`;
+    categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'category-btn';
+        btn.innerText = cat;
+        btn.onclick = function() { filterCategory(cat, this); };
+        container.appendChild(btn);
+    });
+}
+
+function filterCategory(cat, btn) {
+    document.querySelectorAll('.categories .category-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    currentCategory = cat;
+    renderProducts();
 }
 
 async function checkSessionStatus() {
@@ -143,12 +180,15 @@ async function fetchUsers() {
 
 async function fetchProducts() {
     try {
-        const response = await fetch('/api/products');
+        // Kasir hanya lihat produk stand-nya, Owner lihat semua
+        const standId = currentUser && currentUser.stand_id;
+        const url = standId ? `/api/products?stand_id=${standId}` : '/api/products';
+        const response = await fetch(url);
         const data = await response.json();
-        products = data.length > 0 ? data : mockProducts;
+        products = data.length > 0 ? data : [];
     } catch (error) {
         console.error('Fetcher error:', error);
-        products = mockProducts;
+        products = [];
     }
 }
 
@@ -317,7 +357,7 @@ function attemptLogin() {
         body: JSON.stringify({ username, pin })
     })
         .then(res => res.json())
-        .then(data => {
+        .then(async data => {
             if (data.success) {
                 currentUser = data.user;
                 currentAttendanceId = data.attendance_id;
@@ -329,15 +369,16 @@ function attemptLogin() {
                 document.getElementById('loginModal').style.display = 'none';
                 document.getElementById('loginPin').value = '';
 
-                const staffName = currentUser.username.toUpperCase();
-                document.getElementById('sidebarUser').innerText = staffName;
-                document.getElementById('headerStaffKasir').innerText = staffName;
-                document.getElementById('headerStaffPending').innerText = staffName;
-
-                // Show/hide owner menu
+                updateHeaderInfo();
                 updateSidebarVisibility();
 
-                alert(`Login Berhasil! Selamat bekerja, ${currentUser.username}!`);
+                // Reload produk dan kategori sesuai stand
+                await fetchProducts();
+                await loadStandCategories();
+                renderProducts();
+
+                const standInfo = currentUser.stand_name ? ` — ${currentUser.stand_name}` : '';
+                alert(`Login Berhasil! Selamat bekerja, ${currentUser.username}${standInfo}!`);
                 if (typeof refreshIcons === 'function') refreshIcons();
             } else {
                 alert(data.message);
@@ -440,17 +481,18 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
     const payload = {
         invoice_number: `INV-${Date.now()}`,
         items: cart.map(item => ({
-            id: item.id, // for printer service if it needs name etc
+            id: item.id,
             name: item.name,
             product_id: item.id,
             qty: item.qty,
             price: item.price
         })),
-        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0), // Removed 1.1 multiplier (0% tax)
+        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
         payment_method: paymentMethod,
         customer_name: customerName,
         payment_status: paymentStatus,
-        should_print: shouldPrint
+        should_print: shouldPrint,
+        stand_id: currentUser ? currentUser.stand_id : null  // << Multi-stand support
     };
 
     try {
@@ -789,9 +831,41 @@ async function loadReportData() {
     const selectedDate = dateInput.value;
     const selectedShift = document.getElementById('reportShift').value || 1;
 
+    // Populate Stands Dropdown
+    const standFilterEl = document.getElementById('reportStandFilter');
+    const isBoss = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER');
+
+    if (standFilterEl) {
+        if (!isBoss) {
+            // Kasir hanya bisa lihat stand sendiri
+            standFilterEl.innerHTML = `<option value="${currentUser.stand_id}">🏢 ${currentUser.stand_name || 'Stand Saya'}</option>`;
+            standFilterEl.disabled = true;
+        } else {
+            // Owner / Admin bisa lihat semua
+            standFilterEl.disabled = false;
+            if (!standFilterEl.querySelector('option[value="ALL"]')) {
+                standFilterEl.innerHTML = '<option value="ALL">🏢 Semua Stand</option>';
+            }
+            if (standFilterEl.options.length <= 1) {
+                const standsRes = await fetch('/api/stands');
+                const standsData = await standsRes.json();
+                if (standsData.success) {
+                    standsData.data.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.innerText = `🏢 ${s.name}`;
+                        standFilterEl.appendChild(opt);
+                    });
+                }
+            }
+        }
+    }
+    
+    const standId = standFilterEl?.value || 'ALL';
+
     try {
         // 1. Fetch Daily (Selected Shift)
-        const dailyRes = await fetch(`/api/reports/daily?date=${selectedDate}&shift=${selectedShift}`);
+        const dailyRes = await fetch(`/api/reports/daily?date=${selectedDate}&shift=${selectedShift}&stand_id=${standId}`);
         const daily = await dailyRes.json();
         if (daily.success) {
             document.getElementById('dailyRevenue').innerText = `Rp ${Number(daily.data.summary.gross_revenue || 0).toLocaleString()}`;
@@ -861,8 +935,8 @@ async function loadReportData() {
         // 2. Fetch Weekly/Monthly Summary
         try {
             const [weeklyRes, monthlyRes] = await Promise.all([
-                fetch('/api/reports/weekly'),
-                fetch('/api/reports/monthly')
+                fetch(`/api/reports/weekly?stand_id=${standId}`),
+                fetch(`/api/reports/monthly?stand_id=${standId}`)
             ]);
             const weekly = await weeklyRes.json();
             const monthly = await monthlyRes.json();
@@ -1213,9 +1287,20 @@ document.getElementById('btnSubmitOpname')?.addEventListener('click', async () =
 async function openPrintPreview() {
     const reportDate = document.getElementById('reportDate').value;
     const reportShift = document.getElementById('reportShift').value || 1;
+    
+    const standFilterEl = document.getElementById('reportStandFilter');
+    const standId = standFilterEl?.value || 'ALL';
+    const standName = standId === 'ALL' ? 'Semua Stand' : standFilterEl.options[standFilterEl.selectedIndex].text;
+
+    // Update Header Text
+    const printStandNameEl = document.getElementById('printStandName');
+    if (printStandNameEl) {
+        printStandNameEl.innerText = standName;
+        // Strip emojis for print if needed, but simple text is fine
+    }
 
     // Fetch fresh daily data for payment breakdown
-    const response = await fetch(`/api/reports/daily?date=${reportDate}&shift=${reportShift}`);
+    const response = await fetch(`/api/reports/daily?date=${reportDate}&shift=${reportShift}&stand_id=${standId}`);
     const result = await response.json();
 
     if (result.success) {
@@ -1367,6 +1452,53 @@ function closePrintPreview() {
 
 function printReport() {
     window.print();
+}
+
+function exportToPDF(btn) {
+    if (typeof html2pdf === 'undefined') {
+        alert('Maaf, fitur PDF belum siap. Mohon refresh halaman dan coba lagi.');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⌛ MENYIAPKAN...';
+    btn.disabled = true;
+
+    // Tunggu sebentar agar UI tombol berubah sebelum proses berat dimulai
+    setTimeout(() => {
+        const element = document.getElementById('printContent');
+        const standFilterEl = document.getElementById('reportStandFilter');
+        const standName = standFilterEl?.options[standFilterEl.selectedIndex]?.text || 'Laporan';
+        const cleanName = standName.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "_");
+        const dateInput = document.getElementById('reportDate');
+        const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+        
+        const opt = {
+            margin:       10,
+            filename:     `Laporan_${cleanName}_${date}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                backgroundColor: '#ffffff',
+                scrollY: 0
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Gunakan pattern .then() untuk kompatibilitas lebih baik
+        html2pdf().set(opt).from(element).save().then(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            if (typeof refreshIcons === 'function') refreshIcons();
+        }).catch(err => {
+            console.error('PDF Error:', err);
+            alert('Gagal membuat PDF. Coba gunakan tombol Cetak Laporan lalu pilih Save as PDF.');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            if (typeof refreshIcons === 'function') refreshIcons();
+        });
+    }, 100);
 }
 
 function printReceiptFromBrowser() {
@@ -2053,8 +2185,25 @@ let expenseCircleChartInstance = null;
 
 async function loadOwnerData() {
     try {
+        // Populate Stands Dropdown if empty
+        const standFilterEl = document.getElementById('ownerStandFilter');
+        if (standFilterEl && standFilterEl.options.length <= 1) {
+            const standsRes = await fetch('/api/stands');
+            const standsData = await standsRes.json();
+            if (standsData.success) {
+                standsData.data.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.innerText = `🏢 ${s.name}`;
+                    standFilterEl.appendChild(opt);
+                });
+            }
+        }
+
         const filter = document.getElementById('ownerReportFilter')?.value || 'day';
-        const res = await fetch(`/api/reports/owner/summary?filter=${filter}`);
+        const standId = standFilterEl?.value || 'ALL';
+        
+        const res = await fetch(`/api/reports/owner/summary?filter=${filter}&stand_id=${standId}`);
         const result = await res.json();
         if (!result.success) return alert('Gagal memuat data owner: ' + result.error);
 
@@ -2066,7 +2215,9 @@ async function loadOwnerData() {
             'week': '(7 Hari Terakhir)',
             'month': '(Bulan Ini)'
         };
-        const currentLabel = labels[filter] || '(Hari Ini)';
+        const standName = standId === 'ALL' ? 'Semua Stand' : standFilterEl.options[standFilterEl.selectedIndex].text;
+        const currentLabel = `${labels[filter] || '(Hari Ini)'} - ${standName}`;
+        
         document.getElementById('labelTotalRevenue').innerText = `Total Omset ${currentLabel}`;
         document.getElementById('labelTotalExpense').innerText = `Total Pengeluaran ${currentLabel}`;
         document.getElementById('labelProfit').innerText = `Estimasi Keuntungan ${currentLabel}`;

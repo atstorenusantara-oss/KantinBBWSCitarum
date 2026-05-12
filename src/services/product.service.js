@@ -2,28 +2,47 @@ const db = require('../database/connection');
 const { v4: uuidv4 } = require('uuid');
 
 class ProductService {
-    async getAll() {
-        const [rows] = await db.query('SELECT * FROM products WHERE is_active = true');
+    // Get all products, optionally filtered by stand_id
+    async getAll(standId = null) {
+        if (standId) {
+            const [rows] = await db.query(
+                'SELECT * FROM products WHERE is_active = 1 AND stand_id = ? ORDER BY category, name',
+                [standId]
+            );
+            return rows;
+        }
+        const [rows] = await db.query(
+            'SELECT p.*, s.name as stand_name, s.code as stand_code FROM products p LEFT JOIN stands s ON p.stand_id = s.id WHERE p.is_active = 1 ORDER BY s.code, p.category, p.name'
+        );
         return rows;
     }
 
+    // Get distinct categories for a given stand
+    async getCategoriesByStand(standId) {
+        const [rows] = await db.query(
+            'SELECT DISTINCT category FROM products WHERE is_active = 1 AND stand_id = ? ORDER BY category',
+            [standId]
+        );
+        return rows.map(r => r.category);
+    }
+
     async create(productData) {
-        const { name, price, category, image_url } = productData;
+        const { name, price, category, image_url, stand_id } = productData;
         const id = uuidv4();
         await db.query(
-            'INSERT INTO products (id, name, price, category, image_url) VALUES (?, ?, ?, ?, ?)',
-            [id, name, price, category, image_url]
+            'INSERT INTO products (id, name, price, category, image_url, stand_id) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, name, price, category, image_url, stand_id || null]
         );
-        return { id, name, price, category, image_url };
+        return { id, name, price, category, image_url, stand_id };
     }
 
     async update(id, productData) {
-        const { name, price, category, image_url, is_active } = productData;
+        const { name, price, category, image_url, is_active, stand_id } = productData;
         await db.query(
-            'UPDATE products SET name = ?, price = ?, category = ?, image_url = ?, is_active = ? WHERE id = ?',
-            [name, price, category, image_url, is_active, id]
+            'UPDATE products SET name = ?, price = ?, category = ?, image_url = ?, is_active = ?, stand_id = ? WHERE id = ?',
+            [name, price, category, image_url, is_active, stand_id, id]
         );
-        return { id, name, price, category, image_url, is_active };
+        return { id, name, price, category, image_url, is_active, stand_id };
     }
 }
 

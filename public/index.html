@@ -15,6 +15,8 @@
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf -->
+    <script src="js/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -145,6 +147,10 @@
             <div class="header">
                 <h1>Laporan Penjualan</h1>
                 <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="reportStandFilter" class="category-btn" onchange="loadReportData()"
+                        style="padding: 10px 15px; background: var(--surface);">
+                        <option value="ALL">🏢 Semua Stand</option>
+                    </select>
                     <select id="reportShift" class="category-btn" onchange="loadReportData()"
                         style="padding: 10px 15px; background: var(--surface);">
                         <option value="1">☀️ Shift Pagi (06-17)</option>
@@ -173,6 +179,10 @@
                                 style="width: 14px; vertical-align: middle; margin-right: 5px;"></i>
                             <span id="colBtnText">2 Kolom</span>
                         </button>
+                        <button class="category-btn" onclick="exportToPDF(this)"
+                            style="background: #e74c3c; color: white; font-weight: bold;">
+                            <i data-lucide="file-down" style="width: 14px; vertical-align: middle; margin-right: 5px;"></i> EXPORT PDF
+                        </button>
                         <button class="category-btn" onclick="printReport()"
                             style="background: var(--accent); color: var(--bg); font-weight: bold;">
                             CETAK LAPORAN
@@ -187,7 +197,8 @@
                         <div class="print-column">
                             <div
                                 style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 15px;">
-                                <h2 style="margin: 0; font-size: 1.5rem;">G-COFFEE POS</h2>
+                                <h2 style="margin: 0; font-size: 1.5rem;">KANTIN BBWS CITARUM</h2>
+                                <h3 id="printStandName" style="margin: 5px 0; font-weight: bold; font-size: 1.1rem; color: var(--accent);">Semua Stand</h3>
                                 <h3 style="margin: 5px 0; font-weight: normal; font-size: 1rem;">LAPORAN RINGKAS HARIAN
                                 </h3>
                                 <p id="printTimestamp"
@@ -276,24 +287,7 @@
                 </div>
             </div>
 
-            <!-- AI SMART AUDIT INSIGHTS (v2.5) -->
-            <div id="aiInsightContainer" style="margin-bottom: 25px;">
-                <div class="card" style="border: 1px solid var(--accent); background: rgba(228, 168, 83, 0.05);">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 12px;">
-                        <div
-                            style="background: var(--accent); color: var(--secondary); padding: 8px; border-radius: 8px; display: flex;">
-                            <i data-lucide="brain-circuit" style="width: 20px;"></i>
-                        </div>
-                        <h3 style="color: var(--accent);">AI Smart Audit Insight</h3>
-                    </div>
-                    <div id="aiInsightList" style="line-height: 1.6; font-size: 0.95rem;">
-                        <!-- AI Insights will be loaded here -->
-                        <div class="spin"
-                            style="width: 20px; height: 20px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; margin: 10px auto;">
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="report-grid">
                 <!-- Daily Card -->
@@ -759,6 +753,11 @@
                     <p style="color: var(--text-muted); font-size: 0.9rem;">Analisa Performa & Keuangan Real-time</p>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="ownerStandFilter" class="category-btn" onchange="loadOwnerData()"
+                        style="padding: 10px 15px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-weight: bold;">
+                        <option value="ALL">🏢 Semua Stand</option>
+                        <!-- Options akan diisi via JS -->
+                    </select>
                     <select id="ownerReportFilter" class="category-btn" onchange="loadOwnerData()"
                         style="padding: 10px 15px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); font-weight: bold;">
                         <option value="day">☀️ Hari Ini</option>
@@ -767,7 +766,7 @@
                     </select>
                     <button class="category-btn" onclick="openBaristaModal()"
                         style="background: var(--surface); color: var(--accent); border: 1px solid var(--accent); font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                        <i data-lucide="users" style="width: 18px;"></i> Jadwal Barista
+                        <i data-lucide="users" style="width: 18px;"></i> Jadwal Kasir
                     </button>
                     <button class="category-btn" onclick="loadOwnerData()" style="padding: 10px 20px;">
                         <i data-lucide="refresh-cw" style="width: 18px; margin-right: 5px;"></i> Refresh Data
