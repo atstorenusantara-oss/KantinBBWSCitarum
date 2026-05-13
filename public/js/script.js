@@ -2343,17 +2343,27 @@ async function openMenuManager() {
         if (data.success && data.data.is_active) {
             document.getElementById('menuManagerModal').style.display = 'flex';
             
-            // Load Stands into the filter if empty
+            // Load Stands into the filters if empty
             const filterEl = document.getElementById('menuManagerStandFilter');
+            const editStandEl = document.getElementById('editMenuStand');
+            
             if (filterEl.options.length <= 1) {
                 const standsRes = await fetch('/api/stands');
                 const standsData = await standsRes.json();
                 if (standsData.success) {
+                    editStandEl.innerHTML = ''; // Clear existing
                     standsData.data.forEach(s => {
-                        const opt = document.createElement('option');
-                        opt.value = s.id;
-                        opt.innerText = `🏢 ${s.name}`;
-                        filterEl.appendChild(opt);
+                        // For filter
+                        const optF = document.createElement('option');
+                        optF.value = s.id;
+                        optF.innerText = `🏢 ${s.name}`;
+                        filterEl.appendChild(optF);
+                        
+                        // For form
+                        const optE = document.createElement('option');
+                        optE.value = s.id;
+                        optE.innerText = `🏢 ${s.name}`;
+                        editStandEl.appendChild(optE);
                     });
                 }
             }
@@ -2384,10 +2394,12 @@ async function loadMenuManagerData() {
 
 function renderMenuManagerTable(products) {
     const tbody = document.getElementById('menuManagerBody');
-    tbody.innerHTML = products.map(p => `
+    tbody.innerHTML = products.map(p => {
+        const fallbackImg = 'assets/img/default-product.png'; // Fallback if no image
+        return `
         <tr style="border-bottom: 1px solid var(--glass);">
             <td style="padding: 10px;">
-                <img src="${p.image_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                <img src="${p.image_url || fallbackImg}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" onerror="this.src='${fallbackImg}'">
             </td>
             <td style="padding: 10px;">${p.stand_name || '-'}</td>
             <td style="padding: 10px;">${p.category}</td>
@@ -2398,11 +2410,12 @@ function renderMenuManagerTable(products) {
                     ${p.is_active ? 'Aktif' : 'Nonaktif'}
                 </span>
             </td>
-            <td style="padding: 10px; text-align: right;">
+            <td style="padding: 10px; text-align: right; white-space: nowrap;">
                 <button class="category-btn" onclick='openEditMenuModal(${JSON.stringify(p).replace(/'/g, "&#39;")})' style="padding: 6px 12px; background: var(--accent); color: var(--secondary); font-weight: bold;">Edit</button>
+                <button class="category-btn" onclick='deleteMenu("${p.id}")' style="padding: 6px 12px; background: var(--danger); color: white; font-weight: bold; margin-left: 5px;">Hapus</button>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 function filterMenuManagerTable() {
@@ -2414,14 +2427,42 @@ function filterMenuManagerTable() {
     renderMenuManagerTable(filtered);
 }
 
+function openAddMenuModal() {
+    document.getElementById('editMenuModalTitle').innerText = 'Tambah Menu Baru';
+    document.getElementById('editMenuId').value = '';
+    
+    // Set stand to the currently filtered stand (if not ALL)
+    const currentStandFilter = document.getElementById('menuManagerStandFilter').value;
+    if (currentStandFilter !== 'ALL') {
+        document.getElementById('editMenuStand').value = currentStandFilter;
+    }
+    
+    document.getElementById('editMenuName').value = '';
+    document.getElementById('editMenuCategory').value = '';
+    document.getElementById('editMenuPrice').value = '';
+    document.getElementById('editMenuActive').value = '1';
+    document.getElementById('editMenuPreview').src = '';
+    document.getElementById('editMenuImage').value = ''; 
+    document.getElementById('editMenuImage').required = true; // Required for new menu
+    
+    document.getElementById('editMenuModal').style.display = 'flex';
+}
+
 function openEditMenuModal(product) {
+    document.getElementById('editMenuModalTitle').innerText = 'Edit Produk';
     document.getElementById('editMenuId').value = product.id;
+    
+    if (product.stand_id) {
+        document.getElementById('editMenuStand').value = product.stand_id;
+    }
+    
     document.getElementById('editMenuName').value = product.name;
     document.getElementById('editMenuCategory').value = product.category;
     document.getElementById('editMenuPrice').value = product.price;
     document.getElementById('editMenuActive').value = product.is_active;
     document.getElementById('editMenuPreview').src = product.image_url;
     document.getElementById('editMenuImage').value = ''; // Reset file input
+    document.getElementById('editMenuImage').required = false; // Optional for edit
     
     document.getElementById('editMenuModal').style.display = 'flex';
 }
@@ -2446,14 +2487,18 @@ async function submitEditMenu(event) {
         formData.append('category', document.getElementById('editMenuCategory').value);
         formData.append('price', document.getElementById('editMenuPrice').value);
         formData.append('is_active', document.getElementById('editMenuActive').value);
+        formData.append('stand_id', document.getElementById('editMenuStand').value);
         
         const fileInput = document.getElementById('editMenuImage');
         if (fileInput.files.length > 0) {
             formData.append('image', fileInput.files[0]);
         }
 
-        const res = await fetch(`/api/products/${id}`, {
-            method: 'PUT',
+        const url = id ? `/api/products/${id}` : '/api/products';
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
             body: formData
         });
 
@@ -2481,6 +2526,26 @@ async function submitEditMenu(event) {
     } finally {
         btnSave.innerText = 'Simpan Perubahan';
         btnSave.disabled = false;
+    }
+}
+
+async function deleteMenu(id) {
+    if (!confirm('Apakah Anda yakin ingin menghapus menu ini secara permanen?')) return;
+    
+    try {
+        const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        
+        if (data.success) {
+            alert('Menu berhasil dihapus!');
+            await loadMenuManagerData(); // Refresh table
+            await loadProducts(); // Refresh kasir view if needed
+        } else {
+            alert('Gagal menghapus: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Delete menu error:', error);
+        alert('Terjadi kesalahan saat menghapus menu.');
     }
 }
 

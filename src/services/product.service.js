@@ -27,13 +27,15 @@ class ProductService {
     }
 
     async create(productData) {
-        const { name, price, category, image_url, stand_id } = productData;
+        const { name, price, category, image_url, stand_id, is_active } = productData;
         const id = uuidv4();
+        const activeStatus = is_active !== undefined ? is_active : 1;
+        
         await db.query(
-            'INSERT INTO products (id, name, price, category, image_url, stand_id) VALUES (?, ?, ?, ?, ?, ?)',
-            [id, name, price, category, image_url, stand_id || null]
+            'INSERT INTO products (id, name, price, category, image_url, stand_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [id, name, price, category, image_url, stand_id || null, activeStatus]
         );
-        return { id, name, price, category, image_url, stand_id };
+        return { id, name, price, category, image_url, stand_id, is_active: activeStatus };
     }
 
     async update(id, productData) {
@@ -54,6 +56,11 @@ class ProductService {
         
         const [updated] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
         return updated[0];
+    }
+
+    async delete(id) {
+        await db.query('DELETE FROM products WHERE id = ?', [id]);
+        return { success: true, id };
     }
 }
 

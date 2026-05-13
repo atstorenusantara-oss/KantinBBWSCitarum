@@ -1282,6 +1282,7 @@
                     <option value="ALL">Semua Stand</option>
                 </select>
                 <input type="text" id="menuManagerSearch" class="search-bar" placeholder="Cari menu..." onkeyup="filterMenuManagerTable()" style="flex: 1;">
+                <button class="category-btn" onclick="openAddMenuModal()" style="background: var(--success); color: white; font-weight: bold;">+ Tambah Menu Baru</button>
             </div>
 
             <table style="width: 100%; text-align: left; border-collapse: collapse;">
@@ -1305,14 +1306,21 @@
 
     <!-- Edit Menu Modal -->
     <div id="editMenuModal" style="display:none; position: fixed; z-index: 20001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
-        <div class="card" style="width: 450px; background: var(--bg); border: 1px solid var(--accent);">
-            <h2 style="margin-bottom: 20px;">Edit Produk</h2>
+        <div class="card" style="width: 450px; max-height: 90vh; overflow-y: auto; background: var(--bg); border: 1px solid var(--accent);">
+            <h2 id="editMenuModalTitle" style="margin-bottom: 20px;">Edit Produk</h2>
             <form id="editMenuForm" onsubmit="submitEditMenu(event)">
                 <input type="hidden" id="editMenuId">
                 
                 <div style="text-align: center; margin-bottom: 15px;">
                     <img id="editMenuPreview" src="" style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 2px dashed var(--accent); margin-bottom: 10px;">
                     <input type="file" id="editMenuImage" accept="image/*" class="search-bar" style="width: 100%; font-size: 0.8rem;" onchange="previewEditImage(event)">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Stand</label>
+                    <select id="editMenuStand" class="search-bar" style="width: 100%;" required>
+                        <!-- Loaded via JS -->
+                    </select>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">

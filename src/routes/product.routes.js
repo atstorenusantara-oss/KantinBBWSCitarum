@@ -47,13 +47,31 @@ router.get('/categories', async (req, res) => {
 });
 
 // POST /api/products
-router.post('/', async (req, res) => {
-    try {
-        const product = await productService.create(req.body);
-        res.json({ success: true, data: product });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+router.post('/', (req, res) => {
+    upload.single('image')(req, res, async function (err) {
+        if (err instanceof multer.MulterError) {
+            return res.status(400).json({ success: false, message: `Multer error: ${err.message}` });
+        } else if (err) {
+            return res.status(500).json({ success: false, message: `Unknown error: ${err.message}` });
+        }
+
+        try {
+            const productData = { ...req.body };
+            
+            if (productData.price) productData.price = Number(productData.price);
+            if (productData.is_active !== undefined) productData.is_active = Number(productData.is_active);
+            
+            if (req.file) {
+                productData.image_url = `/assets/img/products/${req.file.filename}`;
+            }
+            
+            const product = await productService.create(productData);
+            res.json({ success: true, data: product });
+        } catch (error) {
+            console.error('Create Product Error:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    });
 });
 
 // PUT /api/products/:id
@@ -83,6 +101,18 @@ router.put('/:id', (req, res) => {
             res.status(500).json({ success: false, message: error.message });
         }
     });
+});
+
+// DELETE /api/products/:id
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await productService.delete(id);
+        res.json({ success: true, message: 'Produk berhasil dihapus' });
+    } catch (error) {
+        console.error('Delete Product Error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 module.exports = router;
