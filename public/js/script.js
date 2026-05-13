@@ -2330,6 +2330,160 @@ async function loadGudangData() {
     }
 }
 
+// ==========================================
+// MENU MANAGER LOGIC
+// ==========================================
+let allMenuManagerData = [];
+
+async function openMenuManager() {
+    try {
+        const res = await fetch('/api/settings/menu-editor');
+        const data = await res.json();
+        
+        if (data.success && data.data.is_active) {
+            document.getElementById('menuManagerModal').style.display = 'flex';
+            
+            // Load Stands into the filter if empty
+            const filterEl = document.getElementById('menuManagerStandFilter');
+            if (filterEl.options.length <= 1) {
+                const standsRes = await fetch('/api/stands');
+                const standsData = await standsRes.json();
+                if (standsData.success) {
+                    standsData.data.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.innerText = `🏢 ${s.name}`;
+                        filterEl.appendChild(opt);
+                    });
+                }
+            }
+            
+            await loadMenuManagerData();
+        } else {
+            alert('Maaf, fitur Edit Menu sedang dinonaktifkan oleh administrator.');
+        }
+    } catch (error) {
+        console.error('Menu Editor Check Error:', error);
+        alert('Gagal mengecek status fitur.');
+    }
+}
+
+async function loadMenuManagerData() {
+    try {
+        const standId = document.getElementById('menuManagerStandFilter').value;
+        const url = standId === 'ALL' ? '/api/products' : `/api/products?stand_id=${standId}`;
+        const res = await fetch(url);
+        const products = await res.json();
+        
+        allMenuManagerData = products;
+        renderMenuManagerTable(products);
+    } catch (error) {
+        console.error('Failed to load products for manager:', error);
+    }
+}
+
+function renderMenuManagerTable(products) {
+    const tbody = document.getElementById('menuManagerBody');
+    tbody.innerHTML = products.map(p => `
+        <tr style="border-bottom: 1px solid var(--glass);">
+            <td style="padding: 10px;">
+                <img src="${p.image_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+            </td>
+            <td style="padding: 10px;">${p.stand_name || '-'}</td>
+            <td style="padding: 10px;">${p.category}</td>
+            <td style="padding: 10px; font-weight: bold;">${p.name}</td>
+            <td style="padding: 10px; color: var(--accent);">${formatIDR(p.price)}</td>
+            <td style="padding: 10px;">
+                <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: ${p.is_active ? 'var(--success)' : 'var(--danger)'}; color: white;">
+                    ${p.is_active ? 'Aktif' : 'Nonaktif'}
+                </span>
+            </td>
+            <td style="padding: 10px; text-align: right;">
+                <button class="category-btn" onclick='openEditMenuModal(${JSON.stringify(p).replace(/'/g, "&#39;")})' style="padding: 6px 12px; background: var(--accent); color: var(--secondary); font-weight: bold;">Edit</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterMenuManagerTable() {
+    const search = document.getElementById('menuManagerSearch').value.toLowerCase();
+    const filtered = allMenuManagerData.filter(p => 
+        p.name.toLowerCase().includes(search) || 
+        p.category.toLowerCase().includes(search)
+    );
+    renderMenuManagerTable(filtered);
+}
+
+function openEditMenuModal(product) {
+    document.getElementById('editMenuId').value = product.id;
+    document.getElementById('editMenuName').value = product.name;
+    document.getElementById('editMenuCategory').value = product.category;
+    document.getElementById('editMenuPrice').value = product.price;
+    document.getElementById('editMenuActive').value = product.is_active;
+    document.getElementById('editMenuPreview').src = product.image_url;
+    document.getElementById('editMenuImage').value = ''; // Reset file input
+    
+    document.getElementById('editMenuModal').style.display = 'flex';
+}
+
+function previewEditImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        document.getElementById('editMenuPreview').src = URL.createObjectURL(file);
+    }
+}
+
+async function submitEditMenu(event) {
+    event.preventDefault();
+    const btnSave = document.getElementById('btnSaveMenu');
+    btnSave.innerText = 'Menyimpan...';
+    btnSave.disabled = true;
+
+    try {
+        const id = document.getElementById('editMenuId').value;
+        const formData = new FormData();
+        formData.append('name', document.getElementById('editMenuName').value);
+        formData.append('category', document.getElementById('editMenuCategory').value);
+        formData.append('price', document.getElementById('editMenuPrice').value);
+        formData.append('is_active', document.getElementById('editMenuActive').value);
+        
+        const fileInput = document.getElementById('editMenuImage');
+        if (fileInput.files.length > 0) {
+            formData.append('image', fileInput.files[0]);
+        }
+
+        const res = await fetch(`/api/products/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error('JSON Parse Error:', e);
+            const errorText = await res.text();
+            console.error('Server Response:', errorText);
+            throw new Error('Server mengembalikan respon tidak valid.');
+        }
+
+        if (data.success) {
+            alert('Menu berhasil diperbarui!');
+            document.getElementById('editMenuModal').style.display = 'none';
+            await loadMenuManagerData(); // Refresh table
+            await loadProducts(); // Refresh kasir view if needed
+        } else {
+            alert('Gagal menyimpan: ' + (data.message || 'Error tidak diketahui'));
+        }
+    } catch (error) {
+        console.error('Edit menu error:', error);
+        alert('Terjadi kesalahan: ' + error.message);
+    } finally {
+        btnSave.innerText = 'Simpan Perubahan';
+        btnSave.disabled = false;
+    }
+}
+
 // --- Owner Dashboard Logic ---
 let financeChartInstance = null;
 let expenseCircleChartInstance = null;

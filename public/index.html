@@ -773,6 +773,10 @@
                         style="background: var(--surface); color: var(--accent); border: 1px solid var(--accent); font-weight: bold; display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="users" style="width: 18px;"></i> Jadwal Kasir
                     </button>
+                    <button class="category-btn" onclick="openMenuManager()"
+                        style="background: var(--surface); color: #2ecc71; border: 1px solid #2ecc71; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="layout-list" style="width: 18px;"></i> Manajemen Menu
+                    </button>
                     <button class="category-btn" onclick="exportOwnerPDF()"
                         style="background: #e74c3c; color: white; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="file-down" style="width: 18px;"></i> Export PDF
@@ -1262,6 +1266,83 @@
         </div>
         <div id="vkContent" class="vk-content">
             <!-- Driven by JS -->
+        </div>
+    </div>
+
+    <!-- Menu Manager Modal -->
+    <div id="menuManagerModal" style="display:none; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+        <div class="card" style="width: 900px; max-height: 90vh; overflow-y: auto; background: var(--bg); border: 1px solid var(--accent);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Manajemen Menu (Kantin BBWS Citarum)</h2>
+                <button class="category-btn" onclick="document.getElementById('menuManagerModal').style.display='none'" style="background: var(--danger); color: white;">Tutup</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <select id="menuManagerStandFilter" class="search-bar" onchange="loadMenuManagerData()">
+                    <option value="ALL">Semua Stand</option>
+                </select>
+                <input type="text" id="menuManagerSearch" class="search-bar" placeholder="Cari menu..." onkeyup="filterMenuManagerTable()" style="flex: 1;">
+            </div>
+
+            <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--glass);">
+                        <th style="padding: 10px;">Foto</th>
+                        <th style="padding: 10px;">Stand</th>
+                        <th style="padding: 10px;">Kategori</th>
+                        <th style="padding: 10px;">Nama Produk</th>
+                        <th style="padding: 10px;">Harga</th>
+                        <th style="padding: 10px;">Status</th>
+                        <th style="padding: 10px; text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="menuManagerBody">
+                    <!-- Loaded via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Edit Menu Modal -->
+    <div id="editMenuModal" style="display:none; position: fixed; z-index: 20001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
+        <div class="card" style="width: 450px; background: var(--bg); border: 1px solid var(--accent);">
+            <h2 style="margin-bottom: 20px;">Edit Produk</h2>
+            <form id="editMenuForm" onsubmit="submitEditMenu(event)">
+                <input type="hidden" id="editMenuId">
+                
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <img id="editMenuPreview" src="" style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 2px dashed var(--accent); margin-bottom: 10px;">
+                    <input type="file" id="editMenuImage" accept="image/*" class="search-bar" style="width: 100%; font-size: 0.8rem;" onchange="previewEditImage(event)">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Nama Produk</label>
+                    <input type="text" id="editMenuName" class="search-bar" style="width: 100%;" required>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Kategori</label>
+                    <input type="text" id="editMenuCategory" class="search-bar" style="width: 100%;" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Harga (Rp)</label>
+                    <input type="number" id="editMenuPrice" class="search-bar" style="width: 100%;" required>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Status Aktif</label>
+                    <select id="editMenuActive" class="search-bar" style="width: 100%;">
+                        <option value="1">Aktif (Tampil)</option>
+                        <option value="0">Tidak Aktif (Sembunyikan)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="category-btn" onclick="document.getElementById('editMenuModal').style.display='none'" style="flex: 1; border-style: dashed;">Batal</button>
+                    <button type="submit" id="btnSaveMenu" class="btn-checkout" style="flex: 1; margin: 0;">Simpan Perubahan</button>
+                </div>
+            </form>
         </div>
     </div>
 

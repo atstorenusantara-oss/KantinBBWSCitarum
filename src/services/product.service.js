@@ -37,12 +37,23 @@ class ProductService {
     }
 
     async update(id, productData) {
-        const { name, price, category, image_url, is_active, stand_id } = productData;
-        await db.query(
-            'UPDATE products SET name = ?, price = ?, category = ?, image_url = ?, is_active = ?, stand_id = ? WHERE id = ?',
-            [name, price, category, image_url, is_active, stand_id, id]
-        );
-        return { id, name, price, category, image_url, is_active, stand_id };
+        const fields = [];
+        const values = [];
+        
+        ['name', 'price', 'category', 'image_url', 'is_active', 'stand_id'].forEach(key => {
+            if (productData[key] !== undefined) {
+                fields.push(`${key} = ?`);
+                values.push(productData[key]);
+            }
+        });
+
+        if (fields.length === 0) return { id, ...productData };
+
+        values.push(id);
+        await db.query(`UPDATE products SET ${fields.join(', ')} WHERE id = ?`, values);
+        
+        const [updated] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
+        return updated[0];
     }
 }
 

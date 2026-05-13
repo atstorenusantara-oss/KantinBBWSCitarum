@@ -12,6 +12,18 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Check if menu editor is enabled
+router.get('/menu-editor', async (req, res) => {
+    try {
+        const settings = await settingsService.getSettings();
+        // If not set, default to false (0 or '0')
+        const isActive = settings['ENABLE_MENU_EDITOR'] === '1' || settings['ENABLE_MENU_EDITOR'] === 1;
+        res.json({ success: true, data: { is_active: isActive } });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Update a setting
 router.post('/update', async (req, res) => {
     try {
