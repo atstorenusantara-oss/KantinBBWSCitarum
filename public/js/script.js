@@ -225,7 +225,11 @@ function renderProducts() {
     // Filter by variant, category, and search query
     const filtered = products.filter(p => {
         const isVariant = p.name.includes('(Panas)') || p.name.includes('(Dingin)');
-        const matchCategory = currentCategory === 'Semua' ? !isVariant : (p.category === currentCategory && !isVariant);
+        const baseName = p.name.replace(' (Panas)', '').replace(' (Dingin)', '');
+        const hasBase = products.some(prod => prod.name === baseName);
+        const shouldHide = isVariant && hasBase;
+
+        const matchCategory = currentCategory === 'Semua' ? !shouldHide : (p.category === currentCategory && !shouldHide);
         const matchSearch = p.name.toLowerCase().includes(query);
         return matchCategory && matchSearch;
     });
