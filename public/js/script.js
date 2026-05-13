@@ -69,11 +69,9 @@ function updateHeaderInfo() {
 async function loadStandCategories() {
     try {
         const standId = currentUser && currentUser.stand_id;
-        if (!standId) {
-            currentStandCategories = [];
-            return;
-        }
-        const res = await fetch(`/api/products/categories?stand_id=${standId}`);
+        const url = standId ? `/api/products/categories?stand_id=${standId}` : '/api/products/categories';
+        
+        const res = await fetch(url);
         const result = await res.json();
         if (result.success) {
             currentStandCategories = result.data;
@@ -312,6 +310,7 @@ function updateCart() {
             <div class="cart-item">
                 <div class="cart-item-info">
                     <div style="font-weight: 600;">${item.name}</div>
+                    ${item.stand_code ? `<div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; margin-top: 2px;"><i data-lucide="store" style="width:12px; margin-right:4px;"></i> Stand ${item.stand_code}</div>` : ''}
                     <div style="color: var(--accent);">Rp ${(Number(item.price) * item.qty).toLocaleString()}</div>
                 </div>
                 <div class="cart-item-qty">
@@ -838,14 +837,15 @@ async function loadReportData() {
     // Populate Stands Dropdown
     const standFilterEl = document.getElementById('reportStandFilter');
     const isBoss = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'OWNER');
+    const isGlobalCashier = currentUser && !currentUser.stand_id;
 
     if (standFilterEl) {
-        if (!isBoss) {
-            // Kasir hanya bisa lihat stand sendiri
+        if (!isBoss && !isGlobalCashier) {
+            // Kasir Stand tertentu hanya bisa lihat stand sendiri
             standFilterEl.innerHTML = `<option value="${currentUser.stand_id}">🏢 ${currentUser.stand_name || 'Stand Saya'}</option>`;
             standFilterEl.disabled = true;
         } else {
-            // Owner / Admin bisa lihat semua
+            // Owner / Admin / Kasir Utama bisa lihat semua
             standFilterEl.disabled = false;
             if (!standFilterEl.querySelector('option[value="ALL"]')) {
                 standFilterEl.innerHTML = '<option value="ALL">🏢 Semua Stand</option>';
@@ -887,19 +887,39 @@ async function loadReportData() {
 
             const topBody = document.getElementById('topProductsBody');
             const productsSold = daily.data.all_products || [];
-            topBody.innerHTML = productsSold.map(p => {
-                const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
-                const paymentLabel = isPaid ? (p.payment_method || 'CASH') : '<span style="color: var(--danger); font-weight: 800;">[BELUM BAYAR]</span>';
-                return `
-                <tr>
-                    <td>
-                        <div style="font-weight: 600; color: ${isPaid ? 'var(--text)' : 'var(--danger)'}">${p.name}</div>
-                        <small style="color: var(--text-muted)">${time} | ${paymentLabel}</small>
+            
+            // Group by stand for the UI as well
+            const groupedUI = productsSold.reduce((acc, p) => {
+                const stand = p.stand_name || 'Tanpa Stand';
+                if (!acc[stand]) acc[stand] = { products: [], totalQty: 0 };
+                acc[stand].products.push(p);
+                acc[stand].totalQty += Number(p.total_qty);
+                return acc;
+            }, {});
+
+            topBody.innerHTML = Object.entries(groupedUI).map(([standName, standData]) => `
+                <tr style="background: rgba(228, 168, 83, 0.05);">
+                    <td colspan="2" style="padding: 8px 15px; border-left: 4px solid var(--accent);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: var(--accent); font-size: 0.85rem; text-transform: uppercase;">🏢 ${standName}</span>
+                            <span class="anomaly-tag" style="background: var(--accent); color: var(--secondary); font-weight: 900;">SUBTOTAL: ${standData.totalQty}</span>
+                        </div>
                     </td>
-                    <td style="font-weight: bold; text-align: right;">${p.total_qty}</td>
-                </tr>`;
-            }).join('');
+                </tr>
+                ${standData.products.map(p => {
+                    const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
+                    const paymentLabel = isPaid ? (p.payment_method || 'CASH') : '<span style="color: var(--danger); font-weight: 800;">[BELUM BAYAR]</span>';
+                    return `
+                    <tr>
+                        <td style="padding-left: 30px;">
+                            <div style="font-weight: 600; color: ${isPaid ? 'var(--text)' : 'var(--danger)'}">${p.name}</div>
+                            <small style="color: var(--text-muted)">${time} | ${paymentLabel}</small>
+                        </td>
+                        <td style="font-weight: bold; text-align: right;">${p.total_qty}</td>
+                    </tr>`;
+                }).join('')}
+            `).join('');
 
             // Update Recent Transactions
             const recentBody = document.getElementById('recentSalesBody');
@@ -1440,24 +1460,40 @@ async function openPrintPreview() {
         document.getElementById('printCash').innerText = `Rp ${Number(cash).toLocaleString()}`;
         document.getElementById('printQRIS').innerText = `Rp ${Number(qris).toLocaleString()}`;
 
-        // All Products Sold (with Time & Payment Method)
-        document.getElementById('printProductsUsed').innerHTML = data.all_products.length > 0
-            ? data.all_products.map(p => {
-                const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
-                const paymentLabel = isPaid ? (p.payment_method || 'CASH') : 'BELUM BAYAR';
-                const textStyle = isPaid ? 'color: #333;' : 'color: #d32f2f; font-weight: bold;';
+        // All Products Sold (Grouped by Stand)
+        const groupedByStand = data.all_products.reduce((acc, p) => {
+            const stand = p.stand_name || 'Tanpa Stand';
+            if (!acc[stand]) acc[stand] = { products: [], totalQty: 0 };
+            acc[stand].products.push(p);
+            acc[stand].totalQty += Number(p.total_qty);
+            return acc;
+        }, {});
 
-                return `
-                <div style="display:flex; justify-content:space-between; font-size: 0.85rem; border-bottom: 1px dotted #eee; padding: 4px 0;">
-                    <div style="flex: 1;">
-                        <span style="display:block; font-weight: 600; ${isPaid ? '' : 'color: #d32f2f;'}">- ${p.name}</span>
-                        <small style="${textStyle}">${time} | ${paymentLabel}</small>
+        document.getElementById('printProductsUsed').innerHTML = Object.keys(groupedByStand).length > 0
+            ? Object.entries(groupedByStand).map(([standName, standData]) => `
+                <div style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-bottom: 8px;">
+                        <span style="font-weight: 900; color: #000; text-transform: uppercase; font-size: 0.9rem;">🏢 ${standName}</span>
+                        <span style="background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Total: ${standData.totalQty}</span>
                     </div>
-                    <span style="font-weight:bold;">${p.total_qty}</span>
+                    ${standData.products.map(p => {
+                        const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                        const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
+                        const paymentLabel = isPaid ? (p.payment_method || 'CASH') : 'BELUM BAYAR';
+                        const textStyle = isPaid ? 'color: #333;' : 'color: #d32f2f; font-weight: bold;';
+
+                        return `
+                        <div style="display:flex; justify-content:space-between; font-size: 0.85rem; border-bottom: 1px dotted #eee; padding: 4px 0;">
+                            <div style="flex: 1;">
+                                <span style="display:block; font-weight: 600; ${isPaid ? '' : 'color: #d32f2f;'}">- ${p.name}</span>
+                                <small style="${textStyle}">${time} | ${paymentLabel}</small>
+                            </div>
+                            <span style="font-weight:bold;">${p.total_qty}</span>
+                        </div>
+                    `;
+                    }).join('')}
                 </div>
-            `;
-            }).join('')
+            `).join('')
             : '<p style="font-style:italic;">Belum ada penjualan</p>';
 
         // Stock Added

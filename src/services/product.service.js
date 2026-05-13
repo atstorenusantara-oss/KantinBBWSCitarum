@@ -17,12 +17,18 @@ class ProductService {
         return rows;
     }
 
-    // Get distinct categories for a given stand
+    // Get distinct categories for a given stand (or all if standId is null)
     async getCategoriesByStand(standId) {
-        const [rows] = await db.query(
-            'SELECT DISTINCT category FROM products WHERE is_active = 1 AND stand_id = ? ORDER BY category',
-            [standId]
-        );
+        let query = 'SELECT DISTINCT category FROM products WHERE is_active = 1';
+        let params = [];
+
+        if (standId) {
+            query += ' AND stand_id = ?';
+            params.push(standId);
+        }
+
+        query += ' ORDER BY category';
+        const [rows] = await db.query(query, params);
         return rows.map(r => r.category);
     }
 

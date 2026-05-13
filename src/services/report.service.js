@@ -31,30 +31,62 @@ class ReportService {
             endTime = dayjs(date).add(1, 'day').hour(parseInt(endH)).minute(parseInt(endM)).second(0).format('YYYY-MM-DD HH:mm:ss');
         }
 
-        const standFilter = standId === 'ALL' ? '' : `AND stand_id = '${standId}'`;
-        const standFilterAlias = standId === 'ALL' ? '' : `AND s.stand_id = '${standId}'`;
+        let query, params;
+        if (standId === 'ALL') {
+            query = `
+                SELECT 
+                    COUNT(id) as total_transactions,
+                    SUM(total) as gross_revenue,
+                    AVG(total) as avg_transaction
+                FROM sales 
+                WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'
+            `;
+            params = [startTime, endTime];
+        } else {
+            // Filter by product stand for accurate multi-stand attribution
+            query = `
+                SELECT 
+                    COUNT(DISTINCT s.id) as total_transactions,
+                    SUM(si.qty * si.price) as gross_revenue,
+                    AVG(s.total) as avg_transaction
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sales_id
+                JOIN products p ON si.product_id = p.id
+                WHERE s.created_at BETWEEN ? AND ? 
+                AND s.payment_status = 'PAID' 
+                AND p.stand_id = ?
+            `;
+            params = [startTime, endTime, standId];
+        }
 
-        const query = `
-            SELECT 
-                COUNT(id) as total_transactions,
-                SUM(total) as gross_revenue,
-                AVG(total) as avg_transaction
-            FROM sales 
-            WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID' ${standFilter}
-        `;
-
-        const [summary] = await db.query(query, [startTime, endTime]);
+        const [summary] = await db.query(query, params);
 
         // Payment Method Breakdown
-        const paymentQuery = `
-            SELECT 
-                SUM(CASE WHEN payment_method = 'CASH' THEN total ELSE 0 END) as raw_cash,
-                SUM(CASE WHEN payment_method = 'QRIS' THEN total ELSE 0 END) as raw_qris,
-                SUM(qris_exchange) as total_exchange
-            FROM sales 
-            WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID' ${standFilter}
-        `;
-        const [paymentSummary] = await db.query(paymentQuery, [startTime, endTime]);
+        let paymentQuery, paymentParams;
+        if (standId === 'ALL') {
+            paymentQuery = `
+                SELECT 
+                    SUM(CASE WHEN payment_method = 'CASH' THEN total ELSE 0 END) as raw_cash,
+                    SUM(CASE WHEN payment_method = 'QRIS' THEN total ELSE 0 END) as raw_qris,
+                    SUM(qris_exchange) as total_exchange
+                FROM sales 
+                WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'
+            `;
+            paymentParams = [startTime, endTime];
+        } else {
+            paymentQuery = `
+                SELECT 
+                    SUM(CASE WHEN s.payment_method = 'CASH' THEN si.qty * si.price ELSE 0 END) as raw_cash,
+                    SUM(CASE WHEN s.payment_method = 'QRIS' THEN si.qty * si.price ELSE 0 END) as raw_qris,
+                    0 as total_exchange
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sales_id
+                JOIN products p ON si.product_id = p.id
+                WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID' AND p.stand_id = ?
+            `;
+            paymentParams = [startTime, endTime, standId];
+        }
+        const [paymentSummary] = await db.query(paymentQuery, paymentParams);
         const { raw_cash, raw_qris, total_exchange } = paymentSummary[0];
 
         const payments = [
@@ -63,16 +95,33 @@ class ReportService {
         ];
 
         // All products sold for this shift
-        const allProductQuery = `
-            SELECT p.name, si.qty as total_qty, s.payment_method, s.payment_status, s.created_at
-            FROM sales_items si
-            JOIN products p ON si.product_id = p.id
-            JOIN sales s ON si.sales_id = s.id
-            WHERE s.created_at BETWEEN ? AND ? ${standFilterAlias}
-            GROUP BY s.id, si.id
-            ORDER BY s.created_at DESC
-        `;
-        const [allProducts] = await db.query(allProductQuery, [startTime, endTime]);
+        let allProductQuery, allProductParams;
+        if (standId === 'ALL') {
+            allProductQuery = `
+                SELECT p.name, si.qty as total_qty, s.payment_method, s.payment_status, s.created_at, st.name as stand_name
+                FROM sales_items si
+                JOIN products p ON si.product_id = p.id
+                JOIN sales s ON si.sales_id = s.id
+                LEFT JOIN stands st ON p.stand_id = st.id
+                WHERE s.created_at BETWEEN ? AND ?
+                GROUP BY s.id, si.id
+                ORDER BY s.created_at DESC
+            `;
+            allProductParams = [startTime, endTime];
+        } else {
+            allProductQuery = `
+                SELECT p.name, si.qty as total_qty, s.payment_method, s.payment_status, s.created_at, st.name as stand_name
+                FROM sales_items si
+                JOIN products p ON si.product_id = p.id
+                JOIN sales s ON si.sales_id = s.id
+                LEFT JOIN stands st ON p.stand_id = st.id
+                WHERE s.created_at BETWEEN ? AND ? AND p.stand_id = ?
+                GROUP BY s.id, si.id
+                ORDER BY s.created_at DESC
+            `;
+            allProductParams = [startTime, endTime, standId];
+        }
+        const [allProducts] = await db.query(allProductQuery, allProductParams);
 
         // Stock Added (IN) for this shift
         const stockInQuery = `
@@ -108,23 +157,52 @@ class ReportService {
         const [stockAdjust] = await db.query(stockAdjustQuery, [startTime, endTime]);
 
         // Pending Sales (Unpaid) for this shift
-        const pendingQuery = `
-            SELECT customer_name, total
-            FROM sales 
-            WHERE created_at BETWEEN ? AND ? AND payment_status = 'PENDING' ${standFilter}
-            ORDER BY created_at ASC
-        `;
-        const [pendingSales] = await db.query(pendingQuery, [startTime, endTime]);
+        let pendingQuery, pendingParams;
+        if (standId === 'ALL') {
+            pendingQuery = `
+                SELECT customer_name, total
+                FROM sales 
+                WHERE created_at BETWEEN ? AND ? AND payment_status = 'PENDING'
+                ORDER BY created_at ASC
+            `;
+            pendingParams = [startTime, endTime];
+        } else {
+            pendingQuery = `
+                SELECT DISTINCT s.customer_name, s.total
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sales_id
+                JOIN products p ON si.product_id = p.id
+                WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PENDING' AND p.stand_id = ?
+                ORDER BY s.created_at ASC
+            `;
+            pendingParams = [startTime, endTime, standId];
+        }
+        const [pendingSales] = await db.query(pendingQuery, pendingParams);
 
         // Recent transactions for this shift (Limited to 20)
-        const recentSalesQuery = `
-            SELECT id, invoice_number, customer_name, total, payment_method, payment_status, created_at
-            FROM sales 
-            WHERE created_at BETWEEN ? AND ? ${standFilter}
-            ORDER BY created_at DESC
-            LIMIT 20
-        `;
-        const [recentSales] = await db.query(recentSalesQuery, [startTime, endTime]);
+        let recentSalesQuery, recentSalesParams;
+        if (standId === 'ALL') {
+            recentSalesQuery = `
+                SELECT id, invoice_number, customer_name, total, payment_method, payment_status, created_at
+                FROM sales 
+                WHERE created_at BETWEEN ? AND ?
+                ORDER BY created_at DESC
+                LIMIT 20
+            `;
+            recentSalesParams = [startTime, endTime];
+        } else {
+            recentSalesQuery = `
+                SELECT DISTINCT s.id, s.invoice_number, s.customer_name, s.total, s.payment_method, s.payment_status, s.created_at
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sales_id
+                JOIN products p ON si.product_id = p.id
+                WHERE s.created_at BETWEEN ? AND ? AND p.stand_id = ?
+                ORDER BY s.created_at DESC
+                LIMIT 20
+            `;
+            recentSalesParams = [startTime, endTime, standId];
+        }
+        const [recentSales] = await db.query(recentSalesQuery, recentSalesParams);
 
         // All inventory (for current status)
         const [inventory] = await db.query('SELECT name, stock, unit FROM raw_materials ORDER BY name ASC');
