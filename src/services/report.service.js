@@ -273,6 +273,7 @@ class ReportService {
         }
 
         const standFilterSales = standId === 'ALL' ? '' : `AND stand_id = '${standId}'`;
+        const standFilterCogs = standId === 'ALL' ? '' : `AND s.stand_id = '${standId}'`;
         
         // Revenue Breakdown
         const [revenue] = await db.query(`
@@ -283,6 +284,16 @@ class ReportService {
             FROM sales 
             WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID' ${standFilterSales}
         `, [startTime, endTime]);
+
+        // HPP / COGS calculation
+        const [cogs] = await db.query(`
+            SELECT SUM(si.qty * COALESCE(p.cost_price, 0)) as total_cogs
+            FROM sales_items si
+            JOIN products p ON si.product_id = p.id
+            JOIN sales s ON si.sales_id = s.id
+            WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID' ${standFilterCogs}
+        `, [startTime, endTime]);
+        const totalCogs = Number(cogs[0]?.total_cogs || 0);
 
         // Expenses breakdown (Currently global, but can be tied to stands later)
         const [expenses] = await db.query(`
@@ -304,7 +315,9 @@ class ReportService {
         // If a specific stand is selected, we might hide global expenses for now to show clean revenue
         const isGlobal = standId === 'ALL';
         const totalSalary = isGlobal ? Number(attSalary[0].total_attendance_salary || 0) : 0;
-        const totalExpense = isGlobal ? (Number(expenses[0]?.manual_total || 0) + totalSalary) : 0;
+        const totalExpense = isGlobal 
+            ? (Number(expenses[0]?.manual_total || 0) + totalSalary + totalCogs) 
+            : totalCogs;
 
         // Chart Data (Last 7 Days - Always 7 days trend)
         const chartData = [];
@@ -314,11 +327,21 @@ class ReportService {
             const end = d.endOf('day').format('YYYY-MM-DD HH:mm:ss');
 
             const [rev] = await db.query(`SELECT SUM(total) as total FROM sales WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID' ${standFilterSales}`, [start, end]);
+            const [cogsRes] = await db.query(`
+                SELECT SUM(si.qty * COALESCE(p.cost_price, 0)) as total_cogs
+                FROM sales_items si
+                JOIN products p ON si.product_id = p.id
+                JOIN sales s ON si.sales_id = s.id
+                WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID' ${standFilterCogs}
+            `, [start, end]);
             const [manualExp] = await db.query(`SELECT SUM(amount) as total FROM expenses WHERE created_at BETWEEN ? AND ?`, [start, end]);
             const [atsExp] = await db.query(`SELECT SUM(salary_earned) as total FROM attendance WHERE (clock_out BETWEEN ? AND ?) OR (clock_out IS NULL AND clock_in BETWEEN ? AND ?)`, [start, end, start, end]);
 
             const dayRev = Number(rev[0].total || 0);
-            const dayExp = isGlobal ? ((Number(manualExp[0].total || 0)) + (Number(atsExp[0].total || 0))) : 0;
+            const dayCogs = Number(cogsRes[0]?.total_cogs || 0);
+            const dayExp = isGlobal 
+                ? (Number(manualExp[0].total || 0) + Number(atsExp[0].total || 0) + dayCogs) 
+                : dayCogs;
 
             chartData.push({
                 date: d.format('DD MMM'),
@@ -332,6 +355,7 @@ class ReportService {
                 revenue: revenue[0] || { cash_revenue: 0, qris_revenue: 0, total_revenue: 0 },
                 expense: {
                     raw_material: isGlobal ? (expenses[0]?.raw_material || 0) : 0,
+                    cogs: totalCogs,
                     salary: totalSalary,
                     others: isGlobal ? (expenses[0]?.others || 0) : 0,
                     total_expense: totalExpense

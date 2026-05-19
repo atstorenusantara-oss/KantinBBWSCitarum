@@ -1,5 +1,6 @@
 const db = require('../database/connection');
 const { v4: uuidv4 } = require('uuid');
+const stockService = require('./stock.service');
 
 class SalesService {
     async createTransaction(salesData) {
@@ -18,13 +19,16 @@ class SalesService {
                 [salesId, invoice_number, total, payment_method, customer_name || 'Pelanggan', payment_status || 'PAID', salesData.creator_id || null, qris_exchange || 0, stand_id || null]
             );
 
-            // 2. Insert items (no BOM/stock deduction - kantin mode)
+            // 2. Insert items and reduce stock if recipe exists
             for (const item of items) {
                 const itemId = uuidv4();
                 await connection.query(
                     `INSERT INTO sales_items (id, sales_id, product_id, qty, price) VALUES (?, ?, ?, ?, ?)`,
                     [itemId, salesId, item.product_id, item.qty, item.price]
                 );
+
+                // Reduce stock based on recipe (if defined)
+                await stockService.reduceStockFromSale(item.product_id, item.qty, salesId, connection);
             }
 
             await connection.commit();

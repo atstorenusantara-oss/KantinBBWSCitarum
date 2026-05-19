@@ -59,6 +59,7 @@ router.post('/', (req, res) => {
             const productData = { ...req.body };
             
             if (productData.price) productData.price = Number(productData.price);
+            if (productData.cost_price !== undefined) productData.cost_price = Number(productData.cost_price);
             if (productData.is_active !== undefined) productData.is_active = Number(productData.is_active);
             
             if (req.file) {
@@ -88,6 +89,7 @@ router.put('/:id', (req, res) => {
             const updateData = { ...req.body };
             
             if (updateData.price) updateData.price = Number(updateData.price);
+            if (updateData.cost_price !== undefined) updateData.cost_price = Number(updateData.cost_price);
             if (updateData.is_active !== undefined) updateData.is_active = Number(updateData.is_active);
             
             if (req.file) {

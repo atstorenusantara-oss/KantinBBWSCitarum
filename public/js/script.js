@@ -2445,6 +2445,7 @@ function renderMenuManagerTable(products) {
             <td style="padding: 10px;">${p.category}</td>
             <td style="padding: 10px; font-weight: bold;">${p.name}</td>
             <td style="padding: 10px; color: var(--accent);">${formatIDR(p.price)}</td>
+            <td style="padding: 10px; color: #a29bfe;">${formatIDR(p.cost_price || 0)}</td>
             <td style="padding: 10px;">
                 <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: ${p.is_active ? 'var(--success)' : 'var(--danger)'}; color: white;">
                     ${p.is_active ? 'Aktif' : 'Nonaktif'}
@@ -2480,6 +2481,7 @@ function openAddMenuModal() {
     document.getElementById('editMenuName').value = '';
     document.getElementById('editMenuCategory').value = '';
     document.getElementById('editMenuPrice').value = '';
+    document.getElementById('editMenuCostPrice').value = '';
     document.getElementById('editMenuActive').value = '1';
     document.getElementById('editMenuPreview').src = '';
     document.getElementById('editMenuImage').value = ''; 
@@ -2499,6 +2501,7 @@ function openEditMenuModal(product) {
     document.getElementById('editMenuName').value = product.name;
     document.getElementById('editMenuCategory').value = product.category;
     document.getElementById('editMenuPrice').value = product.price;
+    document.getElementById('editMenuCostPrice').value = product.cost_price || 0;
     document.getElementById('editMenuActive').value = product.is_active;
     document.getElementById('editMenuPreview').src = product.image_url;
     document.getElementById('editMenuImage').value = ''; // Reset file input
@@ -2526,6 +2529,7 @@ async function submitEditMenu(event) {
         formData.append('name', document.getElementById('editMenuName').value);
         formData.append('category', document.getElementById('editMenuCategory').value);
         formData.append('price', document.getElementById('editMenuPrice').value);
+        formData.append('cost_price', document.getElementById('editMenuCostPrice').value);
         formData.append('is_active', document.getElementById('editMenuActive').value);
         formData.append('stand_id', document.getElementById('editMenuStand').value);
         
@@ -2642,6 +2646,7 @@ async function loadOwnerData() {
 
         document.getElementById('ownerTotalExpense').innerText = `Rp ${Number(today.expense.total_expense).toLocaleString()}`;
         document.getElementById('ownerMaterialExpense').innerText = `Rp ${Number(today.expense.raw_material).toLocaleString()}`;
+        document.getElementById('ownerHppExpense').innerText = `Rp ${Number(today.expense.cogs || 0).toLocaleString()}`;
         document.getElementById('ownerSalaryExpense').innerText = `Rp ${Number(today.expense.salary).toLocaleString()}`;
 
         const profit = today.profit;
@@ -2694,6 +2699,7 @@ async function loadOwnerData() {
 
         const expData = [
             Number(today.expense.raw_material || 0),
+            Number(today.expense.cogs || 0),
             Number(today.expense.salary || 0),
             Number(today.expense.others || 0)
         ];
@@ -2701,10 +2707,10 @@ async function loadOwnerData() {
         expenseCircleChartInstance = new Chart(ctxCircle, {
             type: 'doughnut',
             data: {
-                labels: ['Bahan Baku', 'Gaji', 'Lainnya'],
+                labels: ['Bahan Baku', 'HPP Produk', 'Gaji', 'Lainnya'],
                 datasets: [{
                     data: expData,
-                    backgroundColor: ['#E4A853', '#67ff9e', '#ff5f5f'],
+                    backgroundColor: ['#E4A853', '#a29bfe', '#67ff9e', '#ff5f5f'],
                     borderWidth: 0
                 }]
             },
@@ -2723,6 +2729,10 @@ async function loadOwnerData() {
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span>📦 Bahan Baku</span>
                 <b>Rp ${Number(today.expense.raw_material).toLocaleString()} (${((today.expense.raw_material / total) * 100).toFixed(0)}%)</b>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>🏷️ HPP Produk</span>
+                <b>Rp ${Number(today.expense.cogs || 0).toLocaleString()} (${(((today.expense.cogs || 0) / total) * 100).toFixed(0)}%)</b>
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span>👥 Gaji Karyawan</span>

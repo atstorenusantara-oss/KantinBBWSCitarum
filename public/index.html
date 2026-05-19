@@ -809,8 +809,8 @@
                     <div class="card-info">
                         <span class="label" id="labelTotalExpense">Total Pengeluaran (Hari Ini)</span>
                         <h2 id="ownerTotalExpense">Rp 0</h2>
-                        <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.8;">
-                            Bahan: <span id="ownerMaterialExpense">0</span> | Gaji: <span
+                        <div style="font-size: 0.75rem; margin-top: 5px; opacity: 0.8; line-height: 1.4;">
+                            Bahan: <span id="ownerMaterialExpense">0</span> | HPP: <span id="ownerHppExpense">0</span> | Gaji: <span
                                 id="ownerSalaryExpense">0</span>
                         </div>
                     </div>
@@ -1292,7 +1292,8 @@
                         <th style="padding: 10px;">Stand</th>
                         <th style="padding: 10px;">Kategori</th>
                         <th style="padding: 10px;">Nama Produk</th>
-                        <th style="padding: 10px;">Harga</th>
+                        <th style="padding: 10px;">Harga Jual</th>
+                        <th style="padding: 10px;">HPP (Beli)</th>
                         <th style="padding: 10px;">Status</th>
                         <th style="padding: 10px; text-align: right;">Aksi</th>
                     </tr>
@@ -1334,8 +1335,13 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Harga (Rp)</label>
+                    <label>Harga Jual (Rp)</label>
                     <input type="number" id="editMenuPrice" class="search-bar" style="width: 100%;" required>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Harga Beli / HPP (Rp)</label>
+                    <input type="number" id="editMenuCostPrice" class="search-bar" style="width: 100%;" required>
                 </div>
                 
                 <div class="form-group" style="margin-bottom: 20px;">

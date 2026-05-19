@@ -33,22 +33,23 @@ class ProductService {
     }
 
     async create(productData) {
-        const { name, price, category, image_url, stand_id, is_active } = productData;
+        const { name, price, cost_price, category, image_url, stand_id, is_active } = productData;
         const id = uuidv4();
         const activeStatus = is_active !== undefined ? is_active : 1;
+        const costVal = cost_price !== undefined ? cost_price : 0;
         
         await db.query(
-            'INSERT INTO products (id, name, price, category, image_url, stand_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [id, name, price, category, image_url, stand_id || null, activeStatus]
+            'INSERT INTO products (id, name, price, cost_price, category, image_url, stand_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, name, price, costVal, category, image_url, stand_id || null, activeStatus]
         );
-        return { id, name, price, category, image_url, stand_id, is_active: activeStatus };
+        return { id, name, price, cost_price: costVal, category, image_url, stand_id, is_active: activeStatus };
     }
 
     async update(id, productData) {
         const fields = [];
         const values = [];
         
-        ['name', 'price', 'category', 'image_url', 'is_active', 'stand_id'].forEach(key => {
+        ['name', 'price', 'cost_price', 'category', 'image_url', 'is_active', 'stand_id'].forEach(key => {
             if (productData[key] !== undefined) {
                 fields.push(`${key} = ?`);
                 values.push(productData[key]);
