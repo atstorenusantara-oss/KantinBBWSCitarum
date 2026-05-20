@@ -7,9 +7,17 @@ echo    G-COFFEE POS - Integrated Launcher
 echo ======================================================
 echo.
 
-:: 1. Jalankan Server di jendela terpisah
-echo [1/3] Menjalankan Server Node.js...
-start "G-Coffee POS Server" cmd /c "legacy_tools\jalankan_server.bat"
+:: 1. Jalankan Server (Gunakan file EXE jika ada, jika tidak gunakan fallback Node.js)
+echo [1/3] Menjalankan Server...
+if exist "gcoffee-pos.exe" (
+    start "G-Coffee POS Server" cmd /c "gcoffee-pos.exe"
+) else (
+    if exist "dist\gcoffee-pos.exe" (
+        start "G-Coffee POS Server" cmd /c "dist\gcoffee-pos.exe"
+    ) else (
+        start "G-Coffee POS Server" cmd /c "legacy_tools\jalankan_server.bat"
+    )
+)
 
 :: 2. Loop cek apakah server sudah aktif (Port 3000)
 echo [2/3] Menunggu server merespon di http://localhost:3000...

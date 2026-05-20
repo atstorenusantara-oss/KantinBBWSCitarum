@@ -1,3 +1,4 @@
+require('bytenode');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -5,10 +6,22 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const path = require('path');
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static('public')); // Melayani file frontend statis
+
+// 1. Jika berjalan di biner pkg, dahulukan serve berkas UI virtual dari dalam biner .exe
+if (process.pkg) {
+    app.use(express.static(path.join(__dirname, '../public')));
+}
+// 2. Tetap dukung serve berkas fisik dari folder lokal (misal: gambar produk yang diunggah klien)
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Daftarkan route lisensi dan pasang middleware proteksi lisensi
+const { router: licenseRouter, useLicenseProtection } = require('./routes/license.routes.js');
+app.use('/api/license', licenseRouter);
+app.use(useLicenseProtection);
 
 // Basic Route
 app.get('/', (req, res) => {

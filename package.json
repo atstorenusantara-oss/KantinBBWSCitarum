@@ -3,9 +3,18 @@
   "version": "1.0.0",
   "description": "Sistem Kasir Kedai Kopi Terintegrasi Stok Bahan Baku",
   "main": "src/app.js",
+  "bin": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "build:bytecode": "bytenode --compile src/services/license.service.js",
+    "build:exe": "pkg . --targets node18-win-x64 --output dist/gcoffee-pos.exe"
+  },
+  "pkg": {
+    "assets": [
+      "src/**/*.jsc",
+      "public/**/*"
+    ]
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -19,6 +28,8 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3"
+    "bytenode": "^1.5.7",
+    "nodemon": "^3.0.3",
+    "pkg": "^5.8.1"
   }
 }
