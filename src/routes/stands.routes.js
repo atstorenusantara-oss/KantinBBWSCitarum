@@ -40,13 +40,15 @@ router.get('/:id/summary', async (req, res) => {
 
         const [revenue] = await db.query(`
             SELECT 
-                COUNT(id) as total_transactions,
-                SUM(total) as total_revenue,
-                SUM(CASE WHEN payment_method = 'CASH' THEN total ELSE 0 END) as cash_revenue,
-                SUM(CASE WHEN payment_method = 'QRIS' THEN total ELSE 0 END) as qris_revenue
-            FROM sales
-            WHERE stand_id = ? AND payment_status = 'PAID'
-            AND created_at BETWEEN ? AND ?
+                COUNT(DISTINCT s.id) as total_transactions,
+                SUM(si.qty * si.price) as total_revenue,
+                SUM(CASE WHEN s.payment_method = 'CASH' THEN si.qty * si.price ELSE 0 END) as cash_revenue,
+                SUM(CASE WHEN s.payment_method = 'QRIS' THEN si.qty * si.price ELSE 0 END) as qris_revenue
+            FROM sales s
+            JOIN sales_items si ON s.id = si.sales_id
+            JOIN products p ON si.product_id = p.id
+            WHERE p.stand_id = ? AND s.payment_status = 'PAID'
+            AND s.created_at BETWEEN ? AND ?
         `, [id, startTime, endTime]);
 
         const [topProducts] = await db.query(`
@@ -54,7 +56,7 @@ router.get('/:id/summary', async (req, res) => {
             FROM sales_items si
             JOIN products p ON si.product_id = p.id
             JOIN sales s ON si.sales_id = s.id
-            WHERE s.stand_id = ? AND s.payment_status = 'PAID'
+            WHERE p.stand_id = ? AND s.payment_status = 'PAID'
             AND s.created_at BETWEEN ? AND ?
             GROUP BY p.id
             ORDER BY total_qty DESC
@@ -62,12 +64,17 @@ router.get('/:id/summary', async (req, res) => {
         `, [id, startTime, endTime]);
 
         const [recentSales] = await db.query(`
-            SELECT s.invoice_number, s.customer_name, s.total, s.payment_method, s.created_at,
+            SELECT s.invoice_number, s.customer_name, 
+                   SUM(si.qty * si.price) as total, 
+                   s.payment_method, s.created_at,
                    u.username as staff_name
             FROM sales s
+            JOIN sales_items si ON s.id = si.sales_id
+            JOIN products p ON si.product_id = p.id
             LEFT JOIN users u ON s.creator_id = u.id
-            WHERE s.stand_id = ? AND s.payment_status = 'PAID'
+            WHERE p.stand_id = ? AND s.payment_status = 'PAID'
             AND s.created_at BETWEEN ? AND ?
+            GROUP BY s.id
             ORDER BY s.created_at DESC
             LIMIT 10
         `, [id, startTime, endTime]);

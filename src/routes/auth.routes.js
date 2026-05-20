@@ -7,7 +7,11 @@ const settingsService = require('../services/settings.service');
 // Auth: Get Users (for login dropdown)
 router.get('/users', async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT username, role FROM users');
+        const [rows] = await db.query(`
+            SELECT username, role 
+            FROM users 
+            WHERE username NOT IN ('KasirA', 'KasirB', 'KasirC', 'KasirD', 'KasirE', 'KasirF1', 'KasirF2')
+        `);
         res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
