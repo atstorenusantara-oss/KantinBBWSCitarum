@@ -304,16 +304,15 @@ class ReportService {
         let cogs;
         if (isGlobal) {
             const [cogsRows] = await db.query(`
-                SELECT SUM(si.qty * COALESCE(p.cost_price, 0)) as total_cogs
+                SELECT SUM(si.qty * COALESCE(si.cost_price, 0)) as total_cogs
                 FROM sales_items si
-                JOIN products p ON si.product_id = p.id
                 JOIN sales s ON si.sales_id = s.id
                 WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID'
             `, [startTime, endTime]);
             cogs = cogsRows;
         } else {
             const [cogsRows] = await db.query(`
-                SELECT SUM(si.qty * COALESCE(p.cost_price, 0)) as total_cogs
+                SELECT SUM(si.qty * COALESCE(si.cost_price, 0)) as total_cogs
                 FROM sales_items si
                 JOIN products p ON si.product_id = p.id
                 JOIN sales s ON si.sales_id = s.id
@@ -359,9 +358,8 @@ class ReportService {
             if (isGlobal) {
                 const [rev] = await db.query(`SELECT SUM(total) as total FROM sales WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'`, [start, end]);
                 const [cogsRes] = await db.query(`
-                    SELECT SUM(si.qty * COALESCE(p.cost_price, 0)) as total_cogs
+                    SELECT SUM(si.qty * COALESCE(si.cost_price, 0)) as total_cogs
                     FROM sales_items si
-                    JOIN products p ON si.product_id = p.id
                     JOIN sales s ON si.sales_id = s.id
                     WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID'
                 `, [start, end]);
@@ -376,7 +374,7 @@ class ReportService {
                     WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID' AND p.stand_id = ?
                 `, [start, end, standId]);
                 const [cogsRes] = await db.query(`
-                    SELECT SUM(si.qty * COALESCE(p.cost_price, 0)) as total_cogs
+                    SELECT SUM(si.qty * COALESCE(si.cost_price, 0)) as total_cogs
                     FROM sales_items si
                     JOIN products p ON si.product_id = p.id
                     JOIN sales s ON si.sales_id = s.id
@@ -400,6 +398,44 @@ class ReportService {
             });
         }
 
+        // Top Profit Contributors
+        let topProfitQuery;
+        let topParams = [startTime, endTime];
+        if (isGlobal) {
+            topProfitQuery = `
+                SELECT 
+                    p.name, 
+                    s.name as stand_name,
+                    SUM(si.qty) as total_qty, 
+                    SUM(si.qty * (si.price - COALESCE(si.cost_price, 0))) as total_profit
+                FROM sales_items si
+                JOIN products p ON si.product_id = p.id
+                LEFT JOIN stands s ON p.stand_id = s.id
+                JOIN sales sa ON si.sales_id = sa.id
+                WHERE sa.created_at BETWEEN ? AND ? AND sa.payment_status = 'PAID'
+                GROUP BY p.id, s.id
+                ORDER BY total_profit DESC
+                LIMIT 5
+            `;
+        } else {
+            topProfitQuery = `
+                SELECT 
+                    p.name, 
+                    'Selected Stand' as stand_name,
+                    SUM(si.qty) as total_qty, 
+                    SUM(si.qty * (si.price - COALESCE(si.cost_price, 0))) as total_profit
+                FROM sales_items si
+                JOIN products p ON si.product_id = p.id
+                JOIN sales sa ON si.sales_id = sa.id
+                WHERE sa.created_at BETWEEN ? AND ? AND sa.payment_status = 'PAID' AND p.stand_id = ?
+                GROUP BY p.id
+                ORDER BY total_profit DESC
+                LIMIT 5
+            `;
+            topParams.push(standId);
+        }
+        const [topProfitContributors] = await db.query(topProfitQuery, topParams);
+
         return {
             today: {
                 revenue: revenue[0] || { cash_revenue: 0, qris_revenue: 0, total_revenue: 0 },
@@ -412,7 +448,8 @@ class ReportService {
                 },
                 profit: (Number(revenue[0]?.total_revenue || 0)) - totalExpense
             },
-            chart: chartData
+            chart: chartData,
+            top_profit_contributors: topProfitContributors
         };
     }
 }

@@ -2637,7 +2637,7 @@ async function loadOwnerData() {
         
         document.getElementById('labelTotalRevenue').innerText = `Total Omset ${currentLabel}`;
         document.getElementById('labelTotalExpense').innerText = `Total Pengeluaran ${currentLabel}`;
-        document.getElementById('labelProfit').innerText = `Estimasi Keuntungan ${currentLabel}`;
+        document.getElementById('labelProfit').innerText = `Profit Bersih ${currentLabel}`;
 
         // 1. Update Summary Cards
         document.getElementById('ownerTotalRevenue').innerText = `Rp ${Number(today.revenue.total_revenue).toLocaleString()}`;
@@ -2743,6 +2743,22 @@ async function loadOwnerData() {
                 <b>Rp ${Number(today.expense.others).toLocaleString()} (${((today.expense.others / total) * 100).toFixed(0)}%)</b>
             </div>
         `;
+
+        // 5. Update Top Profit Contributors Table
+        const profitContributorsBody = document.getElementById('ownerTopProfitContributors');
+        if (profitContributorsBody && data.top_profit_contributors) {
+            profitContributorsBody.innerHTML = data.top_profit_contributors.map(item => `
+                <tr>
+                    <td style="font-weight: 600;">${item.name}</td>
+                    <td style="color: var(--text-muted);">${item.stand_name || '-'}</td>
+                    <td style="text-align: center; font-weight: bold;">${item.total_qty}</td>
+                    <td style="text-align: right; color: var(--success); font-weight: bold;">${formatIDR(item.total_profit)}</td>
+                </tr>
+            `).join('');
+            if (data.top_profit_contributors.length === 0) {
+                profitContributorsBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 15px;">Belum ada data laba untuk periode ini</td></tr>';
+            }
+        }
 
     } catch (e) {
         console.error(e);

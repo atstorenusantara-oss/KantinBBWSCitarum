@@ -823,7 +823,7 @@
                         <i data-lucide="trending-up"></i>
                     </div>
                     <div class="card-info">
-                        <span class="label" id="labelProfit">Estimasi Keuntungan (Hari Ini)</span>
+                        <span class="label" id="labelProfit">Profit Bersih (Hari Ini)</span>
                         <h2 id="ownerProfit">Rp 0</h2>
                         <span class="sub">Revenue - Expenses</span>
                     </div>
@@ -847,6 +847,30 @@
                     </div>
                     <div style="margin-top: 20px; font-size: 0.85rem;" id="ownerExpenseList">
                         <!-- Breakdown list -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Profit Contributors -->
+            <div style="display: grid; grid-template-columns: 1fr; gap: 25px; margin-top: 25px;">
+                <div class="card">
+                    <h3 style="display: flex; align-items: center; gap: 10px;">
+                        <i data-lucide="award" style="color: var(--accent);"></i> Top 5 Produk Penyumbang Keuntungan Terbesar
+                    </h3>
+                    <div class="table-container" style="margin-top: 20px; overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Produk</th>
+                                    <th>Stand</th>
+                                    <th style="text-align: center;">Jumlah Terjual</th>
+                                    <th style="text-align: right;">Total Keuntungan Bersih</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ownerTopProfitContributors">
+                                <!-- Top contributors will be loaded here dynamically -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

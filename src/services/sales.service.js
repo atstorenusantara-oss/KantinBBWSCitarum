@@ -23,8 +23,9 @@ class SalesService {
             for (const item of items) {
                 const itemId = uuidv4();
                 await connection.query(
-                    `INSERT INTO sales_items (id, sales_id, product_id, qty, price) VALUES (?, ?, ?, ?, ?)`,
-                    [itemId, salesId, item.product_id, item.qty, item.price]
+                    `INSERT INTO sales_items (id, sales_id, product_id, qty, price, cost_price) 
+                     VALUES (?, ?, ?, ?, ?, COALESCE((SELECT cost_price FROM products WHERE id = ?), 0))`,
+                    [itemId, salesId, item.product_id, item.qty, item.price, item.product_id]
                 );
 
                 // Reduce stock based on recipe (if defined)
@@ -107,9 +108,9 @@ class SalesService {
 
                 // Insert into sales_items
                 await connection.query(
-                    `INSERT INTO sales_items (id, sales_id, product_id, qty, price) 
-                     VALUES (?, ?, ?, ?, ?)`,
-                    [itemId, salesId, productId, item.qty, item.price]
+                    `INSERT INTO sales_items (id, sales_id, product_id, qty, price, cost_price) 
+                     VALUES (?, ?, ?, ?, ?, COALESCE((SELECT cost_price FROM products WHERE id = ?), 0))`,
+                    [itemId, salesId, productId, item.qty, item.price, productId]
                 );
 
                 // Reduce stock
