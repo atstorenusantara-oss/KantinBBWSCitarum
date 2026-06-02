@@ -685,7 +685,15 @@ function switchPage(page) {
     // Page-specific loaders
     if (page === 'kasir') renderProducts();
     if (page === 'stok') loadStokData();
-    if (page === 'report') loadReportData();
+    if (page === 'report') {
+        const periodSelect = document.getElementById('reportPeriodType');
+        if (periodSelect) periodSelect.value = 'today';
+        if (typeof togglePeriodFields === 'function') {
+            togglePeriodFields();
+        } else {
+            loadReportData();
+        }
+    }
     if (page === 'pending') loadPendingSales();
 
     if (page === 'settings') loadActivityLogs();
@@ -723,10 +731,12 @@ async function loadAppSettings() {
             const uiDefaultPrint = document.getElementById('settingDefaultPrint');
             const uiShowShutdown = document.getElementById('settingShowShutdown');
             const uiVirtualKeyboard = document.getElementById('settingVirtualKeyboard');
+            const uiStandShare = document.getElementById('settingStandShare');
 
             if (uiDefaultPrint) uiDefaultPrint.checked = settings.default_print === 'ON';
             if (uiShowShutdown) uiShowShutdown.checked = settings.show_shutdown === 'ON';
             if (uiVirtualKeyboard) uiVirtualKeyboard.checked = settings.virtual_keyboard !== 'OFF'; // Default ON
+            if (uiStandShare) uiStandShare.value = settings.stand_share_percentage || '10';
 
             // Store in global or local cache if needed
             window.appSettings = settings;
@@ -825,14 +835,64 @@ async function loadUsageAnalysis() {
 }
 
 // --- Report Logic ---
-async function loadReportData() {
-    const dateInput = document.getElementById('reportDate');
-    if (!dateInput.value) {
-        dateInput.value = new Date().toISOString().split('T')[0];
-    }
+function togglePeriodFields() {
+    const periodType = document.getElementById('reportPeriodType').value;
+    const wrapper = document.getElementById('periodInputWrapper');
+    const startInput = document.getElementById('reportStartDate');
+    const sep = document.getElementById('rangeSeparator');
+    const endInput = document.getElementById('reportEndDate');
 
-    const selectedDate = dateInput.value;
-    const selectedShift = document.getElementById('reportShift').value || 1;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (periodType === 'today') {
+        wrapper.style.display = 'none';
+        startInput.value = todayStr;
+        endInput.value = todayStr;
+        loadReportData();
+    } else if (periodType === 'single') {
+        wrapper.style.display = 'flex';
+        startInput.style.display = 'inline-block';
+        sep.style.display = 'none';
+        endInput.style.display = 'none';
+        
+        if (!startInput.value) {
+            startInput.value = todayStr;
+        }
+        endInput.value = startInput.value;
+        loadReportData();
+    } else if (periodType === 'range') {
+        wrapper.style.display = 'flex';
+        startInput.style.display = 'inline-block';
+        sep.style.display = 'inline-block';
+        endInput.style.display = 'inline-block';
+        
+        if (!startInput.value) {
+            startInput.value = todayStr;
+        }
+        if (!endInput.value) {
+            endInput.value = todayStr;
+        }
+        loadReportData();
+    }
+}
+
+async function loadReportData() {
+    const periodType = document.getElementById('reportPeriodType')?.value || 'today';
+    const startInput = document.getElementById('reportStartDate');
+    const endInput = document.getElementById('reportEndDate');
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    let startDate = todayStr;
+    let endDate = todayStr;
+
+    if (periodType === 'single') {
+        startDate = startInput.value || todayStr;
+        endDate = startDate;
+        if (endInput) endInput.value = startDate;
+    } else if (periodType === 'range') {
+        startDate = startInput.value || todayStr;
+        endDate = endInput.value || todayStr;
+    }
 
     // Populate Stands Dropdown
     const standFilterEl = document.getElementById('reportStandFilter');
@@ -869,7 +929,7 @@ async function loadReportData() {
 
     try {
         // 1. Fetch Daily (Selected Shift)
-        const dailyRes = await fetch(`/api/reports/daily?date=${selectedDate}&shift=${selectedShift}&stand_id=${standId}`);
+        const dailyRes = await fetch(`/api/reports/daily?startDate=${startDate}&endDate=${endDate}&stand_id=${standId}`);
         const daily = await dailyRes.json();
         if (daily.success) {
             document.getElementById('dailyRevenue').innerText = `Rp ${Number(daily.data.summary.gross_revenue || 0).toLocaleString()}`;
@@ -891,18 +951,37 @@ async function loadReportData() {
             // Group by stand for the UI as well
             const groupedUI = productsSold.reduce((acc, p) => {
                 const stand = p.stand_name || 'Tanpa Stand';
-                if (!acc[stand]) acc[stand] = { products: [], totalQty: 0 };
+                if (!acc[stand]) acc[stand] = { products: [], totalQty: 0, totalRevenue: 0 };
                 acc[stand].products.push(p);
                 acc[stand].totalQty += Number(p.total_qty);
+                const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
+                if (isPaid) {
+                    acc[stand].totalRevenue += Number(p.total_qty) * Number(p.unit_price || 0);
+                }
                 return acc;
             }, {});
 
-            topBody.innerHTML = Object.entries(groupedUI).map(([standName, standData]) => `
+            topBody.innerHTML = Object.entries(groupedUI).map(([standName, standData]) => {
+                const revenue = standData.totalRevenue;
+                const standSharePct = Number(window.appSettings?.stand_share_percentage || 10);
+                const dwpSharePct = 100 - standSharePct;
+                const standPct = standSharePct / 100;
+                const shareSelf = revenue * standPct;
+                const shareDWP = revenue * (1 - standPct);
+                
+                return `
                 <tr style="background: rgba(228, 168, 83, 0.05);">
                     <td colspan="2" style="padding: 8px 15px; border-left: 4px solid var(--accent);">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-weight: 800; color: var(--accent); font-size: 0.85rem; text-transform: uppercase;">🏢 ${standName}</span>
-                            <span class="anomaly-tag" style="background: var(--accent); color: var(--secondary); font-weight: 900;">SUBTOTAL: ${standData.totalQty}</span>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 800; color: var(--accent); font-size: 0.85rem; text-transform: uppercase;">🏢 ${standName}</span>
+                                <span class="anomaly-tag" style="background: var(--accent); color: var(--secondary); font-weight: 900;">QTY: ${standData.totalQty}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); border-top: 1px dashed rgba(228,168,83,0.2); padding-top: 4px; margin-top: 2px;">
+                                <span>Omzet: <b>Rp ${revenue.toLocaleString()}</b></span>
+                                <span>Bagi Hasil (${standSharePct}%): <b>Rp ${shareSelf.toLocaleString()}</b></span>
+                                <span>Setor DWP (${dwpSharePct}%): <b>Rp ${shareDWP.toLocaleString()}</b></span>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -910,16 +989,21 @@ async function loadReportData() {
                     const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                     const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
                     const paymentLabel = isPaid ? (p.payment_method || 'CASH') : '<span style="color: var(--danger); font-weight: 800;">[BELUM BAYAR]</span>';
+                    const itemRevenue = Number(p.total_qty) * Number(p.unit_price || 0);
+                    const revenueDetail = isPaid ? ` (${p.total_qty} x Rp ${Number(p.unit_price || 0).toLocaleString()} = Rp ${itemRevenue.toLocaleString()})` : '';
+                    
                     return `
                     <tr>
                         <td style="padding-left: 30px;">
                             <div style="font-weight: 600; color: ${isPaid ? 'var(--text)' : 'var(--danger)'}">${p.name}</div>
-                            <small style="color: var(--text-muted)">${time} | ${paymentLabel}</small>
+                            <small style="color: var(--text-muted)">${time} | ${paymentLabel}${revenueDetail}</small>
                         </td>
-                        <td style="font-weight: bold; text-align: right;">${p.total_qty}</td>
+                        <td style="font-weight: bold; text-align: right; vertical-align: middle;">${p.total_qty}</td>
                     </tr>`;
                 }).join('')}
-            `).join('');
+                `;
+            }).join('');
+
 
             // Update Recent Transactions
             const recentBody = document.getElementById('recentSalesBody');
@@ -1431,8 +1515,8 @@ document.getElementById('btnSubmitOpname')?.addEventListener('click', async () =
 
 // --- Print Logic ---
 async function openPrintPreview() {
-    const reportDate = document.getElementById('reportDate').value;
-    const reportShift = document.getElementById('reportShift').value || 1;
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
     
     const standFilterEl = document.getElementById('reportStandFilter');
     const standId = standFilterEl?.value || 'ALL';
@@ -1446,7 +1530,7 @@ async function openPrintPreview() {
     }
 
     // Fetch fresh daily data for payment breakdown
-    const response = await fetch(`/api/reports/daily?date=${reportDate}&shift=${reportShift}&stand_id=${standId}`);
+    const response = await fetch(`/api/reports/daily?startDate=${startDate}&endDate=${endDate}&stand_id=${standId}`);
     const result = await response.json();
 
     if (result.success) {
@@ -1463,37 +1547,68 @@ async function openPrintPreview() {
         // All Products Sold (Grouped by Stand)
         const groupedByStand = data.all_products.reduce((acc, p) => {
             const stand = p.stand_name || 'Tanpa Stand';
-            if (!acc[stand]) acc[stand] = { products: [], totalQty: 0 };
+            if (!acc[stand]) acc[stand] = { products: [], totalQty: 0, totalRevenue: 0 };
             acc[stand].products.push(p);
             acc[stand].totalQty += Number(p.total_qty);
+            const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
+            if (isPaid) {
+                acc[stand].totalRevenue += Number(p.total_qty) * Number(p.unit_price || 0);
+            }
             return acc;
         }, {});
 
         document.getElementById('printProductsUsed').innerHTML = Object.keys(groupedByStand).length > 0
-            ? Object.entries(groupedByStand).map(([standName, standData]) => `
-                <div style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-bottom: 8px;">
-                        <span style="font-weight: 900; color: #000; text-transform: uppercase; font-size: 0.9rem;">🏢 ${standName}</span>
-                        <span style="background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Total: ${standData.totalQty}</span>
+            ? Object.entries(groupedByStand).map(([standName, standData]) => {
+                const revenue = standData.totalRevenue;
+                const standSharePct = Number(window.appSettings?.stand_share_percentage || 10);
+                const dwpSharePct = 100 - standSharePct;
+                const standPct = standSharePct / 100;
+                const shareSelf = revenue * standPct;
+                const shareDWP = revenue * (1 - standPct);
+                
+                return `
+                <div style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff; color: #000;">
+                    <div style="border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 900; color: #000; text-transform: uppercase; font-size: 0.9rem;">🏢 ${standName}</span>
+                            <span style="background: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Total Qty: ${standData.totalQty}</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; font-size: 0.8rem; margin-top: 5px; background: #f9f9f9; padding: 6px; border-radius: 4px; border: 1px solid #eee; gap: 2px;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span>Total Omzet Stand:</span>
+                                <span style="font-weight: bold;">Rp ${revenue.toLocaleString()}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; color: #2e7d32;">
+                                <span>- Hak Pribadi Stand (${standSharePct}%):</span>
+                                <span style="font-weight: bold;">Rp ${shareSelf.toLocaleString()}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; color: #1565c0;">
+                                <span>- Setoran Darma Wanita (${dwpSharePct}%):</span>
+                                <span style="font-weight: bold;">Rp ${shareDWP.toLocaleString()}</span>
+                            </div>
+                        </div>
                     </div>
                     ${standData.products.map(p => {
                         const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                         const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
                         const paymentLabel = isPaid ? (p.payment_method || 'CASH') : 'BELUM BAYAR';
                         const textStyle = isPaid ? 'color: #333;' : 'color: #d32f2f; font-weight: bold;';
+                        const itemRevenue = Number(p.total_qty) * Number(p.unit_price || 0);
+                        const revenueDetail = isPaid ? ` (${p.total_qty} x Rp ${Number(p.unit_price || 0).toLocaleString()} = Rp ${itemRevenue.toLocaleString()})` : '';
 
                         return `
                         <div style="display:flex; justify-content:space-between; font-size: 0.85rem; border-bottom: 1px dotted #eee; padding: 4px 0;">
                             <div style="flex: 1;">
                                 <span style="display:block; font-weight: 600; ${isPaid ? '' : 'color: #d32f2f;'}">- ${p.name}</span>
-                                <small style="${textStyle}">${time} | ${paymentLabel}</small>
+                                <small style="${textStyle}">${time} | ${paymentLabel}${revenueDetail}</small>
                             </div>
-                            <span style="font-weight:bold;">${p.total_qty}</span>
+                            <span style="font-weight:bold; align-self: center;">${p.total_qty}</span>
                         </div>
                     `;
                     }).join('')}
                 </div>
-            `).join('')
+            `;
+            }).join('')
             : '<p style="font-style:italic;">Belum ada penjualan</p>';
 
         // Stock Added
@@ -1590,8 +1705,9 @@ async function openPrintPreview() {
         }
     }
 
-    const shiftLabel = reportShift == 1 ? "PAGI (06:00 - 17:00)" : "MALAM (17:00 - 03:00)";
-    document.getElementById('printTimestamp').innerText = `Shift: ${shiftLabel}\nTanggal: ${reportDate} | Jam: ${new Date().toLocaleTimeString('id-ID')}`;
+    const shiftLabel = "Satu Hari Penuh (06:00 - 03:00)";
+    const dateRangeLabel = startDate === endDate ? startDate : `${startDate} s/d ${endDate}`;
+    document.getElementById('printTimestamp').innerText = `Shift: ${shiftLabel}\nTanggal: ${dateRangeLabel} | Jam: ${new Date().toLocaleTimeString('id-ID')}`;
     document.getElementById('printStaffName').innerText = currentUser ? currentUser.username : '-';
 
     // Reset report layout
@@ -1625,9 +1741,12 @@ function exportToPDF(btn) {
 
     const standFilterEl = document.getElementById('reportStandFilter');
     const standName = standFilterEl?.options[standFilterEl.selectedIndex]?.text || 'Laporan';
-    const dateInput = document.getElementById('reportDate');
-    const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
-    const titleText = `Laporan Kantin BBWS Citarum - ${standName} - ${date}`;
+    const startInput = document.getElementById('reportStartDate');
+    const endInput = document.getElementById('reportEndDate');
+    const startDate = startInput ? startInput.value : new Date().toISOString().split('T')[0];
+    const endDate = endInput ? endInput.value : startDate;
+    const dateStr = startDate === endDate ? startDate : `${startDate}_sd_${endDate}`;
+    const titleText = `Laporan Kantin BBWS Citarum - ${standName} - ${dateStr}`;
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -2647,7 +2766,6 @@ async function loadOwnerData() {
         document.getElementById('ownerTotalExpense').innerText = `Rp ${Number(today.expense.total_expense).toLocaleString()}`;
         document.getElementById('ownerMaterialExpense').innerText = `Rp ${Number(today.expense.raw_material).toLocaleString()}`;
         document.getElementById('ownerHppExpense').innerText = `Rp ${Number(today.expense.cogs || 0).toLocaleString()}`;
-        document.getElementById('ownerSalaryExpense').innerText = `Rp ${Number(today.expense.salary).toLocaleString()}`;
 
         const profit = today.profit;
         const profitEl = document.getElementById('ownerProfit');
@@ -2700,17 +2818,16 @@ async function loadOwnerData() {
         const expData = [
             Number(today.expense.raw_material || 0),
             Number(today.expense.cogs || 0),
-            Number(today.expense.salary || 0),
             Number(today.expense.others || 0)
         ];
 
         expenseCircleChartInstance = new Chart(ctxCircle, {
             type: 'doughnut',
             data: {
-                labels: ['Bahan Baku', 'HPP Produk', 'Gaji', 'Lainnya'],
+                labels: ['Bahan Baku', 'HPP Produk', 'Lainnya'],
                 datasets: [{
                     data: expData,
-                    backgroundColor: ['#E4A853', '#a29bfe', '#67ff9e', '#ff5f5f'],
+                    backgroundColor: ['#E4A853', '#a29bfe', '#ff5f5f'],
                     borderWidth: 0
                 }]
             },
@@ -2733,10 +2850,6 @@ async function loadOwnerData() {
             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                 <span>🏷️ HPP Produk</span>
                 <b>Rp ${Number(today.expense.cogs || 0).toLocaleString()} (${(((today.expense.cogs || 0) / total) * 100).toFixed(0)}%)</b>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                <span>👥 Gaji Karyawan</span>
-                <b>Rp ${Number(today.expense.salary).toLocaleString()} (${((today.expense.salary / total) * 100).toFixed(0)}%)</b>
             </div>
             <div style="display:flex; justify-content:space-between;">
                 <span>📝 Operasional Lain</span>
@@ -2821,315 +2934,6 @@ function formatIDR(amount) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount).replace('Rp', 'Rp ');
-}
-
-// --- Barista & Salary Management ---
-let editingShiftId = null;
-let salaryHidden = false;
-
-function toggleSalaryVisibility() {
-    salaryHidden = !salaryHidden;
-    const icon = document.getElementById('hideSalaryIcon');
-    const text = document.getElementById('hideSalaryText');
-    if (salaryHidden) {
-        icon.setAttribute('data-lucide', 'eye');
-        text.innerText = 'Show Angka Gaji';
-    } else {
-        icon.setAttribute('data-lucide', 'eye-off');
-        text.innerText = 'Hide Angka Gaji';
-    }
-    lucide.createIcons();
-    renderAttendanceLog();
-}
-
-async function openBaristaModal() {
-    document.getElementById('baristaModal').style.display = 'flex';
-    editingShiftId = null;
-
-    document.getElementById('manualShiftIn').value = dayjs().format('YYYY-MM-DDTHH:mm');
-    document.getElementById('manualShiftOut').value = dayjs().format('YYYY-MM-DDTHH:mm');
-
-    try {
-        const userRes = await fetch('/api/auth/full-users');
-        const userData = await userRes.json();
-        const ratesList = document.getElementById('baristaRatesList');
-        const userSelect = document.getElementById('manualShiftUser');
-
-        if (userData.success) {
-            ratesList.innerHTML = userData.data.map(u => `
-                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-weight: 800; font-size: 1rem; color: var(--text);">${u.username}</span>
-                        <span style="font-size: 0.65rem; color: var(--primary-light); background: rgba(150, 114, 89, 0.2); padding: 2px 8px; border-radius: 4px; font-weight: bold;">${u.role}</span>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                        <div style="position: relative; flex: 1;">
-                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">Rp/Min</span>
-                            <input type="number" id="rate_${u.id}" value="${u.rate_per_minute || 0}" 
-                                class="payment-dropdown" style="background-image: none; padding-left: 55px; height: 40px; font-size: 1rem; width: 100%; font-weight: bold; color: var(--accent);">
-                        </div>
-                        <button class="category-btn" onclick="saveUserRate('${u.id}')" 
-                                style="padding: 0 15px; background: var(--accent); color: var(--secondary); border: none; font-weight: 800; font-size: 0.8rem; border-radius: 10px;">SET</button>
-                    </div>
-
-                    ${u.role !== 'ADMIN' && u.role !== 'OWNER' ? `
-                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(228, 168, 83, 0.05); border-radius: 8px; border: 1px solid rgba(228,168,83,0.1);">
-                        <input type="checkbox" id="perm_${u.id}" ${u.allow_off_schedule ? 'checked' : ''} 
-                            onchange="toggleLoginPermission('${u.id}', this.checked)"
-                            style="width: 18px; height: 18px; cursor: pointer;">
-                        <label for="perm_${u.id}" style="font-size: 0.75rem; color: var(--accent); cursor: pointer; font-weight: bold;">Izin Login Luar Jadwal</label>
-                    </div>
-                    ` : ''}
-                </div>
-            `).join('');
-
-            userSelect.innerHTML = userData.data.map(u => `
-                <option value="${u.id}">${u.username}</option>
-            `).join('');
-
-            const userFilter = document.getElementById('attendanceUserFilter');
-            userFilter.innerHTML = '<option value="">Semua Kasir</option>' + userData.data.map(u => `
-                <option value="${u.id}">${u.username}</option>
-            `).join('');
-        }
-        renderAttendanceLog();
-    } catch (e) {
-        console.error(e);
-        alert('Gagal memuat manajemen barista.');
-    }
-}
-
-async function renderAttendanceLog() {
-    try {
-        const daysRange = document.getElementById('attendanceRange').value;
-        const userFilterId = document.getElementById('attendanceUserFilter').value;
-
-        const attRes = await fetch('/api/auth/attendance');
-        const attData = await attRes.json();
-        const shiftLog = document.getElementById('baristaShiftLog');
-        const totalUnpaidDisplay = document.getElementById('totalUnpaidSalary');
-
-        if (attData.success) {
-            // Client-side filtering
-            let filtered = attData.data;
-            const cutoffDate = dayjs().subtract(parseInt(daysRange), 'day').startOf('day');
-
-            filtered = filtered.filter(a => dayjs(a.clock_in).isAfter(cutoffDate));
-            if (userFilterId) {
-                filtered = filtered.filter(a => a.user_id === userFilterId);
-            }
-
-            const sortedData = filtered.sort((a, b) => new Date(b.clock_in) - new Date(a.clock_in));
-
-            let totalUnpaid = 0;
-
-            if (sortedData.length === 0) {
-                shiftLog.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Belum ada riwayat shift</td></tr>';
-            } else {
-                shiftLog.innerHTML = sortedData.map(a => {
-                    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                    const dayName = days[new Date(a.clock_in).getDay()];
-                    const salaryValue = Number(a.salary_earned || 0);
-                    const displaySalary = salaryHidden ? '****' : formatIDR(salaryValue);
-
-                    if (!a.is_paid && a.clock_out) {
-                        totalUnpaid += salaryValue;
-                    }
-
-                    const payIcon = a.is_paid ? 'check-circle' : 'circle';
-                    const payColor = a.is_paid ? 'var(--success)' : 'var(--text-muted)';
-                    const payLabel = a.is_paid ? 'PAID' : 'UNPAID';
-
-                    return `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; ${a.is_paid ? 'opacity: 0.6;' : ''}" onmouseover="this.style.background='rgba(255,255,255,0.01)'" onmouseout="this.style.background='transparent'">
-                        <td style="padding: 15px 10px; font-weight: 800; color: var(--text);">${a.staff_name}</td>
-                        <td style="padding: 15px 10px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
-                            <span style="color: var(--primary-light);">${dayName}</span><br>${dayjs(a.clock_in).format('DD/MM HH:mm')}
-                        </td>
-                        <td style="padding: 15px 10px; font-size: 0.8rem; color: var(--text-muted);">
-                            ${a.clock_out ? dayjs(a.clock_out).format('DD/MM HH:mm') : '<span style="background: var(--success)22; color: var(--success); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.7rem;">AKTIF</span>'}
-                        </td>
-                        <td style="padding: 15px 10px; color: var(--accent); font-weight: 800; font-size: 1rem;">
-                            ${displaySalary}
-                            ${!salaryHidden && (a.overtime_reward > 0 || a.late_penalty > 0) ? `
-                                <div style="display: flex; gap: 5px; margin-top: 4px;">
-                                    ${a.overtime_reward > 0 ? `<span style="font-size: 0.65rem; background: var(--success)22; color: var(--success); padding: 1px 4px; border-radius: 3px;">+${(a.overtime_reward).toLocaleString()}</span>` : ''}
-                                    ${a.late_penalty > 0 ? `<span style="font-size: 0.65rem; background: var(--danger)22; color: var(--danger); padding: 1px 4px; border-radius: 3px;">-${(a.late_penalty).toLocaleString()}</span>` : ''}
-                                </div>
-                            ` : ''}
-                        </td>
-                        <td style="padding: 15px 10px;">
-                            <div onclick="togglePaymentStatus('${a.id}', ${a.is_paid || 0})" style="cursor: pointer; display: flex; align-items: center; gap: 8px; color: ${payColor}; font-weight: 800; font-size: 0.75rem; background: ${a.is_paid ? 'var(--success)11' : 'rgba(255,255,255,0.05)'}; padding: 6px 12px; border-radius: 20px; width: fit-content; transition: 0.2s; border: 1px solid ${a.is_paid ? 'var(--success)44' : 'transparent'};" onmouseover="this.style.background='${a.is_paid ? 'var(--success)22' : 'rgba(255,255,255,0.1)'}'">
-                                <i data-lucide="${payIcon}" style="width: 16px;"></i> ${payLabel}
-                            </div>
-                        </td>
-                        <td style="padding: 15px 10px;">
-                            <div style="display: flex; gap: 8px;">
-                                <button onclick="inputOvertime('${a.id}', ${a.overtime_reward || 0}, '${a.clock_in}', '${a.clock_out}')" title="Input Lembur" style="background: var(--success); filter: brightness(0.8); border: none; color: var(--bg); cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.filter='brightness(1)'" onmouseout="this.style.filter='brightness(0.8)'"><i data-lucide="plus" style="width:16px;"></i></button>
-                                <button onclick="inputLate('${a.id}', ${a.late_penalty || 0}, '${a.clock_in}', '${a.clock_out}')" title="Input Potongan Telat" style="background: var(--danger); filter: brightness(0.8); border: none; color: white; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.filter='brightness(1)'" onmouseout="this.style.filter='brightness(0.8)'"><i data-lucide="minus" style="width:16px;"></i></button>
-                                <button onclick="editShiftManual('${a.id}', '${a.user_id}', '${a.clock_in}', '${a.clock_out}')" title="Edit Shift" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-muted)'"><i data-lucide="edit-2" style="width:14px;"></i></button>
-                                <button onclick="deleteShift('${a.id}')" title="Hapus Shift" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-muted); cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'"><i data-lucide="trash-2" style="width:14px;"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                `
-                }).join('');
-            }
-            totalUnpaidDisplay.innerHTML = `Belum Dibayar: <span style="font-size: 1.2rem; color: var(--success);">${formatIDR(totalUnpaid)}</span>`;
-            if (typeof refreshIcons === 'function') refreshIcons();
-        }
-    } catch (e) { console.error(e); }
-}
-
-async function syncAllSalaries() {
-    if (!confirm('Ini akan menghitung ulang seluruh log shift berdasarkan Rate Gaji yang aktif sekarang. Lanjutkan?')) return;
-    try {
-        const res = await fetch('/api/auth/attendance/sync', { method: 'POST' });
-        const result = await res.json();
-        if (result.success) {
-            alert('Hasil sinkronisasi: Seluruh data log telah diperbarui sesuai rate aktif.');
-            renderAttendanceLog();
-            if (activePage === 'owner') loadOwnerData();
-        }
-    } catch (e) { alert('Gagal sinkronisasi'); }
-}
-
-async function togglePaymentStatus(id, currentStatus) {
-    try {
-        const res = await fetch(`/api/auth/attendance/${id}/pay`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isPaid: !currentStatus })
-        });
-        const result = await res.json();
-        if (result.success) {
-            renderAttendanceLog();
-        }
-    } catch (e) { alert('Gagal memperbarui status pembayaran'); }
-}
-
-async function submitManualShift() {
-    const userId = document.getElementById('manualShiftUser').value;
-    const clockIn = document.getElementById('manualShiftIn').value;
-    const clockOut = document.getElementById('manualShiftOut').value;
-    if (!clockIn || !clockOut) return alert('Jam masuk dan pulang harus diisi!');
-    try {
-        let url = '/api/auth/attendance/manual';
-        let method = 'POST';
-        let body = { userId, clockIn, clockOut };
-        if (editingShiftId) {
-            url = `/api/auth/attendance/${editingShiftId}`;
-            method = 'PUT';
-            body = { clockIn, clockOut };
-        }
-        const res = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        const result = await res.json();
-        if (result.success) {
-            alert(result.message);
-            editingShiftId = null;
-            renderAttendanceLog();
-            if (activePage === 'owner') loadOwnerData();
-        } else alert(result.message);
-    } catch (e) { alert('Gagal menyimpan shift.'); }
-}
-
-function editShiftManual(id, userId, cin, cout) {
-    editingShiftId = id;
-    document.getElementById('manualShiftUser').value = userId;
-    document.getElementById('manualShiftIn').value = dayjs(cin).format('YYYY-MM-DDTHH:mm');
-    if (cout && cout !== 'null') {
-        document.getElementById('manualShiftOut').value = dayjs(cout).format('YYYY-MM-DDTHH:mm');
-    }
-    alert('Mode Edit Aktif. Silakan ubah waktu dan klik Simpan.');
-}
-
-async function deleteShift(id) {
-    if (!confirm('Anda yakin ingin menghapus data shift ini?')) return;
-    try {
-        const res = await fetch(`/api/auth/attendance/${id}`, { method: 'DELETE' });
-        const result = await res.json();
-        if (result.success) {
-            renderAttendanceLog();
-            if (activePage === 'owner') loadOwnerData();
-        }
-    } catch (e) { alert('Gagal menghapus data.'); }
-}
-
-async function inputOvertime(id, current, cin, cout) {
-    const amount = prompt(" Tambahkan Bonus Lembur (Nominal Rp):", current);
-    if (amount === null) return;
-    try {
-        const res = await fetch(`/api/auth/attendance/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                overtimeReward: parseFloat(amount),
-                clockIn: cin,
-                clockOut: cout === 'null' ? new Date().toISOString() : cout
-            })
-        });
-        const result = await res.json();
-        if (result.success) {
-            renderAttendanceLog();
-            if (activePage === 'owner') loadOwnerData();
-        }
-    } catch (e) { alert('Gagal input lembur'); }
-}
-
-async function inputLate(id, current, cin, cout) {
-    const amount = prompt(" Masukkan Potongan Terlambat (Nominal Rp):", current);
-    if (amount === null) return;
-    try {
-        const res = await fetch(`/api/auth/attendance/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                latePenalty: parseFloat(amount),
-                clockIn: cin,
-                clockOut: cout === 'null' ? new Date().toISOString() : cout
-            })
-        });
-        const result = await res.json();
-        if (result.success) {
-            renderAttendanceLog();
-            if (activePage === 'owner') loadOwnerData();
-        }
-    } catch (e) { alert('Gagal input potongan'); }
-}
-
-async function saveUserRate(userId) {
-    const rate = document.getElementById(`rate_${userId}`).value;
-    if (!rate || rate < 0) return alert('Masukkan rate yang valid!');
-    try {
-        const res = await fetch('/api/auth/update-rate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, rate: parseFloat(rate) })
-        });
-        const result = await res.json();
-        if (result.success) {
-            alert('Rate gaji berhasil diperbarui!');
-            openBaristaModal();
-            if (activePage === 'owner') loadOwnerData();
-        }
-    } catch (e) { alert('Gagal menyimpan rate.'); }
-}
-
-async function toggleLoginPermission(userId, allow) {
-    try {
-        const res = await fetch('/api/auth/toggle-login-permission', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, allow })
-        });
-        const result = await res.json();
-        if (!result.success) alert('Gagal memperbarui izin.');
-    } catch (e) { alert('Terjadi kesalahan.'); }
 }
 
 // Init on load

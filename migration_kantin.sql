@@ -74,7 +74,8 @@ INSERT INTO settings (key_name, value) VALUES
 ('show_shutdown', 'OFF'),
 ('default_print', 'OFF'),
 ('virtual_keyboard', 'ON'),
-('app_name', 'Kantin BBWS Citarum');
+('app_name', 'Kantin BBWS Citarum'),
+('stand_share_percentage', '10');
 
 -- ============================================================
 -- STEP 7: Seed Products per Stand

@@ -3,11 +3,12 @@ const dayjs = require('dayjs');
 
 class ReportService {
     /**
-     * Get Daily Report with flexible shift
-     * @param {string} date - Date in 'YYYY-MM-DD' format
-     * @param {number} shift - 1 (Morning) or 2 (Night)
+     * Get Daily/Range Report with combined shift
+     * @param {string} startDate - Start Date in 'YYYY-MM-DD' format
+     * @param {string} endDate - End Date in 'YYYY-MM-DD' format
+     * @param {string} standId - Stand ID or 'ALL'
      */
-    async getDailyReport(date, shift = 1, standId = 'ALL') {
+    async getDailyReport(startDate, endDate, standId = 'ALL') {
         // Get shift settings from DB
         const [settingsArr] = await db.query('SELECT * FROM settings WHERE key_name LIKE "shift_%"');
         const settings = {};
@@ -15,21 +16,13 @@ class ReportService {
 
         let startTime, endTime;
 
-        if (shift == 1) {
-            // Shift 1: 06:00 - 17:00 (Today)
-            const [startH, startM] = (settings.shift_1_start || '06:00').split(':');
-            const [endH, endM] = (settings.shift_1_end || '17:00').split(':');
+        // Combined Shift (Full Business Day): 06:00 (Start Date) - 03:00 (End Date + 1 Day)
+        const [startH, startM] = (settings.shift_1_start || '06:00').split(':');
+        const [endH, endM] = (settings.shift_2_end || '03:00').split(':');
 
-            startTime = dayjs(date).hour(parseInt(startH)).minute(parseInt(startM)).second(0).format('YYYY-MM-DD HH:mm:ss');
-            endTime = dayjs(date).hour(parseInt(endH)).minute(parseInt(endM)).second(0).format('YYYY-MM-DD HH:mm:ss');
-        } else {
-            // Shift 2: 17:00 (Today) - 03:00 (Next Day)
-            const [startH, startM] = (settings.shift_1_end || '17:00').split(':');
-            const [endH, endM] = (settings.shift_2_end || '03:00').split(':');
+        startTime = dayjs(startDate).hour(parseInt(startH)).minute(parseInt(startM)).second(0).format('YYYY-MM-DD HH:mm:ss');
+        endTime = dayjs(endDate).add(1, 'day').hour(parseInt(endH)).minute(parseInt(endM)).second(0).format('YYYY-MM-DD HH:mm:ss');
 
-            startTime = dayjs(date).hour(parseInt(startH)).minute(parseInt(startM)).second(0).format('YYYY-MM-DD HH:mm:ss');
-            endTime = dayjs(date).add(1, 'day').hour(parseInt(endH)).minute(parseInt(endM)).second(0).format('YYYY-MM-DD HH:mm:ss');
-        }
 
         let query, params;
         if (standId === 'ALL') {
@@ -98,7 +91,7 @@ class ReportService {
         let allProductQuery, allProductParams;
         if (standId === 'ALL') {
             allProductQuery = `
-                SELECT p.name, si.qty as total_qty, s.payment_method, s.payment_status, s.created_at, st.name as stand_name
+                SELECT p.name, si.qty as total_qty, si.price as unit_price, s.payment_method, s.payment_status, s.created_at, st.name as stand_name
                 FROM sales_items si
                 JOIN products p ON si.product_id = p.id
                 JOIN sales s ON si.sales_id = s.id
@@ -110,7 +103,7 @@ class ReportService {
             allProductParams = [startTime, endTime];
         } else {
             allProductQuery = `
-                SELECT p.name, si.qty as total_qty, s.payment_method, s.payment_status, s.created_at, st.name as stand_name
+                SELECT p.name, si.qty as total_qty, si.price as unit_price, s.payment_method, s.payment_status, s.created_at, st.name as stand_name
                 FROM sales_items si
                 JOIN products p ON si.product_id = p.id
                 JOIN sales s ON si.sales_id = s.id
@@ -332,15 +325,8 @@ class ReportService {
             WHERE created_at BETWEEN ? AND ?
         `, [startTime, endTime]);
 
-        // Attendance-based Salary (Currently global)
-        const [attSalary] = await db.query(`
-            SELECT SUM(salary_earned) as total_attendance_salary 
-            FROM attendance 
-            WHERE (clock_out BETWEEN ? AND ?) OR (clock_out IS NULL AND clock_in BETWEEN ? AND ?)
-        `, [startTime, endTime, startTime, endTime]);
-
-        // If a specific stand is selected, we might hide global expenses for now to show clean revenue
-        const totalSalary = isGlobal ? Number(attSalary[0].total_attendance_salary || 0) : 0;
+        // Attendance-based Salary (Disabled)
+        const totalSalary = 0;
         const totalExpense = isGlobal 
             ? (Number(expenses[0]?.manual_total || 0) + totalSalary + totalCogs) 
             : totalCogs;
@@ -385,10 +371,9 @@ class ReportService {
             }
 
             const [manualExp] = await db.query(`SELECT SUM(amount) as total FROM expenses WHERE created_at BETWEEN ? AND ?`, [start, end]);
-            const [atsExp] = await db.query(`SELECT SUM(salary_earned) as total FROM attendance WHERE (clock_out BETWEEN ? AND ?) OR (clock_out IS NULL AND clock_in BETWEEN ? AND ?)`, [start, end, start, end]);
 
             const dayExp = isGlobal 
-                ? (Number(manualExp[0].total || 0) + Number(atsExp[0].total || 0) + dayCogs) 
+                ? (Number(manualExp[0].total || 0) + dayCogs) 
                 : dayCogs;
 
             chartData.push({

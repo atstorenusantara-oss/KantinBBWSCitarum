@@ -154,12 +154,22 @@
                         <option value="ALL">🏢 Semua Stand</option>
                     </select>
                     <select id="reportShift" class="category-btn" onchange="loadReportData()"
-                        style="padding: 10px 15px; background: var(--surface);">
-                        <option value="1">☀️ Shift Pagi (06-17)</option>
-                        <option value="2">🌙 Shift Malam (17-03)</option>
+                        style="padding: 10px 15px; background: var(--surface); display: none;">
+                        <option value="1">☀️ Satu Hari Penuh (06-03)</option>
                     </select>
-                    <input type="date" id="reportDate" class="search-bar" onchange="loadReportData()"
-                        style="width: auto;">
+                    <select id="reportPeriodType" class="category-btn" onchange="togglePeriodFields()"
+                        style="padding: 10px 15px; background: var(--surface);">
+                        <option value="today">☀️ Hari Ini</option>
+                        <option value="single">📅 Pilih Tanggal</option>
+                        <option value="range">🔗 Pilih Rentang Tanggal</option>
+                    </select>
+                    <div id="periodInputWrapper" style="display: none; gap: 5px; align-items: center;">
+                        <input type="date" id="reportStartDate" class="search-bar" onchange="loadReportData()"
+                            style="width: auto;">
+                        <span id="rangeSeparator" style="color: var(--text-muted); font-weight: bold; margin: 0 4px; display: none;">s/d</span>
+                        <input type="date" id="reportEndDate" class="search-bar" onchange="loadReportData()"
+                            style="width: auto; display: none;">
+                    </div>
                     <button class="category-btn" onclick="openPrintPreview()"
                         style="background: var(--accent); color: var(--secondary); font-weight: bold; border: none; display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="printer" style="width: 18px;"></i> Print Laporan
@@ -771,10 +781,6 @@
                         <input type="date" id="ownerEndDate" class="search-bar" onchange="loadOwnerData()"
                             style="padding: 5px; width: 130px; border: none; background: transparent; color: var(--text);">
                     </div>
-                    <button class="category-btn" onclick="openBaristaModal()"
-                        style="background: var(--surface); color: var(--accent); border: 1px solid var(--accent); font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                        <i data-lucide="users" style="width: 18px;"></i> Jadwal Kasir
-                    </button>
                     <button class="category-btn" onclick="openMenuManager()"
                         style="background: var(--surface); color: #2ecc71; border: 1px solid #2ecc71; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="layout-list" style="width: 18px;"></i> Manajemen Menu
@@ -812,8 +818,7 @@
                         <span class="label" id="labelTotalExpense">Total Pengeluaran (Hari Ini)</span>
                         <h2 id="ownerTotalExpense">Rp 0</h2>
                         <div style="font-size: 0.75rem; margin-top: 5px; opacity: 0.8; line-height: 1.4;">
-                            Bahan: <span id="ownerMaterialExpense">0</span> | HPP: <span id="ownerHppExpense">0</span> | Gaji: <span
-                                id="ownerSalaryExpense">0</span>
+                            Bahan: <span id="ownerMaterialExpense">0</span> | HPP: <span id="ownerHppExpense">0</span>
                         </div>
                     </div>
                 </div>
@@ -959,6 +964,20 @@
                                     onchange="updateAppSetting('virtual_keyboard', this.checked ? 'ON' : 'OFF')">
                                 <span class="slider round"></span>
                             </label>
+                        </div>
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--glass); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">Bagi Hasil Stand (%)</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Persentase bagi hasil untuk pribadi stand (sisanya disetor ke DWP)</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="number" id="settingStandShare" min="0" max="100"
+                                    onchange="updateAppSetting('stand_share_percentage', this.value)"
+                                    style="width: 70px; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--surface); color: var(--text); text-align: center; font-weight: bold;">
+                                <span style="font-weight: bold;">%</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1401,126 +1420,7 @@
                 style="width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5);">
         </div>
     </div>
-    <!-- Barista & Salary Modal -->
-    <div id="baristaModal"
-        style="display:none; position: fixed; z-index: 16000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
-        <div class="card"
-            style="width: 1200px; max-width: 95vw; max-height: 90vh; overflow-y: auto; padding: 30px; border: 1px solid var(--accent); background: var(--surface);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="background: var(--accent); color: var(--secondary); padding: 8px; border-radius: 8px;">
-                        <i data-lucide="users" style="width: 24px;"></i>
-                    </div>
-                    <h3>Manajemen Jadwal & Gaji Barista</h3>
-                </div>
-                <button class="category-btn" onclick="document.getElementById('baristaModal').style.display='none'"
-                    style="background: none; border: none; color: var(--text-muted); cursor: pointer;">✕ Tutup</button>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
-                <!-- Left Side: Rates & Manual Input -->
-                <div style="display: flex; flex-direction: column; gap: 25px;">
-                    <!-- Manual Input Form -->
-                    <div
-                        style="background: rgba(228, 168, 83, 0.05); padding: 18px; border-radius: 12px; border: 1px dashed var(--accent);">
-                        <h4 style="margin-bottom: 12px; color: var(--accent); font-size: 0.9rem;">Input Shift Manual
-                        </h4>
-                        <div class="form-group" style="margin-bottom: 12px;">
-                            <label
-                                style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: block;">Barista</label>
-                            <select id="manualShiftUser" class="payment-dropdown"
-                                style="background: var(--surface); height: 42px; font-size: 0.9rem; padding: 0 12px;">
-                                <!-- Populated from JS -->
-                            </select>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label
-                                    style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: block;">Jam
-                                    Masuk</label>
-                                <input type="datetime-local" id="manualShiftIn" class="payment-dropdown"
-                                    style="background-image: none; width: 100%; height: 42px; font-size: 0.9rem; padding: 0 12px; background: var(--surface);">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label
-                                    style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: block;">Jam
-                                    Pulang</label>
-                                <input type="datetime-local" id="manualShiftOut" class="payment-dropdown"
-                                    style="background-image: none; width: 100%; height: 42px; font-size: 0.9rem; padding: 0 12px; background: var(--surface);">
-                            </div>
-                        </div>
-                        <button class="btn-checkout" onclick="submitManualShift()"
-                            style="margin-top: 5px; width: 100%; padding: 12px; font-size: 0.9rem; background: var(--accent); color: var(--secondary); font-weight: 800; border-radius: 12px;">
-                            SIMPAN DATA SHIFT
-                        </button>
-                    </div>
-
-                    <!-- Rates Settings -->
-                    <div>
-                        <div id="baristaRatesList" style="display: flex; flex-direction: column; gap: 15px;">
-                            <!-- JS populated -->
-                        </div>
-                        <button class="category-btn" onclick="syncAllSalaries()"
-                            style="margin-top: 20px; width: 100%; justify-content: center; background: rgba(228, 168, 83, 0.1); color: var(--accent); border: 1px dashed var(--accent); padding: 12px; font-weight: 800;">
-                            <i data-lucide="refresh-cw" style="width: 16px; margin-right: 8px;"></i>
-                            Sinkronkan Semua Gaji (Recalculate)
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Right Side: Shift Log -->
-                <div>
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);">
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <h4 style="margin: 0; color: var(--accent);">Shift Log</h4>
-                            <select id="attendanceRange" class="payment-dropdown" onchange="renderAttendanceLog()"
-                                style="background: var(--surface); height: 35px; width: 140px; font-size: 0.8rem; padding: 0 10px;">
-                                <option value="1">Hari Ini</option>
-                                <option value="7" selected>7 Hari Terakhir</option>
-                                <option value="30">Bulan Ini</option>
-                            </select>
-                            <select id="attendanceUserFilter" class="payment-dropdown" onchange="renderAttendanceLog()"
-                                style="background: var(--surface); height: 35px; width: 140px; font-size: 0.8rem; padding: 0 10px;">
-                                <option value="">Semua Kasir</option>
-                            </select>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <div id="totalUnpaidSalary"
-                                style="font-size: 0.85rem; color: var(--success); font-weight: 800; background: var(--success)22; padding: 5px 12px; border-radius: 8px;">
-                                Belum Dibayar: Rp 0
-                            </div>
-                            <button class="category-btn" onclick="toggleSalaryVisibility()"
-                                style="padding: 5px 12px; font-size: 0.75rem; background: var(--glass); display: flex; align-items: center; gap: 6px;">
-                                <i data-lucide="eye-off" id="hideSalaryIcon" style="width: 14px;"></i>
-                                <span id="hideSalaryText">Hide Angka Gaji</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="table-container"
-                        style="background: rgba(255,255,255,0.02); border-radius: 10px; max-height: 500px; overflow-y: auto;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr
-                                    style="text-align: left; border-bottom: 1px solid var(--glass-border); font-size: 0.8rem; color: var(--text-muted);">
-                                    <th style="padding: 10px;">Barista</th>
-                                    <th style="padding: 10px;">Mulai</th>
-                                    <th style="padding: 10px;">Selesai</th>
-                                    <th style="padding: 10px;">Gaji</th>
-                                    <th style="padding: 10px;">Status</th>
-                                    <th style="padding: 10px;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="baristaShiftLog" style="font-size: 0.8rem;">
-                                <!-- JS populated -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- Exchange Modal -->
     <div id="exchangeModal"
         style="display:none; position: fixed; z-index: 15000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">

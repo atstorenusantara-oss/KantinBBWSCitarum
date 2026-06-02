@@ -4,10 +4,13 @@ const salesService = require('../services/sales.service');
 class ReportController {
     async getDaily(req, res) {
         try {
-            const { date, shift, stand_id } = req.query; // YYYY-MM-DD, shift: 1 or 2
+            const { date, startDate, endDate, stand_id } = req.query;
+            const queryStartDate = startDate || date || new Date().toISOString().split('T')[0];
+            const queryEndDate = endDate || date || queryStartDate;
+
             const report = await reportService.getDailyReport(
-                date || new Date().toISOString().split('T')[0],
-                shift || 1,
+                queryStartDate,
+                queryEndDate,
                 stand_id || 'ALL'
             );
             res.json({ success: true, data: report });
