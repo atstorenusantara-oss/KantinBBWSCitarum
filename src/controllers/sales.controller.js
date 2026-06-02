@@ -14,27 +14,8 @@ class SalesController {
             // Log activity
             await settingsService.logActivity(salesData.creator_id, 'CREATE_SALE', `Created ${salesData.payment_status} sale: ${salesData.invoice_number}`);
 
-            console.log("Generating QRIS for:", { total, invoice_number, payment_method });
+            // Fitur QRIS Dinamis dinonaktifkan (menjadi catatan saja)
             let qrisData = null;
-            if (payment_method === 'QRIS' || payment_method === 'qris') {
-                try {
-                    // Generate dynamic QRIS
-                    const qrisResponse = await qrisService.generate(total, invoice_number);
-                    console.log("TemanQRIS Response:", JSON.stringify(qrisResponse));
-                    
-                    if (qrisResponse.success) {
-                        qrisData = {
-                            qr_image: qrisResponse.qr_image,
-                            payment_link: qrisResponse.payment_link,
-                            expires_at: qrisResponse.expires_at
-                        };
-                    } else {
-                        console.warn("TemanQRIS API returned success:false", qrisResponse.message);
-                    }
-                } catch (qError) {
-                    console.error("QRIS Generation Failed (Error Code):", qError.message);
-                }
-            }
 
             let printResult = null;
             if (should_print) {
@@ -82,27 +63,8 @@ class SalesController {
                 return res.status(404).json({ success: false, message: "Transaksi tidak ditemukan" });
             }
 
-            // QRIS Check for Complete Pending
-            let qrisData = null;
-            if (payment_method === 'QRIS' || payment_method === 'qris') {
-                try {
-                    const qrisResponse = await qrisService.generate(saleData.total, saleData.invoice_number);
-                    if (qrisResponse.success) {
-                        qrisData = {
-                            qr_image: qrisResponse.qr_image,
-                            payment_link: qrisResponse.payment_link,
-                            expires_at: qrisResponse.expires_at
-                        };
-                        // Note: We don't mark as complete yet if using QRIS, 
-                        // as we wait for webhook or manual verify.
-                        // However, current POS flow expects to 'complete' with method first.
-                        // For consistency with frontend, we just return the QRIS data.
-                        return res.json({ success: true, qris: qrisData });
-                    }
-                } catch (qError) {
-                    console.error("QRIS Generation (Complete) Failed:", qError.message);
-                }
-            }
+            // Fitur QRIS Dinamis dinonaktifkan (menjadi catatan saja)
+            // Lanjut proses sebagai pembayaran normal (CASH/QRIS Catatan)
 
             // Otherwise process as normal (CASH etc)
             const result = await salesService.completePayment(id, payment_method);
