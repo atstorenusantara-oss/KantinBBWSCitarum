@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G-Coffee POS | Modern Coffee Management</title>
+    <title>BBWS Citarum | Modern Coffee Management</title>
     <!-- Google Fonts: Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
 <body>
 
     <nav class="sidebar">
-        <div class="logo">GC</div>
+        <div class="logo">BBWS</div>
         <div class="nav-item" id="navKasir" onclick="switchPage('kasir')" title="Kasir"><i
                 data-lucide="layout-grid"></i></div>
         <div class="nav-item" id="navPending" onclick="switchPage('pending')" title="Pesanan Pending"><i
@@ -166,7 +166,8 @@
                     <div id="periodInputWrapper" style="display: none; gap: 5px; align-items: center;">
                         <input type="date" id="reportStartDate" class="search-bar" onchange="loadReportData()"
                             style="width: auto;">
-                        <span id="rangeSeparator" style="color: var(--text-muted); font-weight: bold; margin: 0 4px; display: none;">s/d</span>
+                        <span id="rangeSeparator"
+                            style="color: var(--text-muted); font-weight: bold; margin: 0 4px; display: none;">s/d</span>
                         <input type="date" id="reportEndDate" class="search-bar" onchange="loadReportData()"
                             style="width: auto; display: none;">
                     </div>
@@ -860,7 +861,8 @@
             <div style="display: grid; grid-template-columns: 1fr; gap: 25px; margin-top: 25px;">
                 <div class="card">
                     <h3 style="display: flex; align-items: center; gap: 10px;">
-                        <i data-lucide="award" style="color: var(--accent);"></i> Top 5 Produk Penyumbang Keuntungan Terbesar
+                        <i data-lucide="award" style="color: var(--accent);"></i> Top 5 Produk Penyumbang Keuntungan
+                        Terbesar
                     </h3>
                     <div class="table-container" style="margin-top: 20px; overflow-x: auto;">
                         <table class="data-table">
@@ -970,7 +972,8 @@
                             style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--glass); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                             <div>
                                 <div style="font-weight: 600; margin-bottom: 4px;">Bagi Hasil Stand (%)</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">Persentase bagi hasil untuk pribadi stand (sisanya disetor ke DWP)</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">Persentase bagi hasil untuk
+                                    pribadi stand (sisanya disetor ke DWP)</div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <input type="number" id="settingStandShare" min="0" max="100"
@@ -1080,7 +1083,7 @@
         <div
             style="background: white; color: black; max-width: 350px; margin: 20px auto; padding: 20px; border-radius: 5px; font-family: 'Courier New', Courier, monospace; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
             <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 15px;">
-                <h3 style="margin: 0;">G-COFFEE POS</h3>
+                <h3 style="margin: 0;">BBWS</h3>
                 <p id="receiptInvoice" style="font-size: 0.8rem; margin: 5px 0;"></p>
                 <p id="receiptDate" style="font-size: 0.8rem; margin: 5px 0;"></p>
                 <p style="font-size: 0.8rem; margin: 5px 0;">Kasir: <span id="receiptStaff"
@@ -1215,7 +1218,7 @@
     <div id="loginModal"
         style="display:flex; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: var(--bg); align-items: center; justify-content: center;">
         <div class="card" style="width: 400px; text-align: center; border: 1px solid var(--primary);">
-            <div class="logo" style="margin: 0 auto 20px auto; width: 60px; height: 60px; font-size: 1.5rem;">GC</div>
+            <div class="logo" style="margin: 0 auto 20px auto; width: 60px; height: 60px; font-size: 1.5rem;">BBWS</div>
             <h2 style="margin-bottom: 20px;">Kantin BBWS Citarum Login</h2>
             <div class="form-group" style="text-align: left; margin-bottom: 20px;">
                 <label>Pilih User</label>
@@ -1315,19 +1318,24 @@
     </div>
 
     <!-- Menu Manager Modal -->
-    <div id="menuManagerModal" style="display:none; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
-        <div class="card" style="width: 900px; max-height: 90vh; overflow-y: auto; background: var(--bg); border: 1px solid var(--accent);">
+    <div id="menuManagerModal"
+        style="display:none; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+        <div class="card"
+            style="width: 900px; max-height: 90vh; overflow-y: auto; background: var(--bg); border: 1px solid var(--accent);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Manajemen Menu (Kantin BBWS Citarum)</h2>
-                <button class="category-btn" onclick="document.getElementById('menuManagerModal').style.display='none'" style="background: var(--danger); color: white;">Tutup</button>
+                <button class="category-btn" onclick="document.getElementById('menuManagerModal').style.display='none'"
+                    style="background: var(--danger); color: white;">Tutup</button>
             </div>
-            
+
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <select id="menuManagerStandFilter" class="search-bar" onchange="loadMenuManagerData()">
                     <option value="ALL">Semua Stand</option>
                 </select>
-                <input type="text" id="menuManagerSearch" class="search-bar" placeholder="Cari menu..." onkeyup="filterMenuManagerTable()" style="flex: 1;">
-                <button class="category-btn" onclick="openAddMenuModal()" style="background: var(--success); color: white; font-weight: bold;">+ Tambah Menu Baru</button>
+                <input type="text" id="menuManagerSearch" class="search-bar" placeholder="Cari menu..."
+                    onkeyup="filterMenuManagerTable()" style="flex: 1;">
+                <button class="category-btn" onclick="openAddMenuModal()"
+                    style="background: var(--success); color: white; font-weight: bold;">+ Tambah Menu Baru</button>
             </div>
 
             <table style="width: 100%; text-align: left; border-collapse: collapse;">
@@ -1351,15 +1359,19 @@
     </div>
 
     <!-- Edit Menu Modal -->
-    <div id="editMenuModal" style="display:none; position: fixed; z-index: 20001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
-        <div class="card" style="width: 450px; max-height: 90vh; overflow-y: auto; background: var(--bg); border: 1px solid var(--accent);">
+    <div id="editMenuModal"
+        style="display:none; position: fixed; z-index: 20001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
+        <div class="card"
+            style="width: 450px; max-height: 90vh; overflow-y: auto; background: var(--bg); border: 1px solid var(--accent);">
             <h2 id="editMenuModalTitle" style="margin-bottom: 20px;">Edit Produk</h2>
             <form id="editMenuForm" onsubmit="submitEditMenu(event)">
                 <input type="hidden" id="editMenuId">
-                
+
                 <div style="text-align: center; margin-bottom: 15px;">
-                    <img id="editMenuPreview" src="" style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 2px dashed var(--accent); margin-bottom: 10px;">
-                    <input type="file" id="editMenuImage" accept="image/*" class="search-bar" style="width: 100%; font-size: 0.8rem;" onchange="previewEditImage(event)">
+                    <img id="editMenuPreview" src=""
+                        style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 2px dashed var(--accent); margin-bottom: 10px;">
+                    <input type="file" id="editMenuImage" accept="image/*" class="search-bar"
+                        style="width: 100%; font-size: 0.8rem;" onchange="previewEditImage(event)">
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
@@ -1373,7 +1385,7 @@
                     <label>Nama Produk</label>
                     <input type="text" id="editMenuName" class="search-bar" style="width: 100%;" required>
                 </div>
-                
+
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Kategori</label>
                     <input type="text" id="editMenuCategory" class="search-bar" style="width: 100%;" required>
@@ -1383,12 +1395,12 @@
                     <label>Harga Jual (Rp)</label>
                     <input type="number" id="editMenuPrice" class="search-bar" style="width: 100%;" required>
                 </div>
-                
+
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Harga Beli / HPP (Rp)</label>
                     <input type="number" id="editMenuCostPrice" class="search-bar" style="width: 100%;" required>
                 </div>
-                
+
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label>Status Aktif</label>
                     <select id="editMenuActive" class="search-bar" style="width: 100%;">
@@ -1398,8 +1410,11 @@
                 </div>
 
                 <div style="display: flex; gap: 10px;">
-                    <button type="button" class="category-btn" onclick="document.getElementById('editMenuModal').style.display='none'" style="flex: 1; border-style: dashed;">Batal</button>
-                    <button type="submit" id="btnSaveMenu" class="btn-checkout" style="flex: 1; margin: 0;">Simpan Perubahan</button>
+                    <button type="button" class="category-btn"
+                        onclick="document.getElementById('editMenuModal').style.display='none'"
+                        style="flex: 1; border-style: dashed;">Batal</button>
+                    <button type="submit" id="btnSaveMenu" class="btn-checkout" style="flex: 1; margin: 0;">Simpan
+                        Perubahan</button>
                 </div>
             </form>
         </div>
@@ -1420,7 +1435,7 @@
                 style="width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5);">
         </div>
     </div>
-    
+
     <!-- Exchange Modal -->
     <div id="exchangeModal"
         style="display:none; position: fixed; z-index: 15000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">

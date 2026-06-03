@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../../public/uploads/expenses');
+const uploadDir = path.join(process.cwd(), 'public/uploads/expenses');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
