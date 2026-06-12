@@ -7,13 +7,14 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "build:bytecode": "bytenode --compile src/services/license.service.js",
+    "build:bytecode": "npx -p node@18.5.0 bytenode --compile src/services/license.service.js",
     "build:exe": "pkg . --targets node18-win-x64 --output dist/gcoffee-pos.exe"
   },
   "pkg": {
     "assets": [
       "src/**/*.jsc",
-      "public/**/*"
+      "public/**/*",
+      "legacy_tools/**/*"
     ]
   },
   "dependencies": {

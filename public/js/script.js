@@ -6,6 +6,7 @@ let currentAttendanceId = null;
 let pendingVoid = null;
 let activePage = 'kasir';
 let currentStandCategories = []; // Kategori dinamis sesuai stand
+let currentPreviewSale = null;
 
 function refreshIcons() {
     if (typeof lucide !== 'undefined') {
@@ -70,7 +71,7 @@ async function loadStandCategories() {
     try {
         const standId = currentUser && currentUser.stand_id;
         const url = standId ? `/api/products/categories?stand_id=${standId}` : '/api/products/categories';
-        
+
         const res = await fetch(url);
         const result = await res.json();
         if (result.success) {
@@ -91,7 +92,7 @@ function renderCategoryButtons(categories) {
         const btn = document.createElement('button');
         btn.className = 'category-btn';
         btn.innerText = cat;
-        btn.onclick = function() { filterCategory(cat, this); };
+        btn.onclick = function () { filterCategory(cat, this); };
         container.appendChild(btn);
     });
 }
@@ -110,7 +111,7 @@ async function checkSessionStatus() {
     try {
         const res = await fetch(`/api/auth/shift-status/${currentUser.id}?attendance_id=${currentAttendanceId}`);
         const data = await res.json();
-        
+
         if (data.success && !data.valid) {
             // Auto logout without confirmation
             if (currentAttendanceId) {
@@ -128,7 +129,7 @@ async function checkSessionStatus() {
             localStorage.removeItem('gc_attendanceId');
 
             document.getElementById('loginModal').style.display = 'flex';
-            updateSidebarVisibility(); 
+            updateSidebarVisibility();
             alert('🔐 ' + (data.message || 'Shift Anda berakhir. Otomatis logout.'));
         }
     } catch (e) {
@@ -507,7 +508,7 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
 
         const result = await response.json();
         console.log("Pay Sales Response:", result);
-        
+
         if (result.success) {
             // NEW: QRIS Handling (v2.5)
             if (result.qris) {
@@ -521,9 +522,10 @@ document.getElementById('btnCheckout').addEventListener('click', async () => {
                 } else if (shouldPrint) {
                     if (result.print?.isCloud) {
                         msg += `\n☁️ Mode Cloud: Membuka struk untuk cetak manual...`;
-                        previewReceipt(result.data.id);
+                        previewReceipt(result.data.salesId);
                     } else {
-                        msg += `\n⚠️ Gagal mencetak struk: ${result.print?.error || 'Sedang simulasi server'}`;
+                        msg += `\n⚠️ Gagal cetak otomatis di PC. Membuka preview struk...`;
+                        previewReceipt(result.data.salesId);
                     }
                 }
 
@@ -566,7 +568,7 @@ function closeQRISModal() {
 async function confirmQRISPayment() {
     const btn = document.getElementById('btnConfirmQRIS');
     const originalText = btn.innerHTML;
-    
+
     btn.disabled = true;
     btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> MEMVERIFIKASI...';
     refreshIcons();
@@ -582,11 +584,11 @@ async function confirmQRISPayment() {
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
             alert("✓ " + result.message);
             document.getElementById('qrisModal').style.display = 'none';
-            
+
             if (typeof activePage !== 'undefined' && activePage === 'pending') {
                 loadPendingSales();
             } else {
@@ -854,7 +856,7 @@ function togglePeriodFields() {
         startInput.style.display = 'inline-block';
         sep.style.display = 'none';
         endInput.style.display = 'none';
-        
+
         if (!startInput.value) {
             startInput.value = todayStr;
         }
@@ -865,7 +867,7 @@ function togglePeriodFields() {
         startInput.style.display = 'inline-block';
         sep.style.display = 'inline-block';
         endInput.style.display = 'inline-block';
-        
+
         if (!startInput.value) {
             startInput.value = todayStr;
         }
@@ -880,7 +882,7 @@ async function loadReportData() {
     const periodType = document.getElementById('reportPeriodType')?.value || 'today';
     const startInput = document.getElementById('reportStartDate');
     const endInput = document.getElementById('reportEndDate');
-    
+
     const todayStr = new Date().toISOString().split('T')[0];
     let startDate = todayStr;
     let endDate = todayStr;
@@ -924,7 +926,7 @@ async function loadReportData() {
             }
         }
     }
-    
+
     const standId = standFilterEl?.value || 'ALL';
 
     try {
@@ -947,7 +949,7 @@ async function loadReportData() {
 
             const topBody = document.getElementById('topProductsBody');
             const productsSold = daily.data.all_products || [];
-            
+
             // Group by stand for the UI as well
             const groupedUI = productsSold.reduce((acc, p) => {
                 const stand = p.stand_name || 'Tanpa Stand';
@@ -968,7 +970,7 @@ async function loadReportData() {
                 const standPct = standSharePct / 100;
                 const shareSelf = revenue * standPct;
                 const shareDWP = revenue * (1 - standPct);
-                
+
                 return `
                 <tr style="background: rgba(228, 168, 83, 0.05);">
                     <td colspan="2" style="padding: 8px 15px; border-left: 4px solid var(--accent);">
@@ -991,7 +993,7 @@ async function loadReportData() {
                     const paymentLabel = isPaid ? (p.payment_method || 'CASH') : '<span style="color: var(--danger); font-weight: 800;">[BELUM BAYAR]</span>';
                     const itemRevenue = Number(p.total_qty) * Number(p.unit_price || 0);
                     const revenueDetail = isPaid ? ` (${p.total_qty} x Rp ${Number(p.unit_price || 0).toLocaleString()} = Rp ${itemRevenue.toLocaleString()})` : '';
-                    
+
                     return `
                     <tr>
                         <td style="padding-left: 30px;">
@@ -1196,19 +1198,19 @@ function exportOwnerPDF() {
 
     // Clone the ownerPage so we can modify it for print without affecting the UI
     const printContent = ownerPage.cloneNode(true);
-    
+
     // Remove unnecessary elements from the clone (like the header controls, Jadwal Kasir button, etc)
     const headerControls = printContent.querySelector('.header > div:last-child');
     if (headerControls) headerControls.remove();
-    
+
     // Convert charts to images if possible, or just remove them and keep text data
     // Since chart.js canvases don't clone easily, we'll hide the canvas elements 
     // and rely on the summary cards, or we can try to extract the dataURL
     const canvases = printContent.querySelectorAll('canvas');
     const originalCanvases = ownerPage.querySelectorAll('canvas');
-    
+
     canvases.forEach((canvas, index) => {
-        if(originalCanvases[index]) {
+        if (originalCanvases[index]) {
             const img = document.createElement('img');
             img.src = originalCanvases[index].toDataURL('image/png');
             img.style.maxWidth = '100%';
@@ -1329,6 +1331,7 @@ async function previewReceipt(id) {
 
         if (result.success) {
             const sale = result.data;
+            currentPreviewSale = sale;
             document.getElementById('receiptInvoice').innerText = sale.invoice_number;
             document.getElementById('receiptDate').innerText = new Date(sale.created_at).toLocaleString('id-ID');
             document.getElementById('receiptStaff').innerText = sale.staff_name || '-';
@@ -1517,7 +1520,7 @@ document.getElementById('btnSubmitOpname')?.addEventListener('click', async () =
 async function openPrintPreview() {
     const startDate = document.getElementById('reportStartDate').value;
     const endDate = document.getElementById('reportEndDate').value;
-    
+
     const standFilterEl = document.getElementById('reportStandFilter');
     const standId = standFilterEl?.value || 'ALL';
     const standName = standId === 'ALL' ? 'Semua Stand' : standFilterEl.options[standFilterEl.selectedIndex].text;
@@ -1565,7 +1568,7 @@ async function openPrintPreview() {
                 const standPct = standSharePct / 100;
                 const shareSelf = revenue * standPct;
                 const shareDWP = revenue * (1 - standPct);
-                
+
                 return `
                 <div style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px; background: #fff; color: #000;">
                     <div style="border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-bottom: 8px;">
@@ -1589,14 +1592,14 @@ async function openPrintPreview() {
                         </div>
                     </div>
                     ${standData.products.map(p => {
-                        const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                        const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
-                        const paymentLabel = isPaid ? (p.payment_method || 'CASH') : 'BELUM BAYAR';
-                        const textStyle = isPaid ? 'color: #333;' : 'color: #d32f2f; font-weight: bold;';
-                        const itemRevenue = Number(p.total_qty) * Number(p.unit_price || 0);
-                        const revenueDetail = isPaid ? ` (${p.total_qty} x Rp ${Number(p.unit_price || 0).toLocaleString()} = Rp ${itemRevenue.toLocaleString()})` : '';
+                    const time = new Date(p.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const isPaid = (p.payment_status || '').toUpperCase() === 'PAID';
+                    const paymentLabel = isPaid ? (p.payment_method || 'CASH') : 'BELUM BAYAR';
+                    const textStyle = isPaid ? 'color: #333;' : 'color: #d32f2f; font-weight: bold;';
+                    const itemRevenue = Number(p.total_qty) * Number(p.unit_price || 0);
+                    const revenueDetail = isPaid ? ` (${p.total_qty} x Rp ${Number(p.unit_price || 0).toLocaleString()} = Rp ${itemRevenue.toLocaleString()})` : '';
 
-                        return `
+                    return `
                         <div style="display:flex; justify-content:space-between; font-size: 0.85rem; border-bottom: 1px dotted #eee; padding: 4px 0;">
                             <div style="flex: 1;">
                                 <span style="display:block; font-weight: 600; ${isPaid ? '' : 'color: #d32f2f;'}">- ${p.name}</span>
@@ -1605,7 +1608,7 @@ async function openPrintPreview() {
                             <span style="font-weight:bold; align-self: center;">${p.total_qty}</span>
                         </div>
                     `;
-                    }).join('')}
+                }).join('')}
                 </div>
             `;
             }).join('')
@@ -1815,6 +1818,70 @@ function printReceiptFromBrowser() {
     window.print();
 }
 
+function printReceiptViaRawBT() {
+    if (!currentPreviewSale) {
+        alert('Tidak ada data struk yang aktif.');
+        return;
+    }
+
+    let text = "";
+
+    // Center alignment helper
+    const center = (str) => {
+        const spaces = Math.max(0, Math.floor((32 - str.length) / 2));
+        return " ".repeat(spaces) + str + "\n";
+    };
+
+    // Left/Right helper for item lines
+    const formatLine = (left, right) => {
+        const spaces = Math.max(1, 32 - left.length - right.length);
+        return left + " ".repeat(spaces) + right + "\n";
+    };
+
+    // Header
+    text += center("BBWS - Citarum");
+    text += center("Sistem Kasir Modern");
+    text += "--------------------------------\n";
+    text += `Inv: ${currentPreviewSale.invoice_number}\n`;
+    text += `Cust: ${currentPreviewSale.customer_name || '-'}\n`;
+
+    const dateFormatted = new Date(currentPreviewSale.created_at).toLocaleString('id-ID');
+    text += `Date: ${dateFormatted}\n`;
+    text += "--------------------------------\n";
+
+    // Items
+    currentPreviewSale.items.forEach(item => {
+        const itemLine = `${item.name} x${item.qty}`;
+        const price = `Rp ${Number(item.price * item.qty).toLocaleString()}`;
+        text += formatLine(itemLine, price);
+    });
+
+    text += "--------------------------------\n";
+    text += formatLine("TOTAL:", `Rp ${Number(currentPreviewSale.total).toLocaleString()}`);
+    text += formatLine("METODE:", currentPreviewSale.payment_method);
+
+    if (currentPreviewSale.qris_exchange > 0) {
+        text += "--------------------------------\n";
+        text += formatLine("TUKAR TUNAI:", `Rp ${Number(currentPreviewSale.qris_exchange).toLocaleString()}`);
+        text += formatLine("(QRIS PAY:", `Rp ${Number(Number(currentPreviewSale.total) + Number(currentPreviewSale.qris_exchange)).toLocaleString()})`);
+    }
+
+    text += "--------------------------------\n";
+    text += center("Terima Kasih Atas Kunjungan Anda");
+    text += center("BBWS Citarum");
+    text += "\n\n\n\n"; // Feed paper lines
+
+    // Encode base64 using browser compatible method
+    const base64Data = btoa(unescape(encodeURIComponent(text)));
+
+    // Construct the Android intent URI to bypass Chrome security restrictions
+    // Do not encode the "base64," prefix so RawBT recognizes it correctly
+    const intentUrl = `intent:base64,${base64Data}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;S.browser_fallback_url=https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter;end;`;
+
+    // Redirect to trigger the RawBT app
+    window.location.href = intentUrl;
+}
+
 // --- Pending Orders Logic ---
 let pendingSalesData = [];
 
@@ -1925,10 +1992,10 @@ async function payPending(salesId, method) {
 }
 
 async function deleteSale(salesId, isReport = false) {
-    const msg = isReport 
-        ? 'Apakah Anda yakin ingin menghapus transaksi ini? Stok akan dikembalikan dan data keuangan akan disesuaikan.' 
+    const msg = isReport
+        ? 'Apakah Anda yakin ingin menghapus transaksi ini? Stok akan dikembalikan dan data keuangan akan disesuaikan.'
         : 'Apakah Anda yakin ingin menghapus pesanan pending ini? Stok yang telah terpotong akan dikembalikan ke sistem.';
-    
+
     if (!confirm(msg)) return;
 
     try {
@@ -2498,14 +2565,14 @@ async function openMenuManager() {
     try {
         const res = await fetch('/api/settings/menu-editor');
         const data = await res.json();
-        
+
         if (data.success && data.data.is_active) {
             document.getElementById('menuManagerModal').style.display = 'flex';
-            
+
             // Load Stands into the filters if empty
             const filterEl = document.getElementById('menuManagerStandFilter');
             const editStandEl = document.getElementById('editMenuStand');
-            
+
             if (filterEl.options.length <= 1) {
                 const standsRes = await fetch('/api/stands');
                 const standsData = await standsRes.json();
@@ -2517,7 +2584,7 @@ async function openMenuManager() {
                         optF.value = s.id;
                         optF.innerText = `🏢 ${s.name}`;
                         filterEl.appendChild(optF);
-                        
+
                         // For form
                         const optE = document.createElement('option');
                         optE.value = s.id;
@@ -2526,7 +2593,7 @@ async function openMenuManager() {
                     });
                 }
             }
-            
+
             await loadMenuManagerData();
         } else {
             alert('Maaf, fitur Edit Menu sedang dinonaktifkan oleh administrator.');
@@ -2543,7 +2610,7 @@ async function loadMenuManagerData() {
         const url = standId === 'ALL' ? '/api/products' : `/api/products?stand_id=${standId}`;
         const res = await fetch(url);
         const products = await res.json();
-        
+
         allMenuManagerData = products;
         renderMenuManagerTable(products);
     } catch (error) {
@@ -2580,8 +2647,8 @@ function renderMenuManagerTable(products) {
 
 function filterMenuManagerTable() {
     const search = document.getElementById('menuManagerSearch').value.toLowerCase();
-    const filtered = allMenuManagerData.filter(p => 
-        p.name.toLowerCase().includes(search) || 
+    const filtered = allMenuManagerData.filter(p =>
+        p.name.toLowerCase().includes(search) ||
         p.category.toLowerCase().includes(search)
     );
     renderMenuManagerTable(filtered);
@@ -2590,33 +2657,33 @@ function filterMenuManagerTable() {
 function openAddMenuModal() {
     document.getElementById('editMenuModalTitle').innerText = 'Tambah Menu Baru';
     document.getElementById('editMenuId').value = '';
-    
+
     // Set stand to the currently filtered stand (if not ALL)
     const currentStandFilter = document.getElementById('menuManagerStandFilter').value;
     if (currentStandFilter !== 'ALL') {
         document.getElementById('editMenuStand').value = currentStandFilter;
     }
-    
+
     document.getElementById('editMenuName').value = '';
     document.getElementById('editMenuCategory').value = '';
     document.getElementById('editMenuPrice').value = '';
     document.getElementById('editMenuCostPrice').value = '';
     document.getElementById('editMenuActive').value = '1';
     document.getElementById('editMenuPreview').src = '';
-    document.getElementById('editMenuImage').value = ''; 
+    document.getElementById('editMenuImage').value = '';
     document.getElementById('editMenuImage').required = true; // Required for new menu
-    
+
     document.getElementById('editMenuModal').style.display = 'flex';
 }
 
 function openEditMenuModal(product) {
     document.getElementById('editMenuModalTitle').innerText = 'Edit Produk';
     document.getElementById('editMenuId').value = product.id;
-    
+
     if (product.stand_id) {
         document.getElementById('editMenuStand').value = product.stand_id;
     }
-    
+
     document.getElementById('editMenuName').value = product.name;
     document.getElementById('editMenuCategory').value = product.category;
     document.getElementById('editMenuPrice').value = product.price;
@@ -2625,7 +2692,7 @@ function openEditMenuModal(product) {
     document.getElementById('editMenuPreview').src = product.image_url;
     document.getElementById('editMenuImage').value = ''; // Reset file input
     document.getElementById('editMenuImage').required = false; // Optional for edit
-    
+
     document.getElementById('editMenuModal').style.display = 'flex';
 }
 
@@ -2651,7 +2718,7 @@ async function submitEditMenu(event) {
         formData.append('cost_price', document.getElementById('editMenuCostPrice').value);
         formData.append('is_active', document.getElementById('editMenuActive').value);
         formData.append('stand_id', document.getElementById('editMenuStand').value);
-        
+
         const fileInput = document.getElementById('editMenuImage');
         if (fileInput.files.length > 0) {
             formData.append('image', fileInput.files[0]);
@@ -2694,11 +2761,11 @@ async function submitEditMenu(event) {
 
 async function deleteMenu(id) {
     if (!confirm('Apakah Anda yakin ingin menghapus menu ini secara permanen?')) return;
-    
+
     try {
         const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
         const data = await res.json();
-        
+
         if (data.success) {
             alert('Menu berhasil dihapus!');
             await loadMenuManagerData(); // Refresh table
@@ -2735,7 +2802,7 @@ async function loadOwnerData() {
 
         const startDateInput = document.getElementById('ownerStartDate');
         const endDateInput = document.getElementById('ownerEndDate');
-        
+
         // Default to today if empty
         if (!startDateInput.value) startDateInput.value = new Date().toISOString().split('T')[0];
         if (!endDateInput.value) endDateInput.value = new Date().toISOString().split('T')[0];
@@ -2743,7 +2810,7 @@ async function loadOwnerData() {
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
         const standId = standFilterEl?.value || 'ALL';
-        
+
         const res = await fetch(`/api/reports/owner/summary?start_date=${startDate}&end_date=${endDate}&stand_id=${standId}`);
         const result = await res.json();
         if (!result.success) return alert('Gagal memuat data owner: ' + result.error);
@@ -2753,7 +2820,7 @@ async function loadOwnerData() {
 
         const standName = standId === 'ALL' ? 'Semua Stand' : standFilterEl.options[standFilterEl.selectedIndex].text;
         const currentLabel = `(${startDate} s/d ${endDate}) - ${standName}`;
-        
+
         document.getElementById('labelTotalRevenue').innerText = `Total Omset ${currentLabel}`;
         document.getElementById('labelTotalExpense').innerText = `Total Pengeluaran ${currentLabel}`;
         document.getElementById('labelProfit').innerText = `Profit Bersih ${currentLabel}`;

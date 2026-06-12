@@ -1116,13 +1116,18 @@
                 <p style="margin: 0; font-size: 0.8rem;">TERIMA KASIH</p>
             </div>
         </div>
-        <div style="text-align: center; margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+        <div style="text-align: center; margin-top: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
             <button class="category-btn" onclick="document.getElementById('receiptModal').style.display='none'"
                 style="background: var(--danger); color: white;">TUTUP PREVIEW</button>
             <button class="category-btn" id="btnReceiptPrint" onclick="printReceiptFromBrowser()"
-                style="background: var(--accent); color: var(--secondary); font-weight: bold;">
+                style="background: var(--accent); color: var(--secondary); font-weight: bold; display: none;">
                 <i data-lucide="printer" style="width: 14px; vertical-align: middle; margin-right: 5px;"></i>
                 CETAK STRUK
+            </button>
+            <button class="category-btn" id="btnReceiptPrintRawBT" onclick="printReceiptViaRawBT()"
+                style="background: #25D366; color: white; font-weight: bold;">
+                <i data-lucide="bluetooth" style="width: 14px; vertical-align: middle; margin-right: 5px;"></i>
+                CETAK BLUETOOTH (TAB)
             </button>
         </div>
     </div>

@@ -10,7 +10,7 @@ function generateActivationCode(requestCode) {
         .replace(/[^a-zA-Z0-9]/g, '')
         .substring(0, 16)
         .toUpperCase();
-    
+
     const matched = hash.match(/.{1,4}/g);
     return matched ? matched.join('-') : hash;
 }

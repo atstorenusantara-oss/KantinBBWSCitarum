@@ -219,26 +219,54 @@ class ReportService {
     async getWeeklyReport(standId = 'ALL') {
         const startTime = dayjs().subtract(7, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss');
         const endTime = dayjs().endOf('day').format('YYYY-MM-DD HH:mm:ss');
-        const standFilter = standId === 'ALL' ? '' : `AND stand_id = '${standId}'`;
+        
+        let query, params;
+        if (standId === 'ALL') {
+            query = `
+                SELECT COUNT(id) as total_transactions, SUM(total) as gross_revenue
+                FROM sales 
+                WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'
+            `;
+            params = [startTime, endTime];
+        } else {
+            query = `
+                SELECT COUNT(DISTINCT s.id) as total_transactions, SUM(si.qty * si.price) as gross_revenue
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sales_id
+                JOIN products p ON si.product_id = p.id
+                WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID' AND p.stand_id = ?
+            `;
+            params = [startTime, endTime, standId];
+        }
 
-        const [summary] = await db.query(`
-            SELECT COUNT(id) as total_transactions, SUM(total) as gross_revenue
-            FROM sales WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID' ${standFilter}
-        `, [startTime, endTime]);
-
+        const [summary] = await db.query(query, params);
         return { period: 'Weekly (Last 7 Days)', summary: summary[0] };
     }
 
     async getMonthlyReport(standId = 'ALL') {
         const startTime = dayjs().startOf('month').format('YYYY-MM-DD HH:mm:ss');
         const endTime = dayjs().endOf('month').format('YYYY-MM-DD HH:mm:ss');
-        const standFilter = standId === 'ALL' ? '' : `AND stand_id = '${standId}'`;
+        
+        let query, params;
+        if (standId === 'ALL') {
+            query = `
+                SELECT COUNT(id) as total_transactions, SUM(total) as gross_revenue
+                FROM sales 
+                WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID'
+            `;
+            params = [startTime, endTime];
+        } else {
+            query = `
+                SELECT COUNT(DISTINCT s.id) as total_transactions, SUM(si.qty * si.price) as gross_revenue
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sales_id
+                JOIN products p ON si.product_id = p.id
+                WHERE s.created_at BETWEEN ? AND ? AND s.payment_status = 'PAID' AND p.stand_id = ?
+            `;
+            params = [startTime, endTime, standId];
+        }
 
-        const [summary] = await db.query(`
-            SELECT COUNT(id) as total_transactions, SUM(total) as gross_revenue
-            FROM sales WHERE created_at BETWEEN ? AND ? AND payment_status = 'PAID' ${standFilter}
-        `, [startTime, endTime]);
-
+        const [summary] = await db.query(query, params);
         return { period: 'Monthly (Current Month)', summary: summary[0] };
     }
 

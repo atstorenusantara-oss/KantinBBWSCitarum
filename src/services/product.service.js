@@ -5,10 +5,12 @@ class ProductService {
     // Get all products, optionally filtered by stand_id
     async getAll(standId = null) {
         if (standId) {
-            const [rows] = await db.query(
-                'SELECT * FROM products WHERE is_active = 1 AND stand_id = ? ORDER BY category, name',
-                [standId]
-            );
+            let query = 'SELECT * FROM products WHERE is_active = 1 AND stand_id = ? ORDER BY category, name';
+            let params = [standId];
+            if (standId === 'sa000003-0000-0000-0000-000000000003') {
+                query = 'SELECT * FROM products WHERE is_active = 1 AND stand_id IN (?, "sa000008-0000-0000-0000-000000000008") ORDER BY category, name';
+            }
+            const [rows] = await db.query(query, params);
             return rows;
         }
         const [rows] = await db.query(
@@ -23,7 +25,11 @@ class ProductService {
         let params = [];
 
         if (standId) {
-            query += ' AND stand_id = ?';
+            if (standId === 'sa000003-0000-0000-0000-000000000003') {
+                query += ' AND stand_id IN (?, "sa000008-0000-0000-0000-000000000008")';
+            } else {
+                query += ' AND stand_id = ?';
+            }
             params.push(standId);
         }
 

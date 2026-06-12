@@ -53,13 +53,14 @@ INSERT INTO stands (id, code, name, owner_name, description) VALUES
 ('sa000004-0000-0000-0000-000000000004', 'D', 'Stand D', 'Bu Suminah', 'Rawon, Geprek, Pepes, Bihun, Salad'),
 ('sa000005-0000-0000-0000-000000000005', 'E', 'Stand E', 'Pa Indra / Bu Marga', 'Soto Tangkar, Ayam Goreng, Lauk'),
 ('sa000006-0000-0000-0000-000000000006', 'F1', 'Stand F1', 'Mang Nunu', 'Batagor, Baso Tahu, Yamin, Mie Baso'),
-('sa000007-0000-0000-0000-000000000007', 'F2', 'Stand F2', 'Bu Kimun', 'Bubur, Ikan Bakar, Seblak, Pempek');
+('sa000007-0000-0000-0000-000000000007', 'F2', 'Stand F2', 'Bu Kimun', 'Bubur, Ikan Bakar, Seblak, Pempek'),
+('sa000008-0000-0000-0000-000000000008', 'G', 'sosro&eskrim', 'DWP', 'Stand khusus Sosro dan Es Krim');
 
 -- STEP 5: Seed users (1 owner + 7 kasir)
 INSERT INTO users (id, username, pin, role, stand_id) VALUES
 ('us000001-0000-0000-0000-000000000001', 'Owner', '0000', 'ADMIN', NULL),
 ('us000002-0000-0000-0000-000000000002', 'KasirA', '1111', 'KASIR', 'sa000001-0000-0000-0000-000000000001'),
-('us000003-0000-0000-0000-000000000003', 'KasirB', '2222', 'KASIR', 'sa000002-0000-0000-0000-000000000002'),
+('us000003-0000-0000-0000-000000000002', 'KasirB', '2222', 'KASIR', 'sa000002-0000-0000-0000-000000000002'),
 ('us000004-0000-0000-0000-000000000004', 'KasirC', '3333', 'KASIR', 'sa000003-0000-0000-0000-000000000003'),
 ('us000005-0000-0000-0000-000000000005', 'KasirD', '4444', 'KASIR', 'sa000004-0000-0000-0000-000000000004'),
 ('us000006-0000-0000-0000-000000000006', 'KasirE', '5555', 'KASIR', 'sa000005-0000-0000-0000-000000000005'),
